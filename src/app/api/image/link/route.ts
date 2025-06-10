@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const url = await getSignedUrl(r2, putCommand, { expiresIn: 60 });
 
     return NextResponse.json({ url }, { status: 200 });
-  } catch (_) {
+  } catch (err) {
     return NextResponse.json(
       { message: "There was an internal error while uploading the image." },
       { status: 500 }

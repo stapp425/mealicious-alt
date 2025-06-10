@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import defaultRecipeImage from "@/img/default/default-background.jpg";
 import { UseFormSetValue } from "react-hook-form";
+import { toast } from "sonner";
 
 type ImageUploaderProps = {
   className?: string;
@@ -34,7 +35,7 @@ export default function RecipeImageUploader({ className, image, setImage, messag
       if (imageURL)
         URL.revokeObjectURL(imageURL);
     };
-  }, [image, imageURL]);
+  }, [image]);
   
   return (
     <div className={cn(`h-[425px] flex flex-col overflow-hidden relative group bg-slate-200 rounded-md`, className)}>
@@ -54,8 +55,12 @@ export default function RecipeImageUploader({ className, image, setImage, messag
             type: addedImage?.type
           });
 
-          if (imageValidityCheck.success)
-            setImage("image", addedImage);
+          if (!imageValidityCheck.success) {
+            toast.error(imageValidityCheck.error.message);
+            return;
+          }
+
+          setImage("image", addedImage);
         }}
         className="hidden"
       />

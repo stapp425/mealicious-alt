@@ -19,7 +19,7 @@ export default function WakeLock() {
     };
 
     return releaseWakeLock;
-  }, [release, released]);
+  }, []);
   
   if (!isSupported)
     return null;

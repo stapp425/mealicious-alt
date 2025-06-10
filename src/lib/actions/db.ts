@@ -50,7 +50,10 @@ export const createRecipe = authActionClient
     
     // create recipe statistics
     await db.insert(recipeStatistics)
-      .values({ recipeId });
+      .values({ 
+        recipeId,
+        savedCount: 1
+      });
 
     // automatically make the creator of the user save this recipe
     await db.insert(savedRecipe)
