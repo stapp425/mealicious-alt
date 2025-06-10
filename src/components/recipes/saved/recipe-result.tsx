@@ -179,7 +179,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
             )
           }
           {
-            recipe.diets && (
+            (recipe.diets && recipe.diets.length > 0) && (
               <div className="flex flex-wrap items-center gap-2">
                 {
                   recipe.diets.slice(0, MAX_DIET_DISPLAY_LIMIT).map((d) => (

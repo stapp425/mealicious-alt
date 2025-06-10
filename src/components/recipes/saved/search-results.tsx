@@ -54,7 +54,7 @@ export default async function SearchResults({ query, sort, view, page }: SearchR
           'id', ${diet.id},
           'name', ${diet.name}
         )
-      )
+      ) FILTER (WHERE ${diet.id} IS NOT NULL)
     `.as("diets"),
     cuisine: sql<{
       adjective: string;
@@ -87,8 +87,8 @@ export default async function SearchResults({ query, sort, view, page }: SearchR
     .leftJoin(cuisine, eq(recipe.cuisineId, cuisine.id))
     .leftJoin(countryToCuisine, eq(cuisine.id, countryToCuisine.cuisineId))
     .leftJoin(country, eq(countryToCuisine.countryId, country.id))
-    .innerJoin(recipeToDiet, eq(recipe.id, recipeToDiet.recipeId))
-    .innerJoin(diet, eq(recipeToDiet.dietId, diet.id))
+    .leftJoin(recipeToDiet, eq(recipe.id, recipeToDiet.recipeId))
+    .leftJoin(diet, eq(recipeToDiet.dietId, diet.id))
     .leftJoin(recipeFavorite, and(
       eq(savedRecipe.userId, recipeFavorite.userId),
       eq(savedRecipe.recipeId, recipeFavorite.recipeId)

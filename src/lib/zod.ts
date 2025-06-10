@@ -257,8 +257,8 @@ export const RecipeCreationSchema = z.object({
     note: z.string().optional()
   })).min(1, {
     message: "Recipe must contain at least 1 ingredient."
-  }).max(MAX_INSTRUCTIONS_LENGTH, {
-    message: `Recipe cannot contain more than ${MAX_INSTRUCTIONS_LENGTH.toLocaleString()} instructions.`
+  }).max(MAX_INGREDIENTS_LENGTH, {
+    message: `Recipe cannot contain more than ${MAX_INGREDIENTS_LENGTH.toLocaleString()} instructions.`
   }),
   cuisine: z.object({
     id: IdSchema,
@@ -290,10 +290,14 @@ export const RecipeCreationSchema = z.object({
       required_error: "Instruction content is required."
     }).nonempty({
       message: "Description cannot be empty."
-    }).max(MAX_INSTRUCTIONS_LENGTH, {
-      message: `A maximum of ${MAX_INSTRUCTIONS_LENGTH.toLocaleString()} instructions are allowed.`
+    }).max(MAX_INSTRUCTION_CONTENT_LENGTH, {
+      message: `Instruction content cannot exceeed ${MAX_INSTRUCTION_CONTENT_LENGTH.toLocaleString()} characters.`
     })
-  })),
+  })).min(1, {
+    message: "Recipe must include at least 1 instruction."
+  }).max(MAX_INSTRUCTIONS_LENGTH, {
+    message: `A maximum of ${MAX_INSTRUCTIONS_LENGTH.toLocaleString()} instructions are allowed.`
+  }),
   isPublic: z.boolean()
 });
 

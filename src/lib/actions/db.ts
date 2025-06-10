@@ -19,6 +19,7 @@ import {
   savedRecipe
 } from "@/db/schema";
 import { getRatingKey } from "@/lib/utils";
+import { revalidatePath } from "next/cache";
 
 export const createRecipe = authActionClient
   .schema(z.object({
@@ -111,6 +112,8 @@ export const createRecipe = authActionClient
         index: i + 1,
         time: inst.time.toFixed(2)
       })));
+
+    revalidatePath("/recipes/saved");
 
     return recipeId;
   });

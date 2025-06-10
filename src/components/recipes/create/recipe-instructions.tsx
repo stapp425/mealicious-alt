@@ -44,8 +44,8 @@ export default function RecipeInstructions({ className, setInstructions, formIns
         required_error: "A description is required."
       }).nonempty({
         message: "Description cannot be empty."
-      }).max(MAX_INSTRUCTIONS_LENGTH, {
-        message: `A maximum of ${MAX_INSTRUCTIONS_LENGTH.toLocaleString()} instructions are allowed.`
+      }).max(MAX_INSTRUCTION_CONTENT_LENGTH, {
+        message: `A maximum of ${MAX_INSTRUCTION_CONTENT_LENGTH.toLocaleString()} characters are allowed.`
       })
     }).refine((val) => formInstructionValues.every((fi) => fi.title !== val.title), {
       message: "Title already exists in instructions."
