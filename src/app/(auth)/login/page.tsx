@@ -71,7 +71,7 @@ export default function Page() {
       </div>
       <SignInForm />
       <div className="text-center">
-        Don't have an account? | <Link href="/register" className="text-orange-500 hover:text-orange-700">Sign Up</Link>
+        Don&apos;t have an account? | <Link href="/register" className="text-orange-500 hover:text-orange-700">Sign Up</Link>
       </div>
     </div>
   );

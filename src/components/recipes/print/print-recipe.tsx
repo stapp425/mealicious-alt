@@ -65,7 +65,7 @@ export default function PrintRecipe({ recipe }: PrintRecipeProps) {
           recipe.description ? (
             <p className="text-muted-foreground text-lg hyphens-auto line-clamp-3">{recipe.description}</p>
           ) : (
-            <p className="italic text-muted">No description is available.</p>
+            <p className="italic text-muted-foreground">No description is available.</p>
           )
         }
         <h2 className="font-semibold text-sm">

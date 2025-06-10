@@ -36,7 +36,7 @@ type SidebarUserProps = {
 
 export default function SidebarUser({ username, email, image }: SidebarUserProps) {
   const [mounted, setMounted] = useState<boolean>(false);
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
   
   useEffect(() => {
     setMounted(true);

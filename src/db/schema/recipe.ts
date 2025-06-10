@@ -69,6 +69,9 @@ export const recipeStatistics = pgTable("recipe_stats", (t) => ({
     .references(() => recipe.id, {
       onDelete: "cascade"
     }),
+  savedCount: t.integer("r_stat_saved_count")
+    .notNull()
+    .default(0),
   favoriteCount: t.integer("r_stat_favorite_count")
     .notNull()
     .default(0),
@@ -287,12 +290,15 @@ export const recipeReview = pgTable("recipe_review", (t) => ({
       onDelete: "cascade"
     }),
   userId: t.text("user_id")
+    .notNull()
     .references(() => user.id, {
       onDelete: "cascade"
     }),
   rating: t.integer("review_rating").notNull(),
   content: t.text("review_content"),
-  likeCount: t.integer("review_like_count"),
+  likeCount: t.integer("review_like_count")
+    .notNull()
+    .default(0),
   createdAt: t.timestamp("review_date_created", {
     precision: 0,
     withTimezone: true

@@ -1,8 +1,8 @@
 "use client";
 
-import { diet, dishType, nutrition, recipe } from "@/db/schema/recipe";
+import { diet, dishType, nutrition } from "@/db/schema/recipe";
 import { MAX_DESCRIPTION_LENGTH, RecipeCreation, RecipeCreationSchema, UrlSchema } from "@/lib/zod";
-import { eq, InferSelectModel } from "drizzle-orm";
+import { InferSelectModel } from "drizzle-orm";
 import { Clock, Info, LoaderCircle, Microwave, Clipboard, ChevronDown, Check, Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";

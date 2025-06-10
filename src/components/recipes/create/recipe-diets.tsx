@@ -4,7 +4,7 @@ import { diet } from "@/db/schema";
 import { cn } from "@/lib/utils";
 import { MAX_DIETS_LENGTH, RecipeCreation } from "@/lib/zod";
 import { InferSelectModel } from "drizzle-orm";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { UseFormSetValue } from "react-hook-form";
 import {
   Command,
@@ -42,7 +42,7 @@ export default function RecipeDiets({ className, diets, formDietValues, setDiets
   const remainingDiets = useMemo(() => {
     const formDietValuesSet = new Set(formDietValues.map((fd) => fd.id));
     return diets.filter(({ id }) => !formDietValuesSet.has(id));
-  }, [formDietValues]);
+  }, [formDietValues, diets]);
   
   return (
     <div className={cn("field-container flex flex-col gap-3", className)}>

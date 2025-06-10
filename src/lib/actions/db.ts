@@ -3,7 +3,7 @@
 import { authActionClient } from "@/safe-action";
 import { RecipeCreationSchema, ReviewCreationSchema } from "@/lib/zod";
 import { db } from "@/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, count, eq, isNotNull, sql } from "drizzle-orm";
 import z from "zod";
 import { 
   ingredient, 
@@ -15,8 +15,10 @@ import {
   recipeToDiet, 
   recipeToDishType, 
   recipeToNutrition,
+  reviewLike,
   savedRecipe
 } from "@/db/schema";
+import { getRatingKey } from "@/lib/utils";
 
 export const createRecipe = authActionClient
   .schema(z.object({
@@ -198,6 +200,10 @@ export const toggleSavedListRecipe = authActionClient
         userId: user.id!,
         recipeId
       });
+      
+      await db.update(recipeStatistics)
+        .set({ savedCount: sql`${recipeStatistics.savedCount} + 1` })
+        .where(eq(recipeStatistics.recipeId, recipeId));
 
       return {
         isSaved: true
@@ -208,6 +214,10 @@ export const toggleSavedListRecipe = authActionClient
       eq(savedRecipe.userId, foundSavedRecipe.userId),
       eq(savedRecipe.recipeId, foundSavedRecipe.recipeId)
     ));
+
+    await db.update(recipeStatistics)
+      .set({ savedCount: sql`${recipeStatistics.savedCount} - 1` })
+      .where(eq(recipeStatistics.recipeId, foundSavedRecipe.recipeId));
 
     return {
       isSaved: false
@@ -221,7 +231,7 @@ export const createReview = authActionClient
     }),
     review: ReviewCreationSchema
   }))
-  .action(async ({ parsedInput: { recipeId, review } }) => {
+  .action(async ({ ctx: { user }, parsedInput: { recipeId, review } }) => {
     const foundRecipe = await db.query.recipe.findFirst({
       where: (recipe, { eq }) => eq(recipe.id, recipeId),
       columns: {
@@ -232,31 +242,26 @@ export const createReview = authActionClient
     if (!foundRecipe)
       throw new Error("Recipe does not exist.");
 
-    await db.insert(recipeReview).values({
-      recipeId,
-      rating: review.rating,
-      content: review.content || undefined
+    const foundReview = await db.query.recipeReview.findFirst({
+      where: (review, { eq, and }) => and(
+        eq(review.recipeId, recipeId),
+        eq(review.userId, user.id!)
+      )
     });
 
-    let insertedRating: `${"one" | "two" | "three" | "four" | "five"}StarCount` = "oneStarCount";
+    if (foundReview)
+      throw new Error("You have already created a review for this recipe!");
 
-    switch (review.rating) {
-      case 1:
-        insertedRating = "oneStarCount";
-        break;
-      case 2:
-        insertedRating = "twoStarCount";
-        break;
-      case 3:
-        insertedRating = "threeStarCount";
-        break;
-      case 4:
-        insertedRating = "fourStarCount";
-        break;
-      case 5:
-        insertedRating = "fiveStarCount";
-        break;
-    }
+    const [{ insertedReviewId }] = await db.insert(recipeReview).values({
+      recipeId,
+      userId: user.id!,
+      rating: review.rating,
+      content: review.content || undefined,
+    }).returning({
+      insertedReviewId: recipeReview.id
+    });
+
+    const insertedRating = getRatingKey(review.rating);
 
     await db.update(recipeStatistics).set({
       [insertedRating]: sql`${recipeStatistics[insertedRating]} + 1`
@@ -264,7 +269,7 @@ export const createReview = authActionClient
 
     return {
       success: true as const,
-      message: "Review successfully created!"
+      review: insertedReviewId
     };
   });
 
@@ -315,3 +320,100 @@ export const deleteReview = authActionClient
       message: "Review successfully removed!"
     };
   });
+
+export const toggleReviewLike = authActionClient
+  .schema(z.object({
+    reviewId: z.string().nonempty({
+      message: "Review ID cannot be empty."
+    })
+  }))
+  .action(async ({ ctx: { user }, parsedInput: { reviewId } }) => {    
+    const foundReviewLike = await db.query.reviewLike.findFirst({
+      where: (reviewLike, { eq }) => eq(reviewLike.reviewId, reviewId)
+    });
+
+    if (!foundReviewLike) {
+      const foundReview = await db.query.recipeReview.findFirst({
+        where: (review, { eq }) => eq(review.id, reviewId)
+      });
+
+      if (!foundReview)
+        throw new Error("Review does not exist.");
+      
+      await db.insert(reviewLike).values({
+        reviewId,
+        userId: user.id!
+      });
+
+      await db.update(recipeReview)
+        .set({
+          likeCount: sql`${recipeReview.likeCount} + 1`
+        })
+        .where(eq(recipeReview.id, reviewId));
+
+      return {
+        success: true as const,
+        isLiked: true
+      };
+    }
+
+    await db.delete(reviewLike).where(eq(reviewLike.reviewId, reviewId));
+
+    await db.update(recipeReview)
+      .set({
+        likeCount: sql`${recipeReview.likeCount} - 1`
+      })
+      .where(eq(recipeReview.id, reviewId));
+
+    return {
+      success: true as const,
+      isLiked: false
+    };
+  });
+
+export async function getReviewsByRecipe({ recipeId, limit, offset, userId }: { recipeId: string; limit: number; offset: number; userId?: string; }) {
+  return db.query.recipeReview.findMany({
+    where: (review, { eq, isNotNull, and }) => and(
+      eq(review.recipeId, recipeId),
+      isNotNull(review.content)
+    ),
+    columns: {
+      userId: false,
+      recipeId: false
+    },
+    with: {
+      creator: {
+        columns: {
+          id: true,
+          image: true,
+          name: true,
+          email: true
+        }
+      },
+      likedBy: {
+        where: (liked, { eq }) => eq(liked.userId, userId || ""),
+        columns: {
+          userId: true
+        }
+      }
+    },
+    limit,
+    offset,
+    orderBy: (review, { desc }) => [desc(review.createdAt)]
+  });
+}
+
+export async function getRecipeStatistics(recipeId: string) {
+  return db.query.recipeStatistics.findFirst({
+    where: (stats, { eq }) => eq(stats.recipeId, recipeId)
+  });
+}
+
+export async function getRecipeReviewCount(recipeId: string) {
+  return db.select({ count: count() })
+    .from(recipeReview)
+    .where(and(
+      eq(recipeReview.recipeId, recipeId),
+      isNotNull(recipeReview.content)
+    ));
+}

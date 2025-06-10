@@ -81,6 +81,10 @@ export const config = {
         token.isUsingCredentials = true;
 
       return token;
+    },
+    session: async ({ session, user }) => {
+      session.user.id = user.id;
+      return session;
     }
   },
   jwt: {

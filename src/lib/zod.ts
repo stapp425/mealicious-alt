@@ -300,7 +300,7 @@ export const RecipeCreationSchema = z.object({
 export type RecipeCreation = z.infer<typeof RecipeCreationSchema>;
 
 export const ReviewCreationSchema = z.object({
-  rating: z.coerce.number({
+  rating: z.number({
     required_error: "A rating is required."
   }).int({
     message: "Rating must be an integer."
@@ -311,8 +311,6 @@ export const ReviewCreationSchema = z.object({
   }),
   content: z.optional(z.string({
     required_error: "Review content is required."
-  }).nonempty({
-    message: "Review cannot be empty."
   }).max(MAX_REVIEW_CONTENT_LENGTH, {
     message: `Review content cannot have more than ${MAX_REVIEW_CONTENT_LENGTH.toLocaleString()} characters.`
   }))

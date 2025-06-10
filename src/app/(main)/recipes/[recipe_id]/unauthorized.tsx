@@ -1,18 +1,18 @@
 "use client";
 
-import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, ExternalLink, SearchX } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, ExternalLink, Lock } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
-export default function NotFound() {
+export default function Unauthorized() {
   const { back, push } = useRouter();
   
   return (
     <div className="h-full flex flex-col justify-center items-center p-4">
       <div className="bg-sidebar border border-border w-full max-w-[500px] flex flex-col justify-center items-center gap-6 mx-auto py-10 px-8 rounded-md">
-        <SearchX size={96}/>
+        <Lock size={96}/>
         <h1 className="text-xl text-center font-bold">
-          The requested recipe was not found!
+          You do not have permission to view this recipe.
         </h1>
         <Separator />
         <button onClick={() => back()} className="mealicious-button flex items-center gap-2 font-semibold text-white py-2 px-4 rounded-md">

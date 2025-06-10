@@ -27,7 +27,7 @@ export default function Description({ description }: DescriptionProps) {
         description ? (
           <p className="text-muted-foreground text-sm hyphens-auto line-clamp-3">{description}</p>
         ) : (
-          <p className="italic text-muted">No description is available.</p>
+          <p className="italic text-muted-foreground">No description is available.</p>
         )
       }
     </section>

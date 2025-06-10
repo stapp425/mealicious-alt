@@ -43,7 +43,7 @@ export default function RecipeDishTypes({ className, dishTypes, formDishTypeValu
   const remainingDishTypes = useMemo(() => {
     const formDishTypeValuesSet = new Set(formDishTypeValues.map((fdt) => fdt.id));
     return dishTypes.filter(({ id }) => !formDishTypeValuesSet.has(id));
-  }, [formDishTypeValues]);
+  }, [formDishTypeValues, dishTypes]);
   
   return (
     <div className={cn("field-container flex flex-col gap-3", className)}>

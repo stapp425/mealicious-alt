@@ -142,7 +142,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={async () => await executeAsync({ recipeId: recipe.id })}
                           disabled={isExecuting}
@@ -203,7 +203,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
             recipe.description ? (
               <p className="text-muted-foreground text-sm hyphens-auto line-clamp-3">{recipe.description}</p>
             ) : (
-              <p className="italic text-muted">No description is available.</p>
+              <p className="italic text-muted-foreground">No description is available.</p>
             )
           }
           {

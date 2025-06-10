@@ -113,9 +113,6 @@ export default async function SearchResults({ query, sort, view, page }: SearchR
     case "save date":
       savedRecipesQuery.orderBy(desc(savedRecipe.saveDate))
       break;
-    default:
-      savedRecipesQuery;
-      break;
   }
 
   const savedRecipesCountQuery = db.select({ count: count() })

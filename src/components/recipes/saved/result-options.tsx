@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sort, sorts, View, views } from "@/lib/types";
 import { LayoutGrid, List } from "lucide-react";
-import { parseAsIndex, parseAsStringLiteral, useQueryState, useQueryStates } from "nuqs";
+import { parseAsIndex, parseAsStringLiteral, useQueryStates } from "nuqs";
 
 export default function ResultOptions() {
   const [resultOptions, setResultOptions] = useQueryStates({

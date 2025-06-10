@@ -1,6 +1,5 @@
 import SignUpForm from "@/components/auth/sign-up-form";
 import siteLogo from "@/img/logo/mealicious-logo.svg";
-import registerImage from "@/img/register-page.jpg";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";

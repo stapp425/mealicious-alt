@@ -6,10 +6,10 @@ import { createReview } from "@/lib/actions/db";
 import { cn } from "@/lib/utils";
 import { ReviewCreation, ReviewCreationSchema } from "@/lib/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Star } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -17,15 +17,11 @@ type CreateReviewFormProps = {
   recipeId: string;
 };
 
-const outlineStar = '\u2606';
-const halfStar = '\u2BE8';
-const filledStar = '\u2605';
-
 export default function CreateReviewForm({ recipeId }: CreateReviewFormProps) {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const { executeAsync } = useAction(createReview, {
-    onSuccess: ({ data }) => toast.success(data?.message),
-    onError: () => toast.error("Failed to create a review.")
+    onSuccess: () => toast.success("Successfully created recipe!"),
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
   const {
     register,
@@ -34,7 +30,8 @@ export default function CreateReviewForm({ recipeId }: CreateReviewFormProps) {
     reset,
     watch,
     formState: {
-      isSubmitting
+      isSubmitting,
+      errors
     }
   } = useForm<ReviewCreation>({
     resolver: zodResolver(ReviewCreationSchema),
@@ -42,13 +39,12 @@ export default function CreateReviewForm({ recipeId }: CreateReviewFormProps) {
 
   const onSubmit = handleSubmit(async (data) => {
     const createReviewResult = await executeAsync({ recipeId, review: data });
-
-    if (!createReviewResult?.data) {
-      toast.error("Failed to create the review.");
-      return;
-    }
     
-    router.refresh();
+    if (!createReviewResult?.data)
+      return;
+
+    reset();
+    refresh();
   });
 
   const rating = watch("rating");
@@ -57,21 +53,41 @@ export default function CreateReviewForm({ recipeId }: CreateReviewFormProps) {
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
       <h2 className="font-bold text-lg">Create a Review</h2>
       <Separator />
-      <h2 className="font-semibold">Your Rating</h2>
-      <div className="flex items-end gap-2 h-[50px]">
+      <div className="flex justify-between items-center">
+        <h2 className="font-semibold">Your Rating</h2>
         {
-          Array.from({ length: 5 }, (_, i) => i + 1).map((i) => (
-            <span 
-              key={`${i}-star`}
-              onClick={() => setValue("rating", i)}
-              className={cn(
-                i <= rating ? "text-[#ffba00]" : "text-[var(--color-foreground)]",
-                "cursor-pointer text-6xl"
-              )}
-            >
-              {i <= rating ? '\u2605' : '\u2606'}
-            </span>
-          ))
+          errors.rating?.message && (
+            <div className="error-text text-sm">
+              <Info size={16}/>
+              {errors.rating?.message}
+            </div>
+          )
+        }
+      </div>
+      <div className="flex justify-between items-end">
+        <div className="flex items-center gap-2 h-[35px] md:h-[50px]">
+          {
+            Array.from({ length: 5 }, (_, i) => i + 1).map((i) => (
+              <span 
+                key={`${i}-star`}
+                onClick={() => setValue("rating", i)}
+                className={cn(
+                  i <= rating ? "text-[#ffba00]" : "text-[var(--color-foreground)]",
+                  "cursor-pointer text-3xl md:text-6xl"
+                )}
+              >
+                {i <= rating ? '\u2605' : '\u2606'}
+              </span>
+            ))
+          }
+        </div>
+        {
+          errors.content?.message && (
+            <div className="error-text text-sm">
+              <Info size={16}/>
+              {errors.content?.message}
+            </div>
+          )
         }
       </div>
       <Textarea
@@ -89,9 +105,9 @@ export default function CreateReviewForm({ recipeId }: CreateReviewFormProps) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="mealicious-button font-semibold text-sm py-2 px-4 rounded-sm"
+          className="w-[85px] h-[35px] mealicious-button flex justify-center items-center font-semibold text-sm py-2 rounded-sm"
         >
-          Submit
+          {isSubmitting ? <Loader2 size={15} className="animate-spin"/> : "Submit"}
         </button>
       </div>
     </form>

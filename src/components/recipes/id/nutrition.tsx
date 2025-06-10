@@ -2,11 +2,10 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { Unit, units } from "@/db/data/unit";
+import { Unit } from "@/db/data/unit";
 import { Slot } from "@radix-ui/react-slot";
 import { Info, Minus, Plus } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { useState } from "react";
 
 type NutritionProps = {
   servingSizeAmount: string;

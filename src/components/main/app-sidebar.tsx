@@ -11,7 +11,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { ArrowDownToLine, Calendar, ChevronDown, Drumstick, Home, List, LogIn, Pencil, Search } from "lucide-react";
+import { ArrowDownToLine, Calendar, Home, List, Pencil, Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import siteLogo from "@/img/logo/mealicious-logo.svg";

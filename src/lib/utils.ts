@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { differenceInDays, differenceInHours, differenceInMinutes, differenceInMonths, differenceInYears } from "date-fns";
 import { twMerge } from "tailwind-merge";
+import { Rating } from "@/lib/types";
 
 export const MAX_LIST_RECIPE_DISPLAY_LIMIT = 1;
 export const MAX_GRID_RECIPE_DISPLAY_LIMIT = 2;
@@ -62,4 +63,28 @@ export function getRecipeSaveDateDifference(recipeSaveDate: Date): string {
     return "Saved just a moment ago";
 
   return `Saved ${mostRecentTime.difference} ${mostRecentTime.difference !== 1 ? mostRecentTime.pluralName : mostRecentTime.name} ago`;
+}
+
+export function getRatingKey(amount: number): Rating {
+  let ratingKey: `${"one" | "two" | "three" | "four" | "five"}StarCount` = "oneStarCount";
+
+  switch (amount) {
+    case 1:
+      ratingKey = "oneStarCount";
+      break;
+    case 2:
+      ratingKey = "twoStarCount";
+      break;
+    case 3:
+      ratingKey = "threeStarCount";
+      break;
+    case 4:
+      ratingKey = "fourStarCount";
+      break;
+    case 5:
+      ratingKey = "fiveStarCount";
+      break;
+  }
+
+  return ratingKey;
 }

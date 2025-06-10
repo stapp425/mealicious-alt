@@ -1,10 +1,6 @@
-import { auth } from "@/auth";
 import PrintRecipe from "@/components/recipes/print/print-recipe";
-import { Separator } from "@/components/ui/separator";
 import { db } from "@/db";
-import { format } from "date-fns";
-import { Clock } from "lucide-react";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ recipe_id: string; }>;

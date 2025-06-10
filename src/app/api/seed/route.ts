@@ -1,7 +1,6 @@
 import { country, countryToCuisine, cuisine, diet, dishType, nutrition } from "@/db/schema/recipe";
 import { db } from "@/db";
-import { NextRequest, NextResponse } from "next/server";
-import { InferInsertModel } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 export async function POST() {
   const [{ id: philippinesId }] = await db.insert(country).values({

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { notFound } from "next/navigation";
+import { notFound, unauthorized } from "next/navigation";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { Clock, Microwave, Clipboard, Medal, Earth, Printer, Pencil } from "lucide-react";
@@ -21,6 +21,8 @@ import WakeLock from "@/components/recipes/id/wake-lock";
 import Nutrition from "@/components/recipes/id/nutrition";
 import CreateReviewForm from "@/components/recipes/id/create-review-form";
 import Reviews from "@/components/recipes/id/reviews";
+import { MAX_REVIEW_DISPLAY_LIMIT } from "@/lib/types";
+import { getRecipeReviewCount, getRecipeStatistics, getReviewsByRecipe } from "@/lib/actions/db";
 
 type PageProps = {
   params: Promise<{ recipe_id: string; }>;
@@ -104,23 +106,6 @@ export default async function Page({ params }: PageProps) {
         columns: {
           recipeId: false
         }
-      },
-      reviews: {
-        where: (review, { isNotNull }) => isNotNull(review.content),
-        columns: {
-          recipeId: false,
-          userId: false
-        },
-        with: {
-          creator: {
-            columns: {
-              id: true,
-              image: true,
-              name: true,
-              email: true
-            }
-          }
-        }
       }
     }
   });
@@ -133,6 +118,56 @@ export default async function Page({ params }: PageProps) {
   const isSaved = foundRecipe.savedBy && foundRecipe.savedBy.length > 0;
   const isFavorited = foundRecipe.favoritedBy && foundRecipe.favoritedBy.length > 0;
   const isAccessible = isAuthor || isPublic || isSaved;
+
+  if (!isAccessible)
+    unauthorized();
+
+  const reviewCountQuery = getRecipeReviewCount(foundRecipe.id);
+  const recipeStatisticsQuery = getRecipeStatistics(foundRecipe.id);
+  const initialReviewsQuery = getReviewsByRecipe({
+    recipeId: foundRecipe.id,
+    userId: userId,
+    limit: MAX_REVIEW_DISPLAY_LIMIT,
+    offset: 0,
+  });
+  const userReviewQuery = db.query.recipeReview.findFirst({
+    where: (review, { eq, and }) => and(
+      eq(review.recipeId, foundRecipe.id),
+      eq(review.userId, userId!)
+    ),
+    columns: {
+      userId: false,
+      recipeId: false
+    },
+    with: {
+      creator: {
+        columns: {
+          id: true,
+          image: true,
+          name: true,
+          email: true
+        }
+      },
+      likedBy: {
+        where: (liked, { eq }) => eq(liked.userId, userId || ""),
+        columns: {
+          userId: true
+        }
+      }
+    }
+  });
+  
+  const [
+    initialReviews, 
+    userReview, 
+    reviewCount, 
+    recipeStatistics
+  ] = await Promise.all([
+    initialReviewsQuery, 
+    userReviewQuery, 
+    reviewCountQuery, 
+    recipeStatisticsQuery
+  ]);
   
   return (
     <div className="flex-1 relative w-full">
@@ -142,6 +177,7 @@ export default async function Page({ params }: PageProps) {
             src={foundRecipe.image || defaultImage}
             alt={`Image of ${foundRecipe.title}`}
             fill
+            priority
             className="bg-fixed object-cover contrast-35 dark:opacity-15"
           />
         )
@@ -222,22 +258,16 @@ export default async function Page({ params }: PageProps) {
                 }
               </div>
             </section>
-            <div className="flex items-stretch gap-2 *:flex-1">
+            <div className="flex items-stretch flex-wrap gap-3 *:flex-1">
               <Favorite 
                 recipeId={foundRecipe.id}
                 isRecipeFavorite={isFavorited}
+                favoriteCount={recipeStatistics?.favoriteCount || 0}
               />
-              <Link 
-                href={`/recipes/${foundRecipe.id}/print`}
-                target="_blank"
-                className="cursor-pointer bg-slate-600 hover:bg-slate-700 text-white text-xs sm:text-sm font-semibold flex justify-center items-center gap-2 py-2 md:py-3 px-5 rounded-sm transition-colors"
-              >
-                <Printer size={14}/>
-                Print
-              </Link>
               <Saved 
                 recipeId={foundRecipe.id}
                 isRecipeSaved={isSaved}
+                savedCount={recipeStatistics?.savedCount || 0}
               />
               {
                 isAuthor && (
@@ -250,6 +280,14 @@ export default async function Page({ params }: PageProps) {
                   </Link>
                 )
               }
+              <Link 
+                href={`/recipes/${foundRecipe.id}/print`}
+                target="_blank"
+                className="cursor-pointer bg-slate-600 hover:bg-slate-700 text-white text-xs sm:text-sm font-semibold flex justify-center items-center gap-2 py-2 md:py-3 px-5 rounded-sm transition-colors"
+              >
+                <Printer size={14}/>
+                Print
+              </Link>
             </div>
             <div className="bg-mealicious-primary text-white border border-border h-[100px] flex justify-between rounded-md">
               <div className="flex-1 flex flex-col justify-between items-center py-2">
@@ -282,9 +320,14 @@ export default async function Page({ params }: PageProps) {
             <WakeLock />
             <Ingredients ingredients={foundRecipe.ingredients}/>
             <Instructions instructions={foundRecipe.instructions}/>
-            <Reviews 
-              statistics={foundRecipe.recipeStatistics}
-              reviews={foundRecipe.reviews}
+            <CreateReviewForm recipeId={foundRecipe.id}/>
+            <Reviews
+              reviewCount={reviewCount[0].count}
+              initialReviews={initialReviews}
+              userReview={userReview}
+              statistics={recipeStatistics!}
+              recipeId={foundRecipe.id}
+              userId={userId!}
             />
             </>
           ) : (

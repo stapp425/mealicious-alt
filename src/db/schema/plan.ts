@@ -1,6 +1,6 @@
-import { check, pgTable, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, primaryKey } from "drizzle-orm/pg-core";
 import { user } from "./user";
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { meal } from "./meal";
 import { nanoid } from "nanoid";
 

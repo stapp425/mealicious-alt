@@ -34,7 +34,7 @@ export default function RecipeImageUploader({ className, image, setImage, messag
       if (imageURL)
         URL.revokeObjectURL(imageURL);
     };
-  }, [image]);
+  }, [image, imageURL]);
   
   return (
     <div className={cn(`h-[425px] flex flex-col overflow-hidden relative group bg-slate-200 rounded-md`, className)}>

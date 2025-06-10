@@ -10,7 +10,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Unit, unitAbbreviations, units } from "@/db/data/unit";
+import { Unit, unitAbbreviations } from "@/db/data/unit";
 import { cn } from "@/lib/utils";
 import { MAX_INGREDIENT_AMOUNT, MAX_INGREDIENT_NAME_LENGTH, MAX_INGREDIENTS_LENGTH, RecipeCreation, UnitSchema } from "@/lib/zod";
 import { Info, Plus } from "lucide-react";
