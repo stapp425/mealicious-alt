@@ -1,0 +1,142 @@
+import { auth } from "@/auth";
+import EditRecipeForm from "@/components/recipes/edit/edit-recipe-form";
+import { db } from "@/db";
+import { Metadata } from "next";
+import { notFound, unauthorized } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "Edit Recipe | Mealicious",
+  description: "Edit your mealicious recipes here!"
+};
+
+export default async function Page({ params }: { params: Promise<{ recipe_id: string; }> }) {
+  const { recipe_id: recipeId } = await params;
+  const session = await auth();
+  const userId = session?.user?.id;
+  const foundRecipe = await db.query.recipe.findFirst({
+    where: (recipe, { eq }) => eq(recipe.id, recipeId),
+    columns: {
+      createdAt: false, 
+      cuisineId: false, 
+      updatedAt: false
+    },
+    with: {
+      cuisine: {
+        columns: {
+          id: true,
+          adjective: true
+        },
+        with: {
+          countryOrigins: {
+            limit: 1,
+            columns: {},
+            with: {
+              country: {
+                columns: {
+                  id: true,
+                  name: true,
+                  icon: true
+                }
+              }
+            }
+          }
+        }
+      },
+      diets: {
+        columns: {},
+        with: {
+          diet: {
+            columns: {
+              id: true,
+              name: true
+            }
+          }
+        }
+      },
+      dishTypes: {
+        columns: {},
+        with: {
+          dishType: {
+            columns: {
+              id: true,
+              name: true
+            }
+          }
+        }
+      },
+      nutritionalFacts: {
+        columns: {
+          id: true,
+          amount: true,
+          unit: true
+        },
+        with: {
+          nutrition: {
+            columns: {
+              description: false
+            }
+          }
+        }
+      },
+      ingredients: {
+        columns: {
+          recipeId: false
+        }
+      },
+      instructions: {
+        orderBy: (instruction, { asc }) => [asc(instruction.index)],
+        columns: {
+          recipeId: false
+        }
+      }
+    }
+  });
+
+  if (!foundRecipe)
+    notFound();
+
+  if (foundRecipe.createdBy !== userId)
+    unauthorized();
+
+  const cuisinesQuery = db.query.cuisine.findMany({
+    orderBy: (cuisines, { asc }) => [asc(cuisines.adjective)],
+    columns: {
+      description: false
+    },
+    with: {
+      countryOrigins: {
+        columns: {},
+        with: {
+          country: {
+            columns: {
+              icon: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const dietsQuery = db.query.diet.findMany({
+    columns: {
+      description: false
+    }
+  });
+
+  const dishTypesQuery = db.query.dishType.findMany({
+    columns: {
+      description: false
+    }
+  });
+
+  const [cuisines, diets, dishTypes] = await Promise.all([cuisinesQuery, dietsQuery, dishTypesQuery]);
+  
+  return (
+    <EditRecipeForm
+      cuisines={cuisines}
+      diets={diets}
+      dishTypes={dishTypes}
+      recipe={foundRecipe}
+    />
+  );
+}

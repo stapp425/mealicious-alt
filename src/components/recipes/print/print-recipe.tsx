@@ -83,7 +83,7 @@ export default function PrintRecipe({ recipe }: PrintRecipeProps) {
 
               return (
                 <li key={n.id} className="list-inside list-disc">
-                  <b>{n.nutrition?.name}(s)</b>: {n.amount} {Number(n.amount) !== 1 ? foundUnit.pluralName : foundUnit.name} ({n.unit})
+                  <b>{n.nutrition?.name}</b>: {n.amount} {Number(n.amount) !== 1 ? foundUnit.pluralName : foundUnit.name} ({n.unit})
                 </li>
               );
             })

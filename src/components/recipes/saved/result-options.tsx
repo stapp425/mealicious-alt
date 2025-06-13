@@ -1,32 +1,114 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sort, sorts, View, views } from "@/lib/types";
-import { LayoutGrid, List } from "lucide-react";
-import { parseAsIndex, parseAsStringLiteral, useQueryStates } from "nuqs";
+import { filters, Sort, sorts, View, views } from "@/lib/types";
+import { ChevronDown, LayoutGrid, List } from "lucide-react";
+import { parseAsArrayOf, parseAsIndex, parseAsStringLiteral, useQueryStates } from "nuqs";
 
 export default function ResultOptions() {
   const [resultOptions, setResultOptions] = useQueryStates({
     view: parseAsStringLiteral(views).withDefault("list"),
     page: parseAsIndex.withDefault(0),
-    sort: parseAsStringLiteral(sorts).withDefault("none")
+    sort: parseAsStringLiteral(sorts),
+    filters: parseAsArrayOf(parseAsStringLiteral(filters)).withDefault([])
   }, {
-    shallow: false
+    shallow: false,
+    throttleMs: 500
   });
-
-  const { view, sort } = resultOptions;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex justify-between items-center">
+        <h2 className="font-semibold">Search Options</h2>
         <h2 className="font-semibold">View</h2>
-        <h2 className="font-semibold">Sort Options</h2>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Select value={resultOptions.sort || ""} onValueChange={(val) => setResultOptions((r) => ({
+              ...r,
+              sort: val as Sort,
+              page: 0
+            }))}>
+              <SelectTrigger className="w-[125px]">
+                <SelectValue placeholder="Sort by..."/>
+              </SelectTrigger>
+              <SelectContent>
+                {
+                  sorts.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s.charAt(0).toUpperCase() + s.slice(1).replaceAll(/([A-Z])/g, " $1")}
+                    </SelectItem>
+                  ))
+                }
+              </SelectContent>
+            </Select>
+            {
+              resultOptions.sort && (
+                <Button 
+                  variant="destructive"
+                  onClick={() => setResultOptions((r) => ({ 
+                    ...r,
+                    sort: null,
+                    page: 0
+                  }))}
+                  className="cursor-pointer"
+                >
+                  Clear
+                </Button>
+              )
+            }
+          </div>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="w-[125px] cursor-pointer border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+                Filters
+                <ChevronDown />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {
+                  filters.map((f) => (
+                    <DropdownMenuCheckboxItem
+                      key={f}
+                      checked={resultOptions.filters.includes(f)}
+                      onCheckedChange={(val) => {
+                        setResultOptions((r) => ({
+                          ...r,
+                          page: 0,
+                          filters: val
+                            ? [...new Set([...resultOptions.filters, f])]
+                            : [...r.filters.filter((ff) => ff !== f)]
+                        }));
+                      }}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1).replaceAll(/([A-Z])/g, " $1")}
+                    </DropdownMenuCheckboxItem>
+                  ))
+                }
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {
+              resultOptions.filters.length > 0 && (
+                <Button 
+                  variant="destructive"
+                  onClick={() => setResultOptions((r) => ({ 
+                    ...r,
+                    filters: [],
+                    page: 0
+                  }))}
+                  className="cursor-pointer"
+                >
+                  Clear
+                </Button>
+              )
+            }
+          </div>
+        </div>
         <Tabs
-          value={view}
+          value={resultOptions.view}
           onValueChange={(val) => setResultOptions((r) => ({ 
             ...r,
             view: val as View,
@@ -36,55 +118,20 @@ export default function ResultOptions() {
           <TabsList className="bg-transparent gap-2">
             <TabsTrigger
               value="list"
-              className="cursor-pointer border-border data-[state=active]:border-none data-[state=active]:cursor-default data-[state=active]:bg-mealicious-primary data-[state=active]:text-white dark:data-[state=active]:bg-mealicious-primary data-[state=inactive]:hover:bg-secondary transition-colors p-4"
+              className="h-9 cursor-pointer border-border data-[state=active]:border-none data-[state=active]:cursor-default data-[state=active]:bg-mealicious-primary data-[state=active]:text-white dark:data-[state=active]:bg-mealicious-primary data-[state=inactive]:hover:bg-secondary transition-colors p-4"
             >
               <List />
               <span className="hidden md:inline">List</span>
             </TabsTrigger>
             <TabsTrigger
               value="grid"
-              className="cursor-pointer border-border data-[state=active]:border-none data-[state=active]:cursor-default data-[state=active]:bg-mealicious-primary data-[state=active]:text-white dark:data-[state=active]:bg-mealicious-primary data-[state=inactive]:hover:bg-secondary transition-colors p-4"
+              className="h-9 cursor-pointer border-border data-[state=active]:border-none data-[state=active]:cursor-default data-[state=active]:bg-mealicious-primary data-[state=active]:text-white dark:data-[state=active]:bg-mealicious-primary data-[state=inactive]:hover:bg-secondary transition-colors p-4"
             >
               <LayoutGrid />
               <span className="hidden md:inline">Grid</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="flex items-center gap-2 ml-auto">
-          {
-            sort !== "none" && (
-              <Button 
-                variant="destructive"
-                onClick={() => setResultOptions((r) => ({ 
-                  ...r,
-                  sort: "none",
-                  page: 0
-                }))}
-                className="cursor-pointer"
-              >
-                Clear
-              </Button>
-            )
-          }
-          <Select value={sort || undefined} onValueChange={(val) => setResultOptions((r) => ({
-            ...r,
-            sort: val as Sort,
-            page: 0
-          }))}>
-            <SelectTrigger className="w-[125px]">
-              <SelectValue placeholder="Sort by..."/>
-            </SelectTrigger>
-            <SelectContent>
-              {
-                sorts.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s.split(/\W/).map((str) => str.charAt(0).toUpperCase() + str.slice(1)).join(" ")}
-                  </SelectItem>
-                ))
-              }
-            </SelectContent>
-          </Select>
-        </div>
       </div>
     </div>
   );

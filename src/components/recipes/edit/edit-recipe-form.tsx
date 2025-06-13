@@ -1,156 +1,241 @@
 "use client";
 
-import { diet, dishType, nutrition } from "@/db/schema/recipe";
-import { MAX_DESCRIPTION_LENGTH, RecipeCreation, RecipeCreationSchema } from "@/lib/zod";
-import { InferSelectModel } from "drizzle-orm";
-import { Clock, Info, LoaderCircle, Microwave, Clipboard, ChevronDown, Check, Plus } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue
-} from "@/components/ui/select";
-import { unitAbbreviations } from "@/db/data/unit";
-import RecipeImageUploader from "@/components/recipes/create/recipe-image-uploader";
-import RecipeTags from "@/components/recipes/create/recipe-tags";
-import RecipeTimes from "@/components/recipes/create/recipe-times";
-import RecipeDiets from "@/components/recipes/create/recipe-diets";
-import RecipeDishTypes from "@/components/recipes/create/recipe-dish-types";
-import RecipeIngredients from "@/components/recipes/create/recipe-ingredients";
-import RecipeInstructions from "@/components/recipes/create/recipe-instructions";
-import Image from "next/image";
-import { createRecipe, generatePresignedUrlForImageUpload, updateRecipeImage } from "@/lib/actions/db";
-import { toast } from "sonner";
-import axios, { AxiosError } from "axios";
-import { Textarea } from "@/components/ui/textarea";
-import { useEffect } from "react";
+  Command, 
+  CommandEmpty, 
+  CommandGroup, 
+  CommandInput, 
+  CommandItem, 
+  CommandList
+} from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Unit, unitAbbreviations } from "@/db/data/unit";
+import { diet, dishType } from "@/db/schema";
+import { cn } from "@/lib/utils";
+import { MAX_DESCRIPTION_LENGTH, RecipeEdition, RecipeEditionSchema } from "@/lib/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { InferSelectModel } from "drizzle-orm";
+import { Check, ChevronDown, Clock, Info, Microwave, Clipboard, LoaderCircle, Plus } from "lucide-react";
+import { useForm } from "react-hook-form";
+import Image from "next/image";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import RecipeImageUploader from "@/components/recipes/edit/recipe-image-uploader";
+import RecipeTags from "@/components/recipes/edit/recipe-tags";
+import RecipeTimes from "@/components/recipes/edit/recipe-times";
+import RecipeDiets from "@/components/recipes/edit/recipe-diets";
+import RecipeDishTypes from "@/components/recipes/edit/recipe-dish-types";
+import RecipeIngredients from "@/components/recipes/edit/recipe-ingredients";
+import RecipeInstructions from "@/components/recipes/edit/recipe-instructions";
+import { useRouter } from "next/navigation";
+import { generatePresignedUrlForImageDelete, generatePresignedUrlForImageUpload, updateRecipe, updateRecipeImage } from "@/lib/actions/db";
+import axios, { AxiosError } from "axios";
+import { toast } from "sonner";
 
-type CreateRecipeFormProps = {
-  readonly nutrition: Omit<InferSelectModel<typeof nutrition>, "description">[];
+type EditRecipeFormProps = {
   readonly cuisines: {
     id: string;
     adjective: string;
     countryOrigins: {
       country: {
-          icon: string;
+        icon: string;
       };
     }[];
   }[];
   readonly diets: Omit<InferSelectModel<typeof diet>, "description">[];
   readonly dishTypes: Omit<InferSelectModel<typeof dishType>, "description">[];
+  recipe: {
+    id: string;
+    description: string | null;
+    title: string;
+    image: string;
+    tags: string[];
+    cookTime: string;
+    prepTime: string;
+    readyTime: string;
+    isPublic: boolean;
+    createdBy: string | null;
+    sourceName: string | null;
+    sourceUrl: string | null;
+    servingSizeAmount: string;
+    servingSizeUnit: Unit["abbreviation"];
+    cuisine: {
+      id: string;
+      adjective: string;
+      countryOrigins: {
+        country: {
+          name: string;
+          id: string;
+          icon: string;
+        };
+      }[];
+    } | null;
+    diets: {
+      diet: {
+        name: string;
+        id: string;
+      };
+    }[];
+    dishTypes: {
+      dishType: {
+        name: string;
+        id: string;
+      };
+    }[];
+    nutritionalFacts: {
+      id: string;
+      unit: Unit["abbreviation"];
+      amount: string;
+      nutrition: {
+        name: string;
+        id: string;
+        isMacro: boolean;
+        allowedUnits: Unit["abbreviation"][];
+      };
+    }[];
+    ingredients: {
+      name: string;
+      id: string;
+      unit: Unit["abbreviation"];
+      amount: string;
+      isAllergen: boolean;
+      note: string | null;
+    }[];
+    instructions: {
+      id: string;
+      description: string;
+      title: string;
+      time: string;
+      index: number;
+    }[];
+  };
 };
 
-export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes }: CreateRecipeFormProps) {  
+type Nutrition = {
+  id: string;
+  unit: Unit["abbreviation"];
+  amount: string;
+  nutrition: {
+    name: string;
+    id: string;
+    isMacro: boolean;
+    allowedUnits: Unit["abbreviation"][];
+  };
+};
+
+export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: EditRecipeFormProps) {  
+  const { push } = useRouter();
+
   // put macronutrients first
-  const [macro, micro] = nutrition.reduce(([a, b]: [typeof nutrition, typeof nutrition], n) => {
-    (n.isMacro ? a : b).push(n);
+  const [macro, micro] = recipe.nutritionalFacts.reduce(([a, b]: [Nutrition[], Nutrition[]], n) => {
+    (n.nutrition?.isMacro ? a : b).push(n);
     return [a, b];
   }, [[], []]);
 
   const nutrientCutoff = macro.length;
   
-  const {
+  const { 
     register,
-    handleSubmit,
     watch,
     setValue,
+    handleSubmit,
     reset,
-    formState: { 
+    formState: {
       errors,
       isSubmitting
     }
-  } = useForm<RecipeCreation>({
-    resolver: zodResolver(RecipeCreationSchema),
-    mode: "onSubmit",
-    delayError: 250,
+  } = useForm<RecipeEdition>({
+    resolver: zodResolver(RecipeEditionSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      cookTime: 0,
-      prepTime: 0,
-      readyTime: 0,
-      isPublic: false,
-      servingSize: {
-        amount: 0,
-        unit: "g"
+      id: recipe.id,
+      title: recipe.title,
+      isPublic: recipe.isPublic,
+      description: recipe.description || undefined,
+      source: {
+        name: recipe.sourceName || undefined,
+        url: recipe.sourceUrl || undefined
       },
       cuisine: {
-        id: "",
-        adjective: "",
-        countryOrigins: [
-          {
-            country: {
-              icon: ""
-            }
-          }
-        ]
+        id: recipe.cuisine?.id,
+        adjective: recipe.cuisine?.adjective,
+        countryOrigins: recipe.cuisine?.countryOrigins
       },
-      diets: [],
-      dishTypes: [],
-      ingredients: [],
-      instructions: [],
+      cookTime: Number(recipe.cookTime),
+      prepTime: Number(recipe.prepTime),
+      readyTime: Number(recipe.readyTime),
+      diets: recipe.diets.map(({ diet }) => diet),
+      dishTypes: recipe.dishTypes.map(({ dishType }) => dishType),
+      tags: recipe.tags,
+      ingredients: recipe.ingredients.map((i) => ({
+        ...i,
+        note: i.note || undefined,
+        amount: Number(i.amount)
+      })),
+      servingSize: {
+        amount: Number(recipe.servingSizeAmount),
+        unit: recipe.servingSizeUnit
+      },
       nutrition: [
         macro.map((n) => ({
-          ...n,
-          unit: n.allowedUnits.length > 0 ? n.allowedUnits[0] : "g",
-          amount: 0
+          id: n.nutrition.id,
+          name: n.nutrition.name,
+          amount: Number(n.amount),
+          unit: n.unit,
+          allowedUnits: n.nutrition.allowedUnits
         })),
         micro.map((n) => ({
-          ...n,
-          unit: n.allowedUnits.length > 0 ? n.allowedUnits[0] : "g",
-          amount: 0
+          id: n.nutrition.id,
+          name: n.nutrition.name,
+          amount: Number(n.amount),
+          unit: n.unit,
+          allowedUnits: n.nutrition.allowedUnits
         })),
       ].flat(),
-      tags: []
+      instructions: recipe.instructions.map((i) => ({
+        ...i,
+        time: Number(i.time)
+      }))
     }
   });
 
-  const currentCuisine = watch("cuisine");
-  const currentDescription = watch("description") || "";
-
-  const handleUnload = (e: BeforeUnloadEvent) => e.preventDefault();
-  useEffect(() => {
-    addEventListener("beforeunload", handleUnload);
-    return () => removeEventListener("beforeunload", handleUnload);
-  }, []);
-
-  const onSubmit = handleSubmit(async (formData) => {
+  const onSubmit = handleSubmit(async (data) => {
     try {
-      const { image, ...formDataRest } = formData;
-      const recipeCreationResult = await createRecipe({ createdRecipe: formDataRest });
+      const { image, ...dataRest } = data;
+      const recipeEditionResult = await updateRecipe({ editedRecipe: dataRest });
 
-      if (!recipeCreationResult?.data)
-        throw new Error("Failed to create recipe.");
+      if (!recipeEditionResult?.data)
+        throw new Error("Failed to update recipe.");
 
-      const { data: { recipeId } } = recipeCreationResult;
-      const imageName = `${recipeId}/${image.name}`
+      // user has added a new image
+      if (image) {
+        const { url: deleteImageUrl } = await generatePresignedUrlForImageDelete(recipe.image);
+        await axios.delete(deleteImageUrl);
 
-      const { url } = await generatePresignedUrlForImageUpload({
-        name: imageName,
-        type: image.type,
-        size: image.size
-      });
-      
-      await axios.put(url, image, {
-        headers: {
-          "Content-Type": image.type
-        }
-      });
+        const imageName = `${data.id}/${image.name}`;
+        const { url: insertImageUrl } = await generatePresignedUrlForImageUpload({
+          name: imageName,
+          size: image.size,
+          type: image.type
+        });
 
-      const updateRecipeImageResult = await updateRecipeImage({ recipeId, imageName });
+        await axios.put(insertImageUrl, image, {
+          headers: {
+            "Content-Type": image.type
+          }
+        });
 
-      if (!updateRecipeImageResult?.data?.success)
-        throw new Error("Failed to add image to the recipe.");
+        const updateRecipeImageResult = await updateRecipeImage({ 
+          recipeId: data.id,
+          imageName
+        });
+
+        if (!updateRecipeImageResult?.data)
+          throw new Error("Failed to add image to the recipe.");
+      }
     } catch (err) {
       if (err instanceof AxiosError) {
         toast.error("Failed to upload the recipe image.");
@@ -159,25 +244,31 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
         return;
       }
     }
-
-    toast.success("Recipe successfully created!");
-    reset();
+    
+    toast.success("Recipe successfully edited!");
+    reset(data);
+    push(`/recipes/${data.id}`);
   });
-  
+
+  const currentCuisine = watch("cuisine");
+  const currentDescription = watch("description") || "";
+  const currentNutrition = watch("nutrition");
+
   return (
     <form 
       onSubmit={onSubmit} 
       className="max-w-[750px] xl:max-w-[1250px] w-full bg-background mx-auto p-4"
     >
-      <h1 className="text-4xl font-bold mb-6">Create a Recipe</h1>
+      <h1 className="text-4xl font-bold mb-6">Edit Recipe</h1>
       <div className="flex flex-col xl:flex-row gap-3">
         <div className="w-full xl:w-[500px] flex flex-col gap-3">
           <RecipeImageUploader
             image={watch("image")}
             setImage={setValue}
             message={errors.image?.message}
+            recipeImageUrl={recipe.image}
           />
-          <div className="flex xl:hidden flex-col gap-3 field-container">
+          <div className="flex xl:hidden flex-col gap-3 field-container ">
             <h2 className="required-field font-bold text-2xl">
               Title
             </h2>
@@ -345,14 +436,14 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
           />
           <button
             disabled={isSubmitting}
-            type="submit" 
+            type="submit"
             className="hidden xl:flex mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
           >
-            {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
+            {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
           </button>
         </div>
         <div className="flex-1 flex flex-col gap-3">
-          <div className="hidden xl:flex flex-col gap-3 field-container">
+          <div className="hidden xl:flex flex-col gap-3 field-container ">
             <h2 className="required-field font-bold text-2xl">
               Title
             </h2>
@@ -473,7 +564,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
             </div>
             <div className="flex flex-col gap-3">
               {
-                nutrition.slice(0, nutrientCutoff).map((rn, i) => (
+                currentNutrition.slice(0, nutrientCutoff).map((rn, i) => (
                   <div key={rn.id} className="flex flex-col gap-3">
                     {
                       errors?.nutrition?.[i]?.amount?.message && (
@@ -528,7 +619,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
                 <CollapsibleContent asChild>
                   <div className="flex flex-col gap-3 mt-3">
                     {
-                      nutrition.slice(nutrientCutoff).map((rn, i) => (
+                      currentNutrition.slice(nutrientCutoff).map((rn, i) => (
                         <div key={rn.id} className="flex flex-col gap-3">
                           {
                             errors?.nutrition?.[i]?.amount?.message && (
@@ -593,7 +684,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
             type="submit" 
             className="flex xl:hidden mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
           >
-            {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
+            {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
           </button>
         </div>
       </div>

@@ -2,13 +2,13 @@
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { RecipeCreation } from "@/lib/zod";
+import { RecipeEdition } from "@/lib/zod";
 import { Clock, Info } from "lucide-react";
 import { UseFormRegister } from "react-hook-form";
 
 type RecipeTimeProps = {
   className?: string,
-  register: UseFormRegister<RecipeCreation>,
+  register: UseFormRegister<RecipeEdition>,
   recipeTimesDetails: {
     icon: typeof Clock,
     label: string,

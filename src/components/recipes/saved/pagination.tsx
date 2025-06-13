@@ -4,14 +4,12 @@ import { Button } from "@/components/ui/button";
 import { cn, generatePagination } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { parseAsIndex, useQueryState } from "nuqs";
-import { useMediaQuery } from "usehooks-ts";
 
 type PaginationProps = {
   pages: number;
 };
 
 export default function Pagination({ pages }: PaginationProps) {
-  const matches = useMediaQuery("(min-width: 48rem)");
   const [page, setPage] = useQueryState(
     "page",
     parseAsIndex
@@ -33,7 +31,7 @@ export default function Pagination({ pages }: PaginationProps) {
         className="cursor-pointer disabled:cursor-not-allowed"
       >
         <ChevronLeft />
-        {matches && "Previous"}
+        <span className="hidden md:block">Previous</span>
       </Button>
       {
         generatePagination(page, pages).map((p, i) => p === "..." ? (
@@ -60,7 +58,7 @@ export default function Pagination({ pages }: PaginationProps) {
         onClick={() => setPage((p) => p + 1)}
         className="cursor-pointer disabled:cursor-not-allowed"
       >
-        {matches && "Next"}
+        <span className="hidden md:block">Next</span>
         <ChevronRight />
       </Button>
     </div>

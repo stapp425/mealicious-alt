@@ -3,14 +3,16 @@ import SearchBar from "@/components/recipes/saved/search-bar";
 import SearchResults from "@/components/recipes/saved/search-results";
 import { Separator } from "@/components/ui/separator";
 import { SearchParams } from "nuqs";
-import { sorts, views } from "@/lib/types";
+import { filters, sorts, views } from "@/lib/types";
 import { 
   createLoader,
   parseAsString,
   parseAsStringLiteral,
-  parseAsIndex
+  parseAsIndex,
+  parseAsArrayOf
 } from "nuqs/server";
 import { Suspense } from "react";
+import { Metadata } from "next";
 
 type AllRecipesPageProps = {
   searchParams: Promise<SearchParams>;
@@ -19,12 +21,18 @@ type AllRecipesPageProps = {
 const loadSearchParams = createLoader({
   query: parseAsString.withDefault(""),
   view: parseAsStringLiteral(views).withDefault("list"),
-  sort: parseAsStringLiteral(sorts).withDefault("none"),
+  sort: parseAsStringLiteral(sorts),
+  filters: parseAsArrayOf(parseAsStringLiteral(filters)).withDefault([]),
   page: parseAsIndex.withDefault(0)
 });
 
+export const metadata: Metadata = {
+  title: "Saved Recipes | Mealicious",
+  description: "View all your saved mealicious recipes here!"
+};
+
 export default async function Page({ searchParams }: AllRecipesPageProps) {
-  const { query, sort, view, page } = await loadSearchParams(searchParams);
+  const { query, sort, filters, view, page } = await loadSearchParams(searchParams);
 
   return (
     <div className="max-w-[850px] w-full flex-1 flex flex-col gap-2.5 mx-auto p-4">
@@ -37,6 +45,7 @@ export default async function Page({ searchParams }: AllRecipesPageProps) {
         <SearchResults
           query={query}
           sort={sort}
+          filters={filters}
           view={view}
           page={page}
         />

@@ -1,10 +1,12 @@
 export const MAX_REVIEW_DISPLAY_LIMIT = 1;
 
 export const views = ["list", "grid"] as const;
-export const sorts = ["none", "creator", "title", "favorited", "prep time", "save date"] as const;
+export const sorts = ["title", "prepTime", "saveDate"] as const;
+export const filters = ["created", "favorited"] as const;
 
 export type View = typeof views[number];
 export type Sort = typeof sorts[number];
+export type Filter = typeof filters[number];
 
 export const recipeDetailViews = ["simplified", "detailed"] as const;
 

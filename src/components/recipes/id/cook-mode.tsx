@@ -5,38 +5,31 @@ import { Switch } from "@/components/ui/switch";
 import { useEffect, useState } from "react";
 import { useWakeLock } from "react-screen-wake-lock";
 
-export default function WakeLock() {
+export default function CookMode() {
   const [isWakeLockEnabled, setIsWakeLockEnabled] = useState<boolean>(false);
-  const { isSupported, request, release, released } = useWakeLock();
+  const [mounted, setMounted] = useState<boolean>(false);
+  const { isSupported, request, release } = useWakeLock({
+    onRequest: () => setIsWakeLockEnabled(true),
+    onRelease: () => setIsWakeLockEnabled(false)
+  });
 
   useEffect(() => {
-    const releaseWakeLock = () => {
-      if (!released) {
-        release().catch((err) => {
-          console.error("Failed to release wake lock", err);
-        });
-      }
-    };
-
-    return releaseWakeLock;
+    setMounted(true);
   }, []);
   
-  if (!isSupported)
+  if (!isSupported || !mounted)
     return null;
-
+ 
   return (
     <div className="border border-border w-fit flex items-center gap-4 py-2.5 px-4 rounded-sm">
       <Switch
         id="cook-mode"
         checked={isWakeLockEnabled}
         onCheckedChange={async (val) => {
-          setIsWakeLockEnabled(val === true);
-          if (val === true) {
+          if (val === true) 
             await request();
-          } else {
-            if (!released)
-              await release();
-          }
+          else 
+            await release();
         }}
       />
       <div className="flex flex-col gap-0.5">

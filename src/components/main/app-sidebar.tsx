@@ -64,14 +64,6 @@ export function AppSidebar({ username, email, image }: AppSidebarProps) {
               </SidebarMenuSubItem>
               <SidebarMenuSubItem>
                 <SidebarMenuButton asChild>
-                  <Link href="/recipes">
-                    Your Recipes
-                    <List />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuButton asChild>
                   <Link href="/recipes/create">
                     Create Recipe
                     <Pencil />

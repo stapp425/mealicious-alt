@@ -132,7 +132,7 @@ export const MAX_INSTRUCTIONS_LENGTH = 50;
 
 export const MAX_REVIEW_CONTENT_LENGTH = 256;
 
-export const RecipeCreationSchema = z.object({
+export const RecipeFormSchema = z.object({
   title: z
     .string({
       required_error: "A title is required."
@@ -141,7 +141,6 @@ export const RecipeCreationSchema = z.object({
     }).max(MAX_TITLE_LENGTH, {
       message: `Title cannot exceed ${MAX_TITLE_LENGTH.toLocaleString()} characters.`
     }),
-  image: ImageFileSchema,
   description: z.optional(z.string().max(MAX_DESCRIPTION_LENGTH, {
     message: `Description cannot have more than ${MAX_DESCRIPTION_LENGTH.toLocaleString()} characters.`
   })),
@@ -301,7 +300,19 @@ export const RecipeCreationSchema = z.object({
   isPublic: z.boolean()
 });
 
+export const RecipeCreationSchema = RecipeFormSchema.extend({
+  image: ImageFileSchema,
+});
+
+export const RecipeEditionSchema = RecipeFormSchema.extend({
+  id: IdSchema.nonempty({
+    message: "Recipe ID must not be empty."
+  }),
+  image: z.union([ImageFileSchema, z.null()]),
+});
+
 export type RecipeCreation = z.infer<typeof RecipeCreationSchema>;
+export type RecipeEdition = z.infer<typeof RecipeEditionSchema>;
 
 export const ReviewCreationSchema = z.object({
   rating: z.number({

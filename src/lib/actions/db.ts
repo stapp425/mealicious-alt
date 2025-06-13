@@ -1,7 +1,7 @@
 "use server";
 
 import { authActionClient } from "@/safe-action";
-import { RecipeCreationSchema, ReviewCreationSchema } from "@/lib/zod";
+import { ImageDataSchema, RecipeCreationSchema, RecipeEditionSchema, ReviewCreationSchema } from "@/lib/zod";
 import { db } from "@/db";
 import { and, count, eq, isNotNull, sql } from "drizzle-orm";
 import z from "zod";
@@ -20,6 +20,47 @@ import {
 } from "@/db/schema";
 import { getRatingKey } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { r2 } from "@/r2-client";
+import axios from "axios";
+
+export async function generatePresignedUrlForImageUpload(params: { name: string; type: string; size: number; }) {
+  const parsedBody = ImageDataSchema.safeParse(params);
+
+  if (!parsedBody.success)
+    throw new Error(parsedBody.error.errors[0].message);
+  
+  const { name, type, size } = ImageDataSchema.parse(params);
+
+  const putCommand = new PutObjectCommand({
+    Bucket: process.env.NEXT_PUBLIC_IMAGE_BUCKET_NAME!,
+    Key: name,
+    ContentType: type,
+    ContentLength: size
+  });
+
+  const url = await getSignedUrl(r2, putCommand, { expiresIn: 60 });
+
+  return {
+    success: true as const,
+    url
+  };
+}
+
+export async function generatePresignedUrlForImageDelete(imageLink: string) {
+  const putCommand = new DeleteObjectCommand({
+    Bucket: process.env.NEXT_PUBLIC_IMAGE_BUCKET_NAME!,
+    Key: imageLink.replace(`${process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL!}/`, "")
+  });
+
+  const url = await getSignedUrl(r2, putCommand, { expiresIn: 60 });
+
+  return {
+    success: true as const,
+    url
+  };
+}
 
 export const createRecipe = authActionClient
   .schema(z.object({
@@ -115,12 +156,169 @@ export const createRecipe = authActionClient
 
     revalidatePath("/recipes/saved");
 
-    return recipeId;
+    return {
+      success: true as const,
+      recipeId
+    };
+  });
+
+export const updateRecipe = authActionClient
+  .schema(z.object({
+    editedRecipe: RecipeEditionSchema.omit({ image: true })
+  }))
+  .action(async ({ 
+    ctx: { user },
+    parsedInput: { editedRecipe }
+  }) => {
+    const foundRecipe = await db.query.recipe.findFirst({
+      where: (recipe, { eq }) => eq(recipe.id, editedRecipe.id),
+      columns: {
+        id: true,
+        createdBy: true,
+        image: true
+      }
+    });
+
+    if (!foundRecipe)
+      throw new Error("Recipe does not exist.");
+
+    if (foundRecipe.createdBy !== user.id)
+      throw new Error("You are not authorized to edit this recipe.");
+
+    await db.update(recipe)
+      .set({
+        title: editedRecipe.title,
+        description: editedRecipe.title,
+        isPublic: editedRecipe.isPublic,
+        cuisineId: editedRecipe.cuisine?.id,
+        sourceName: editedRecipe.source?.name,
+        sourceUrl: editedRecipe.source?.url,
+        servingSizeAmount: editedRecipe.servingSize.amount.toFixed(2),
+        servingSizeUnit: editedRecipe.servingSize.unit,
+        cookTime: editedRecipe.cookTime.toFixed(2),
+        prepTime: editedRecipe.prepTime.toFixed(2),
+        readyTime: editedRecipe.readyTime.toFixed(2),
+        tags: editedRecipe.tags,
+        updatedAt: new Date(),
+      })
+      .where(eq(recipe.id, foundRecipe.id));
+    
+    await db.delete(recipeToNutrition)
+      .where(eq(recipeToNutrition.recipeId, foundRecipe.id));
+
+    // insert recipe nutrition
+    await db.insert(recipeToNutrition)
+      .values(editedRecipe.nutrition.map((n) => ({
+        recipeId: foundRecipe.id,
+        nutritionId: n.id,
+        amount: n.amount.toFixed(2),
+        unit: n.unit
+      })));
+
+    await db.delete(ingredient)
+      .where(eq(ingredient.recipeId, foundRecipe.id));
+
+    // insert recipe ingredients
+    const filteredIngredients = editedRecipe.ingredients.filter((i) => i.amount > 0);
+
+    await db.insert(ingredient)
+      .values(filteredIngredients.map((i) => ({
+        recipeId: foundRecipe.id,
+        name: i.name,
+        amount: i.amount.toFixed(2),
+        unit: i.unit,
+        isAllergen: i.isAllergen,
+        note: i.note
+      })));
+
+    await db.delete(recipeToDiet)
+      .where(eq(recipeToDiet.recipeId, foundRecipe.id));
+    
+    // insert recipe diets
+    if (editedRecipe.diets.length > 0) {
+      await db.insert(recipeToDiet)
+        .values(editedRecipe.diets.map((d) => ({
+          recipeId: foundRecipe.id,
+          dietId: d.id
+        })));
+    }
+
+    await db.delete(recipeToDishType)
+      .where(eq(recipeToDishType.recipeId, foundRecipe.id));
+    
+    // insert recipe dish types
+    if (editedRecipe.dishTypes.length > 0) {
+      await db.insert(recipeToDishType)
+        .values(editedRecipe.dishTypes.map((dt) => ({
+          recipeId: foundRecipe.id,
+          dishTypeId: dt.id
+        })));
+    }
+
+    await db.delete(instruction)
+      .where(eq(instruction.recipeId, foundRecipe.id));
+
+    // insert recipe instructions
+    await db.insert(instruction)
+      .values(editedRecipe.instructions.map((inst, i) => ({
+        recipeId: foundRecipe.id,
+        title: inst.title,
+        description: inst.description,
+        index: i + 1,
+        time: inst.time.toFixed(2)
+      })));
+
+    revalidatePath("/recipes/saved");
+    revalidatePath(`/recipes/${foundRecipe.id}`);
+    revalidatePath(`/recipes/${foundRecipe.id}/edit`)
+
+    return {
+      success: true as const,
+      recipeId: foundRecipe.id
+    };
+  });
+
+export const deleteRecipe = authActionClient
+  .schema(z.object({
+    recipeId: z.string()
+      .nonempty({
+        message: "Recipe ID must not be empty."
+      })
+  }))
+  .action(async ({ ctx: { user }, parsedInput: { recipeId } }) => {
+    const foundRecipe = await db.query.recipe.findFirst({
+      where: (recipe, { eq }) => eq(recipe.id, recipeId),
+      columns: {
+        id: true,
+        createdBy: true,
+        image: true
+      }
+    });
+
+    if (!foundRecipe)
+      throw new Error("Recipe does not exist.");
+
+    if (user.id !== foundRecipe.createdBy)
+      throw new Error("You are not authorized to delete this recipe.");
+
+    const { url } = await generatePresignedUrlForImageDelete(foundRecipe.image);
+    await axios.delete(url);
+    await db.delete(recipe).where(eq(recipe.id, foundRecipe.id));
+
+    revalidatePath("/recipes/saved");
+
+    return {
+      success: true as const,
+      message: "Successfully deleted recipe!"
+    };
   });
 
 export const updateRecipeImage = authActionClient
   .schema(z.object({
-    recipeId: z.string(),
+    recipeId: z.string()
+      .nonempty({
+        message: "Recipe ID must not be empty."
+      }),
     imageName: z.string()
   }))
   .action(async ({ parsedInput: { recipeId, imageName }}) => {
@@ -141,6 +339,7 @@ export const toggleRecipeFavorite = authActionClient
     })
   }))
   .action(async ({ ctx: { user }, parsedInput: { recipeId } }) => {
+    let isFavorite = false;
     const foundFavoritedRecipe = await db.query.recipeFavorite.findFirst({
       where: (recipeFavorite, { eq, and }) => and(
         eq(recipeFavorite.userId, user.id!),
@@ -152,8 +351,18 @@ export const toggleRecipeFavorite = authActionClient
       }
     });
 
-    // recipe has not been favorited
-    if (!foundFavoritedRecipe) {
+    if (foundFavoritedRecipe) {
+      await db.delete(recipeFavorite).where(and(
+        eq(recipeFavorite.userId, foundFavoritedRecipe.userId),
+        eq(recipeFavorite.recipeId, foundFavoritedRecipe.recipeId)
+      ));
+
+      await db.update(recipeStatistics).set({
+        favoriteCount: sql`${recipeStatistics.favoriteCount} - 1`
+      }).where(eq(recipeStatistics.recipeId, recipeId));
+
+      isFavorite = false;
+    } else {
       await db.insert(recipeFavorite).values({
         userId: user.id!,
         recipeId
@@ -162,24 +371,16 @@ export const toggleRecipeFavorite = authActionClient
       await db.update(recipeStatistics).set({
         favoriteCount: sql`${recipeStatistics.favoriteCount} + 1`
       }).where(eq(recipeStatistics.recipeId, recipeId));
-      
-      return {
-        isFavorite: true
-      };
+
+      isFavorite = true;
     }
 
-    // recipe is favorited
-    await db.delete(recipeFavorite).where(and(
-      eq(recipeFavorite.userId, foundFavoritedRecipe.userId),
-      eq(recipeFavorite.recipeId, foundFavoritedRecipe.recipeId)
-    ));
+    revalidatePath("/recipes/saved");
+    revalidatePath(`/recipes/${recipeId}`);
 
-    await db.update(recipeStatistics).set({
-      favoriteCount: sql`${recipeStatistics.favoriteCount} - 1`
-    }).where(eq(recipeStatistics.recipeId, recipeId));
-
-    return {
-      isFavorite: false
+    return { 
+      success: true as const,
+      isFavorite
     };
   });
 
@@ -190,6 +391,7 @@ export const toggleSavedListRecipe = authActionClient
     })
   }))
   .action(async ({ ctx: { user }, parsedInput: { recipeId } }) => {
+    let isSaved = false;
     const foundSavedRecipe = await db.query.savedRecipe.findFirst({
       where: (savedRecipe, { eq, and }) => and(
         eq(savedRecipe.userId, user.id!),
@@ -201,7 +403,18 @@ export const toggleSavedListRecipe = authActionClient
       }
     });
 
-    if (!foundSavedRecipe) {
+    if (foundSavedRecipe) {
+      await db.delete(savedRecipe).where(and(
+        eq(savedRecipe.userId, foundSavedRecipe.userId),
+        eq(savedRecipe.recipeId, foundSavedRecipe.recipeId)
+      ));
+
+      await db.update(recipeStatistics)
+        .set({ savedCount: sql`${recipeStatistics.savedCount} - 1` })
+        .where(eq(recipeStatistics.recipeId, foundSavedRecipe.recipeId));
+      
+      isSaved = false;
+    } else {
       await db.insert(savedRecipe).values({
         userId: user.id!,
         recipeId
@@ -211,22 +424,15 @@ export const toggleSavedListRecipe = authActionClient
         .set({ savedCount: sql`${recipeStatistics.savedCount} + 1` })
         .where(eq(recipeStatistics.recipeId, recipeId));
 
-      return {
-        isSaved: true
-      };
+      isSaved = true;
     }
-    
-    await db.delete(savedRecipe).where(and(
-      eq(savedRecipe.userId, foundSavedRecipe.userId),
-      eq(savedRecipe.recipeId, foundSavedRecipe.recipeId)
-    ));
 
-    await db.update(recipeStatistics)
-      .set({ savedCount: sql`${recipeStatistics.savedCount} - 1` })
-      .where(eq(recipeStatistics.recipeId, foundSavedRecipe.recipeId));
+    revalidatePath("/recipes/saved");
+    revalidatePath(`/recipes/${recipeId}`);
 
     return {
-      isSaved: false
+      success: true as const,
+      isSaved
     };
   });
 

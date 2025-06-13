@@ -1,4 +1,4 @@
-import { Sort, View } from "@/lib/types";
+import { Sort, View, Filter } from "@/lib/types";
 import { Info, SearchX } from "lucide-react";
 import { db } from "@/db";
 import { 
@@ -11,7 +11,7 @@ import {
   recipeToDiet, 
   savedRecipe
 } from "@/db/schema";
-import { eq, and, ilike, sql, asc, desc, count } from "drizzle-orm";
+import { eq, and, ilike, sql, asc, desc, count, SQL } from "drizzle-orm";
 import Pagination from "@/components/recipes/saved/pagination";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
@@ -24,21 +24,32 @@ import {
 
 type SearchResultsProps = {
   query: string;
-  sort: Sort;
+  sort: Sort | null;
+  filters: Filter[];
   view: View;
   page: number;
 };
 
-export default async function SearchResults({ query, sort, view, page }: SearchResultsProps) {
+export default async function SearchResults({ query, sort, filters, view, page }: SearchResultsProps) {
   const session = await auth();
 
   if (!session?.user)
     redirect("/login");
 
   const { user } = session;
-  
   const recipeDisplayLimit = view === "list" ? MAX_LIST_RECIPE_DISPLAY_LIMIT : MAX_GRID_RECIPE_DISPLAY_LIMIT;
   
+  const orderByClauses: Record<Sort, SQL> = {
+    title: asc(recipe.title),
+    prepTime: asc(recipe.prepTime),
+    saveDate: desc(savedRecipe.saveDate)
+  };
+  
+  const filterClauses: Record<Filter, SQL> = {
+    created: eq(sql<boolean>`CASE WHEN ${recipe.createdBy} = ${user.id!} THEN TRUE ELSE FALSE END`, true),
+    favorited: eq(sql<boolean>`CASE WHEN ${recipeFavorite.recipeId} IS NOT NULL THEN TRUE ELSE FALSE END`, true)
+  };
+
   const savedRecipesQuery = db.select({
     id: recipe.id,
     title: recipe.title,
@@ -81,7 +92,8 @@ export default async function SearchResults({ query, sort, view, page }: SearchR
   }).from(savedRecipe)
     .where(and(
       eq(savedRecipe.userId, user.id!),
-      ilike(recipe.title, `%${query}%`)
+      ilike(recipe.title, `%${query}%`),
+      ...filters.map((f) => filterClauses[f])
     ))
     .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
     .leftJoin(cuisine, eq(recipe.cuisineId, cuisine.id))
@@ -95,33 +107,21 @@ export default async function SearchResults({ query, sort, view, page }: SearchR
     ))
     .limit(recipeDisplayLimit)
     .offset(page * recipeDisplayLimit)
-    .groupBy(recipe.id, savedRecipe.saveDate, cuisine.id, recipeFavorite.recipeId);
-
-  switch (sort) {
-    case "creator":
-      savedRecipesQuery.orderBy(desc(sql`CASE WHEN ${recipe.createdBy} = ${user.id!} THEN TRUE ELSE FALSE END`));
-      break;
-    case "title":
-      savedRecipesQuery.orderBy(asc(recipe.title));
-      break;
-    case "favorited":
-      savedRecipesQuery.orderBy(desc(sql`CASE WHEN ${recipeFavorite.recipeId} IS NOT NULL THEN TRUE ELSE FALSE END`));
-      break;
-    case "prep time":
-      savedRecipesQuery.orderBy(asc(recipe.prepTime));
-      break;
-    case "save date":
-      savedRecipesQuery.orderBy(desc(savedRecipe.saveDate))
-      break;
-  }
+    .groupBy(recipe.id, savedRecipe.saveDate, cuisine.id, recipeFavorite.recipeId)
+    .orderBy(...(sort ? [orderByClauses[sort]] : []));
 
   const savedRecipesCountQuery = db.select({ count: count() })
     .from(savedRecipe)
     .where(and(
       eq(savedRecipe.userId, user.id!),
-      ilike(recipe.title, `%${query}%`)
+      ilike(recipe.title, `%${query}%`),
+      ...filters.map((f) => filterClauses[f])
     ))
-    .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id));
+    .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
+    .leftJoin(recipeFavorite, and(
+      eq(savedRecipe.userId, recipeFavorite.userId),
+      eq(savedRecipe.recipeId, recipeFavorite.recipeId)
+    ));
   
   const [savedRecipes, [{ count: savedRecipesCount }]] = await Promise.all([savedRecipesQuery, savedRecipesCountQuery]);
   const totalPages = Math.ceil(savedRecipesCount / recipeDisplayLimit);

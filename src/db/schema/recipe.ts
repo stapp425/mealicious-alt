@@ -10,7 +10,9 @@ export const recipe = pgTable("recipe", (t) => ({
     .primaryKey()
     .$default(() => nanoid()),
   title: t.varchar("recipe_title", { length: 100 }).notNull(),
-  image: t.text("recipe_image"),
+  image: t.text("recipe_image")
+    .notNull()
+    .default(`${process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL!}/mealicious-logo.jpg`),
   description: t.text("recipe_desc"),
   tags: t.json("recipe_tags")
     .$type<string[]>()
@@ -148,8 +150,9 @@ export const recipeToNutrition = pgTable("recipe_to_nutrition", (t) => ({
       onDelete: "cascade"
     }),
   nutritionId: t.text("nutr_id")
+    .notNull()
     .references(() => nutrition.id, {
-      onDelete: "set null"
+      onDelete: "cascade"
     }),
   unit: t.text("rn_unit")
     .notNull()

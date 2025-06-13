@@ -36,15 +36,20 @@ export function Favorite({ recipeId, isRecipeFavorite, favoriteCount }: Favorite
     >
       {
         isExecuting ? (
-          <Loader2 size={14} className="animate-spin"/>
+          <Loader2 size={24} className="animate-spin"/>
         ) : (
-          <>
-          <div className="font-semibold flex items-center gap-2">
-            <Heart size={14} fill={isFavorite ? "white" : "none"}/>
-            <span className="font-semibold">{isFavorite ? "Unfavorite" : "Favorite"}</span>
+          <div className="w-full flex flex-col lg:flex-row justify-center items-center lg:gap-3">
+            <Heart size={28} fill={isFavorite ? "white" : "none"}/>
+            <div className="flex flex-col">
+              <span className="font-semibold hidden md:block">{isFavorite ? "Unfavorite" : "Favorite"}</span>
+              <span className="hidden md:block text-xs font-semibold">
+                ({_favoriteCount} {_favoriteCount !== 1 ? "favorites" : "favorite"})
+              </span>
+              <span className="block md:hidden text-xs font-semibold">
+                {_favoriteCount}
+              </span>
+            </div>
           </div>
-          <span className="text-xs">({_favoriteCount} {_favoriteCount !== 1 ? "favorites" : "favorite"})</span>
-          </>
         )
       }
     </button>
@@ -54,10 +59,11 @@ export function Favorite({ recipeId, isRecipeFavorite, favoriteCount }: Favorite
 type SavedProps = {
   recipeId: string;
   isRecipeSaved: boolean;
+  isAuthor: boolean;
   savedCount: number;
 };
 
-export function Saved({ recipeId, isRecipeSaved, savedCount }: SavedProps) {
+export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedProps) {
   const [isSaved, setIsSaved] = useState<boolean>(isRecipeSaved);
   const [_savedCount, _setSavedCount] = useState<number>(savedCount);
   const { executeAsync, isExecuting } = useAction(toggleSavedListRecipe, {
@@ -77,27 +83,53 @@ export function Saved({ recipeId, isRecipeSaved, savedCount }: SavedProps) {
   
   return (
     <button 
-      disabled={isExecuting}
+      disabled={isExecuting || isAuthor}
       onClick={async () => {
         await executeAsync({ 
           recipeId
         });
       }}
       className={cn(
-        isSaved ? "disabled:bg-red-300 bg-red-500 hover:bg-red-700 " : "disabled:bg-green-300 bg-green-500 hover:bg-green-700",
-        "cursor-pointer text-white text-xs sm:text-sm font-semibold flex flex-col justify-center items-center py-2 md:py-3 px-3 rounded-sm transition-colors"
+        "text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center lg:gap-4.5 py-2 md:py-3 px-3 rounded-sm transition-colors",
+        isAuthor 
+          ? "bg-green-500"
+          : isSaved
+            ? "cursor-pointer disabled:cursor-not-allowed disabled:bg-red-300 bg-red-500 hover:bg-red-700"
+            : "cursor-pointer disabled:cursor-not-allowed disabled:bg-green-300 bg-green-500 hover:bg-green-700"
       )}
     >
       {
         isExecuting ? (
-          <Loader2 size={14} className="animate-spin"/>
+          <Loader2 size={24} className="animate-spin"/>
         ) : (
           <>
-          <div className="flex items-center gap-2">
-            <Icon size={14}/>
-            {label}
+          <Icon size={28}/>
+          <div className="flex flex-col">
+            {
+              isAuthor ? (
+                <>
+                <span className="font-semibold hidden md:block">
+                  {savedCount} Saves
+                </span>
+                <span className="font-semibold block md:hidden">
+                  {savedCount}
+                </span>
+                </>
+              ) : (
+                <>
+                <span className="font-semibold hidden md:block">
+                  {label}
+                </span>
+                <span className="hidden md:block text-xs font-semibold">
+                  ({_savedCount} {_savedCount !== 1 ? "saves" : "save"})
+                </span>
+                <span className="block md:hidden text-xs font-semibold">
+                  {_savedCount}
+                </span>
+                </>
+              )
+            }
           </div>
-          <span className="text-xs">({_savedCount} {_savedCount !== 1 ? "saves" : "save"})</span>
           </>
         )
       }

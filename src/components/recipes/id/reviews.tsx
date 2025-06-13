@@ -238,7 +238,7 @@ const ReviewCard = memo(({ review, isReviewLiked, isAuthor, setReviews }: Review
                             refresh();
                           }}
                           disabled={isDeleteReviewExecuting}
-                          className="min-w-[75px] cursor-pointer bg-red-500 dark:bg-red-700 disabled:bg-red-300 dark:disabled:bg-red-400 text-foreground"
+                          className="min-w-[75px] cursor-pointer text-white bg-red-500 dark:bg-red-700 disabled:bg-red-300 dark:disabled:bg-red-400"
                         >
                           {isDeleteReviewExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
                         </Button>

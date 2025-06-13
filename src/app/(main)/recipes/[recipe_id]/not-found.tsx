@@ -24,6 +24,7 @@ export default function NotFound() {
           Go to Dashboard
         </button>
       </div>
+      <title>(404) Recipe Not Found | Mealicious</title>
     </div>
   );
 }

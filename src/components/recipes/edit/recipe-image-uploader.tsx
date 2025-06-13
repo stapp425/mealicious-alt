@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { ImageDataSchema, RecipeCreation } from "@/lib/zod";
+import { ImageDataSchema, RecipeEdition } from "@/lib/zod";
 import { Info, Plus } from "lucide-react";
 import { 
   useEffect, 
@@ -17,12 +17,13 @@ import { toast } from "sonner";
 type ImageUploaderProps = {
   className?: string;
   image: File | null;
-  setImage: UseFormSetValue<RecipeCreation>;
+  setImage: UseFormSetValue<RecipeEdition>;
   message?: string;
+  recipeImageUrl: string;
 };
 
-export default function RecipeImageUploader({ className, image, setImage, message }: ImageUploaderProps) {
-  const [imageURL, setImageURL] = useState<string | null>(null);
+export default function RecipeImageUploader({ recipeImageUrl, className, image, setImage, message }: ImageUploaderProps) {
+  const [imageURL, setImageURL] = useState<string>(recipeImageUrl);
   const addImageButton = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
@@ -65,7 +66,7 @@ export default function RecipeImageUploader({ className, image, setImage, messag
         className="hidden"
       />
       {
-        image ? (
+        imageURL ? (
           <>
           <Image
             src={imageURL || defaultRecipeImage}
@@ -73,7 +74,7 @@ export default function RecipeImageUploader({ className, image, setImage, messag
             fill
             className="size-full object-cover"
           />
-          <h1 className="absolute top-2 left-2 bg-mealicious-primary size-fit select-none text-white font-semibold text-sm px-3 py-1 rounded-md">{image.type.split("/")[1].toUpperCase()}</h1>
+          {image && <h1 className="absolute top-2 left-2 bg-mealicious-primary size-fit select-none text-white font-semibold text-sm px-3 py-1 rounded-md">{image.type.split("/")[1].toUpperCase()}</h1>}
           <div className="absolute bottom-0 w-full flex justify-between items-center gap-2 p-2">
             <button
               type="button"
@@ -82,6 +83,20 @@ export default function RecipeImageUploader({ className, image, setImage, messag
             >
               Change Image
             </button>
+            {
+              recipeImageUrl !== imageURL && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImageURL(recipeImageUrl);
+                    setImage("image", null);
+                  }}
+                  className="cursor-pointer bg-red-500 hover:bg-red-700 font-semibold text-white text-nowrap text-xs py-1 px-3 rounded-md"
+                >
+                  Clear
+                </button>
+              )
+            }
           </div>
           </>
         ) : (
