@@ -29,11 +29,13 @@ import { createRecipe, generatePresignedUrlForImageUpload, updateRecipeImage } f
 import { toast } from "sonner";
 import axios, { AxiosError } from "axios";
 import { Textarea } from "@/components/ui/textarea";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useMediaQuery } from "usehooks-ts";
+import { useRouter } from "next/navigation";
 
 type CreateRecipeFormProps = {
   readonly nutrition: Omit<InferSelectModel<typeof nutrition>, "description">[];
@@ -51,14 +53,15 @@ type CreateRecipeFormProps = {
 };
 
 export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes }: CreateRecipeFormProps) {  
+  const { push } = useRouter();
+  const [mounted, setMounted] = useState<boolean>(false);
+  const matches = useMediaQuery("(min-width: 80rem)");
   // put macronutrients first
   const [macro, micro] = nutrition.reduce(([a, b]: [typeof nutrition, typeof nutrition], n) => {
     (n.isMacro ? a : b).push(n);
     return [a, b];
   }, [[], []]);
-
   const nutrientCutoff = macro.length;
-  
   const {
     register,
     handleSubmit,
@@ -117,9 +120,12 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
 
   const currentCuisine = watch("cuisine");
   const currentDescription = watch("description") || "";
+  const currentTitle = watch("title");
 
   const handleUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+  
   useEffect(() => {
+    setMounted(true);
     addEventListener("beforeunload", handleUnload);
     return () => removeEventListener("beforeunload", handleUnload);
   }, []);
@@ -151,6 +157,10 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
 
       if (!updateRecipeImageResult?.data?.success)
         throw new Error("Failed to add image to the recipe.");
+
+      reset();
+      toast.success("Recipe successfully created!");
+      push(`/recipes/${recipeCreationResult.data.recipeId}`);
     } catch (err) {
       if (err instanceof AxiosError) {
         toast.error("Failed to upload the recipe image.");
@@ -159,9 +169,6 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
         return;
       }
     }
-
-    toast.success("Recipe successfully created!");
-    reset();
   });
   
   return (
@@ -177,44 +184,49 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
             setImage={setValue}
             message={errors.image?.message}
           />
-          <div className="flex xl:hidden flex-col gap-3 field-container">
-            <h2 className="required-field font-bold text-2xl">
-              Title
-            </h2>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <p className="font-semibold text-muted-foreground">
-                Add a title to your recipe here.
-              </p>
-              <span className={cn(watch("title").length > 100 && "text-red-500")}>
-                <b className="text-xl">{watch("title").length}</b> / 100
-              </span>
-            </div>
-            <Input
-              {...register("title")}
-              placeholder="Title"
-              className="h-[50px] font-bold"
-            />
-            <div className="flex items-center gap-3">
-              <Checkbox
-                id="isPublic"
-                {...register("isPublic")}
-              />
-              <label
-                htmlFor="isPublic"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Make Recipe Public
-              </label>
-            </div>
-            {
-              errors.title?.message && (
-                <div className="error-text text-sm">
-                  <Info size={16}/>
-                  {errors.title?.message}
+          {
+            mounted && !matches && (
+              <div className="flex flex-col gap-3 field-container">
+                <h2 className="required-field font-bold text-2xl">
+                  Title
+                </h2>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                  <p className="font-semibold text-muted-foreground">
+                    Add a title to your recipe here.
+                  </p>
+                  <span className={cn(currentTitle.length > 100 && "text-red-500")}>
+                    <b className="text-xl">{currentTitle.length}</b> / 100
+                  </span>
                 </div>
-              )
-            }
-          </div>
+                <Input
+                  {...register("title")}
+                  placeholder="Title"
+                  className="h-[50px] font-bold"
+                />
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="isPublic"
+                    checked={watch("isPublic")}
+                    onCheckedChange={(val) => setValue("isPublic", val === true)}
+                  />
+                  <label
+                    htmlFor="isPublic"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Make Recipe Public
+                  </label>
+                </div>
+                {
+                  errors.title?.message && (
+                    <div className="error-text text-sm">
+                      <Info size={16}/>
+                      {errors.title?.message}
+                    </div>
+                  )
+                }
+              </div>
+            )
+          }
           <div className="field-container flex flex-col gap-3">
             <h2 className="font-bold text-2xl">
               Cuisine
@@ -352,45 +364,49 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
           </button>
         </div>
         <div className="flex-1 flex flex-col gap-3">
-          <div className="hidden xl:flex flex-col gap-3 field-container">
-            <h2 className="required-field font-bold text-2xl">
-              Title
-            </h2>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <p className="font-semibold text-muted-foreground">
-                Add a title to your recipe here.
-              </p>
-              <span className={cn(watch("title").length > 100 && "text-red-500")}>
-                <b className="text-xl">{watch("title").length}</b> / 100
-              </span>
-            </div>
-            <Input
-              className="h-[50px] font-bold"
-              {...register("title")}
-              placeholder="Title"
-            />
-
-            <div className="flex items-center gap-3">
-              <Checkbox
-                id="isPublic"
-                {...register("isPublic")}
-              />
-              <label
-                htmlFor="isPublic"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Make Recipe Public
-              </label>
-            </div>
-            {
-              errors.title?.message && (
-                <div className="error-text text-sm">
-                  <Info size={16}/>
-                  {errors.title?.message}
+          {
+            mounted && matches && (
+              <div className="flex flex-col gap-3 field-container">
+                <h2 className="required-field font-bold text-2xl">
+                  Title
+                </h2>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                  <p className="font-semibold text-muted-foreground">
+                    Add a title to your recipe here.
+                  </p>
+                  <span className={cn(currentTitle.length > 100 && "text-red-500")}>
+                    <b className="text-xl">{currentTitle.length}</b> / 100
+                  </span>
                 </div>
-              )
-            }
-          </div>
+                <Input
+                  className="h-[50px] font-bold"
+                  {...register("title")}
+                  placeholder="Title"
+                />
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="isPublic"
+                    checked={watch("isPublic")}
+                    onCheckedChange={(val) => setValue("isPublic", val === true)}
+                  />
+                  <label
+                    htmlFor="isPublic"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Make Recipe Public
+                  </label>
+                </div>
+                {
+                  errors.title?.message && (
+                    <div className="error-text text-sm">
+                      <Info size={16}/>
+                      {errors.title?.message}
+                    </div>
+                  )
+                }
+              </div>
+            )
+          }
           <div className="field-container flex flex-col gap-3">
             <h1 className="text-2xl font-bold">Description</h1>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end">

@@ -3,8 +3,8 @@ import { differenceInDays, differenceInHours, differenceInMinutes, differenceInM
 import { twMerge } from "tailwind-merge";
 import { Rating } from "@/lib/types";
 
-export const MAX_LIST_RECIPE_DISPLAY_LIMIT = 1;
-export const MAX_GRID_RECIPE_DISPLAY_LIMIT = 2;
+export const MAX_LIST_RECIPE_DISPLAY_LIMIT = 10;
+export const MAX_GRID_RECIPE_DISPLAY_LIMIT = 20;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

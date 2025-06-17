@@ -11,7 +11,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { ArrowDownToLine, Calendar, Home, List, Pencil, Search } from "lucide-react";
+import { ArrowDownToLine, Calendar, Home, List, Pencil } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import siteLogo from "@/img/logo/mealicious-logo.svg";
@@ -56,7 +56,7 @@ export function AppSidebar({ username, email, image }: AppSidebarProps) {
             <SidebarMenuSub>
               <SidebarMenuSubItem>
                 <SidebarMenuButton asChild>
-                  <Link href="/recipes/saved">
+                  <Link href="/recipes">
                     Saved Recipes
                     <ArrowDownToLine />
                   </Link>
@@ -67,14 +67,6 @@ export function AppSidebar({ username, email, image }: AppSidebarProps) {
                   <Link href="/recipes/create">
                     Create Recipe
                     <Pencil />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/recipes/search">
-                    Search New Recipes
-                    <Search />
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuSubItem>

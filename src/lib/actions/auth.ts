@@ -89,7 +89,7 @@ export async function signInWithCredentials({ email, password }: z.infer<typeof 
       }
     }
 
-    // mainly for handling redirect
+    // for handling redirect
     throw err;
   }
 

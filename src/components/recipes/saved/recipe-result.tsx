@@ -159,7 +159,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                     <>
                     <DropdownMenuItem asChild>
                       <Link 
-                        href={`/recipes/${recipe.id}`}
+                        href={`/recipes/${recipe.id}/edit`}
                         className="cursor-pointer"
                       >
                         Edit
@@ -330,7 +330,7 @@ function ListRecipeResult({ recipe, isFavorite, ...props }: LayoutRecipeResultPr
       </div>
       <div className="flex-1 flex flex-col gap-3">
         <div className="flex justify-between items-start gap-3">
-          <h2 className="font-bold text-2xl line-clamp-2 text-wrap break-all truncate">{recipe.title}</h2>
+          <h2 className="font-bold text-2xl line-clamp-2 text-wrap break-all truncate text-left">{recipe.title}</h2>
           {
             (recipe.cuisine && recipe.cuisine.adjective && recipe.cuisine.countries.length > 0) && (
               <Tooltip>

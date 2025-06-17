@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@algolia/autocomplete-plugin-recent-searches": "^1.19.2",
+    "@algolia/client-search": "^5.27.0",
     "@auth/drizzle-adapter": "^1.9.1",
     "@aws-sdk/client-s3": "^3.828.0",
     "@aws-sdk/s3-request-presigner": "^3.828.0",
@@ -32,6 +34,7 @@
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@radix-ui/react-visually-hidden": "^1.2.3",
+    "algoliasearch": "^5.27.0",
     "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
     "bufferutil": "^4.0.9",
@@ -58,6 +61,8 @@
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.1",
     "universal-user-agent": "^7.0.3",
+    "use-debounce": "^10.0.5",
+    "usehooks-ts": "^3.1.1",
     "uuid": "^11.1.0",
     "ws": "^8.18.2",
     "zod": "^3.25.64"

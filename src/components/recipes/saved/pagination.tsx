@@ -35,12 +35,12 @@ export default function Pagination({ pages }: PaginationProps) {
       </Button>
       {
         generatePagination(page, pages).map((p, i) => p === "..." ? (
-          <span key={i + 1}>
+          <span key={i}>
             ...
           </span>
         ) : (
           <button
-            key={p}
+            key={`page-${p}`}
             onClick={() => setPage(p - 1)}
             disabled={p - 1 === page}
             className={cn(

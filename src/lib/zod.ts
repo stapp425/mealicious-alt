@@ -308,7 +308,7 @@ export const RecipeEditionSchema = RecipeFormSchema.extend({
   id: IdSchema.nonempty({
     message: "Recipe ID must not be empty."
   }),
-  image: z.union([ImageFileSchema, z.null()]),
+  image: z.nullable(ImageFileSchema),
 });
 
 export type RecipeCreation = z.infer<typeof RecipeCreationSchema>;
@@ -332,3 +332,34 @@ export const ReviewCreationSchema = z.object({
 });
 
 export type ReviewCreation = z.infer<typeof ReviewCreationSchema>;
+
+export const RecipeSearchIndexSchema = z.object({
+  results: z.array(z.object({
+    hits: z.array(z.object({
+      objectID: z.string().nonempty({
+        message: "Search title ID cannot be empty."
+      }),
+      title: z.string().nonempty({
+        message: "Search index title cannot be empty."
+      })
+    }))
+  }))
+});
+
+export type RecipeSearchIndex = z.infer<typeof RecipeSearchIndexSchema>;
+
+export const RecipeSearchIndexInsertionSchema = z.object({
+  objectID: z.string().nonempty({
+    message: "Search title ID cannot be empty."
+  }),
+  title: z.string().nonempty({
+    message: "Search index title cannot be empty."
+  }),
+});
+
+export const RecipeSearchIndexDeletionSchema = RecipeSearchIndexInsertionSchema.omit({
+  title: true
+});
+
+export type RecipeSearchIndexInsertion = z.infer<typeof RecipeSearchIndexInsertionSchema>;
+export type RecipeSearchIndexDeletion = z.infer<typeof RecipeSearchIndexDeletionSchema>;

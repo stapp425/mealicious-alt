@@ -32,7 +32,7 @@ export function Favorite({ recipeId, isRecipeFavorite, favoriteCount }: Favorite
           recipeId 
         });
       }}
-      className="cursor-pointer disabled:bg-rose-300 bg-rose-400 hover:bg-rose-500 text-white text-xs sm:text-sm flex flex-col justify-center items-center py-2 md:py-3 px-3 rounded-sm transition-colors"
+      className="cursor-pointer disabled:bg-rose-300 bg-rose-400 hover:bg-rose-500 text-white text-xs sm:text-sm flex flex-col justify-center items-center py-2 md:py-3 rounded-sm transition-colors"
     >
       {
         isExecuting ? (
@@ -77,9 +77,13 @@ export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedPr
     },
     onError: () => toast.error(`Could not ${isSaved ? "remove" : "add"} recipe.`)
   });
-
-  const Icon = isSaved ? X : Download;
+  
   const label = isSaved ? "Unsave" : "Save";
+  const Icon = isAuthor
+    ? Download
+    : isSaved 
+      ? X
+      : Download;
   
   return (
     <button 
@@ -90,7 +94,7 @@ export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedPr
         });
       }}
       className={cn(
-        "text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center lg:gap-4.5 py-2 md:py-3 px-3 rounded-sm transition-colors",
+        "text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center lg:gap-4.5 py-2 md:py-3 rounded-sm transition-colors",
         isAuthor 
           ? "bg-green-500"
           : isSaved
@@ -109,7 +113,7 @@ export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedPr
               isAuthor ? (
                 <>
                 <span className="font-semibold hidden md:block">
-                  {savedCount} Saves
+                  {savedCount} {savedCount !== 1 ? "Saves" : "Save"}
                 </span>
                 <span className="font-semibold block md:hidden">
                   {savedCount}

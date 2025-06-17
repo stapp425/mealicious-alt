@@ -22,9 +22,11 @@ import Nutrition from "@/components/recipes/id/nutrition";
 import CreateReviewForm from "@/components/recipes/id/create-review-form";
 import Reviews from "@/components/recipes/id/reviews";
 import { MAX_REVIEW_DISPLAY_LIMIT } from "@/lib/types";
-import { getRecipeReviewCount, getRecipeStatistics, getReviewsByRecipe } from "@/lib/actions/db";
+import { getReviewsByRecipe } from "@/lib/actions/db";
 import { Metadata } from "next";
 import { cache } from "react";
+import { and, count, eq, isNotNull } from "drizzle-orm";
+import { recipeReview } from "@/db/schema";
 
 type MetadataProps = {
   params: Promise<{ recipe_id: string }>;
@@ -76,8 +78,15 @@ export default async function Page({ params }: PageProps) {
   if (!isAccessible)
     unauthorized();
 
-  const reviewCountQuery = getRecipeReviewCount(foundRecipe.id);
-  const recipeStatisticsQuery = getRecipeStatistics(foundRecipe.id);
+  const reviewCountQuery = db.select({ count: count() })
+    .from(recipeReview)
+    .where(and(
+      eq(recipeReview.recipeId, foundRecipe.id),
+      isNotNull(recipeReview.content)
+    ));
+  const recipeStatisticsQuery = db.query.recipeStatistics.findFirst({
+    where: (stats, { eq }) => eq(stats.recipeId, foundRecipe.id)
+  });
   const initialReviewsQuery = getReviewsByRecipe({
     recipeId: foundRecipe.id,
     userId: userId,
@@ -224,7 +233,7 @@ export default async function Page({ params }: PageProps) {
           <Link 
             href={`/recipes/${foundRecipe.id}/print`}
             target="_blank"
-            className="cursor-pointer bg-slate-600 hover:bg-slate-700 text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center gap-2 lg:gap-3 py-2 md:py-3 px-5 rounded-sm transition-colors"
+            className="cursor-pointer bg-slate-600 hover:bg-slate-700 text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center gap-2 lg:gap-3 py-2 md:py-3 rounded-sm transition-colors"
           >
             <Printer size={24}/>
             <span className="hidden md:block">Print</span>
@@ -233,7 +242,7 @@ export default async function Page({ params }: PageProps) {
             isAuthor && (
               <Link 
                 href={`/recipes/${foundRecipe.id}/edit`}
-                className="mealicious-button text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center gap-2 lg:gap-3 py-2 md:py-3 px-5 rounded-sm"
+                className="mealicious-button text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center gap-2 lg:gap-3 py-2 md:py-3 rounded-sm"
               >
                 <Pencil size={24}/>
                 <span className="hidden md:block">Edit</span>

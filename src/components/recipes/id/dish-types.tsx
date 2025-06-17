@@ -40,7 +40,7 @@ export default function DishTypes({ dishTypes }:  DishTypesProps) {
               How a specific recipe is identified as part of a meal and what time of day they are typically eaten at.
             </PopoverContent>
           </Popover>
-          <TabsList className="bg-transparent gap-2">
+          <TabsList className="bg-transparent gap-2 p-0">
             <TabsTrigger
               value="simplified"
               className="cursor-pointer border-border data-[state=active]:border-none data-[state=active]:cursor-default data-[state=active]:bg-mealicious-primary data-[state=active]:text-white dark:data-[state=active]:bg-mealicious-primary data-[state=inactive]:hover:bg-secondary transition-colors p-4"
