@@ -147,7 +147,7 @@ export const RecipeFormSchema = z.object({
   tags: z.array(z.string()).max(MAX_TAGS_LENGTH, {
     message: `A maximum of ${MAX_TAGS_LENGTH} tags is allowed.`
   }),
-  source: z.object({
+  source: z.optional(z.object({
     name: z.union([
       z.string().max(MAX_SOURCE_NAME_LENGTH, {
         message: `Source name must not exceed ${MAX_SOURCE_NAME_LENGTH.toLocaleString()} characters.`
@@ -164,7 +164,7 @@ export const RecipeFormSchema = z.object({
     ])
   }).refine((val) => !!val.name === !!val.url, {
     message: "Both source name and url must be either filled or empty."
-  }).optional(),
+  })),
   cookTime: z.coerce.number({
     required_error: "An amount is required."
   }).positive({
@@ -253,25 +253,21 @@ export const RecipeFormSchema = z.object({
     }).max(MAX_INGREDIENT_AMOUNT, {
       message: `Amount cannot be more than ${MAX_INGREDIENT_AMOUNT.toLocaleString()}.`
     }),
-    note: z.string().optional()
+    note: z.optional(z.string())
   })).min(1, {
     message: "Recipe must contain at least 1 ingredient."
   }).max(MAX_INGREDIENTS_LENGTH, {
     message: `Recipe cannot contain more than ${MAX_INGREDIENTS_LENGTH.toLocaleString()} instructions.`
   }),
-  cuisine: z.object({
+  cuisine: z.optional(z.object({
     id: IdSchema,
     adjective: z.string({
       required_error: "A cuisine adjective is required."
     }),
-    countryOrigins: z.array(z.object({
-      country: z.object({
-        icon: z.string({
-          required_error: "A country icon is required."
-        })
-      })
-    }))
-  }).optional(),
+    icon: z.string().nonempty({
+      message: "Cuisine icon cannot be empty."
+    })
+  })),
   instructions: z.array(z.object({
     title: z.string({
       required_error: "An instruction title is required."
@@ -363,3 +359,30 @@ export const RecipeSearchIndexDeletionSchema = RecipeSearchIndexInsertionSchema.
 
 export type RecipeSearchIndexInsertion = z.infer<typeof RecipeSearchIndexInsertionSchema>;
 export type RecipeSearchIndexDeletion = z.infer<typeof RecipeSearchIndexDeletionSchema>;
+
+export const RecipeSearchSchema = z.object({
+  query: z.string(),
+  cuisine: z.optional(z.object({
+    id: IdSchema,
+    adjective: z.string({
+      required_error: "A cuisine adjective is required."
+    }),
+    icon: z.string().nonempty({
+      message: "Cuisine icon cannot be empty."
+    })
+  })),
+  diet: z.optional(z.object({
+    id: IdSchema,
+    name: z.string().nonempty({
+      message: "Diet name cannot be empty."
+    })
+  })),
+  dishType: z.optional(z.object({
+    id: IdSchema,
+    name: z.string().nonempty({
+      message: "Dish type name cannot be empty."
+    })
+  })),
+});
+
+export type RecipeSearch = z.infer<typeof RecipeSearchSchema>;

@@ -22,7 +22,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
         image={user.image as string | null}
       />
       <main className="min-h-screen flex-1 flex flex-col relative">
-        <header className="print:hidden sticky border-b top-0 flex bg-background z-50 items-center p-4 gap-3">
+        <header className="print:hidden sticky border-b top-0 bg-background flex z-50 justify-between md:justify-start items-center gap-3 p-4">
           <SidebarTrigger className="cursor-pointer"/>
           <RecipeSearchBar />
           <Breadcrumbs />

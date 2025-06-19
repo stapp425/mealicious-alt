@@ -1,50 +1,27 @@
-import { country, countryToCuisine, cuisine, diet, dishType, nutrition } from "@/db/schema/recipe";
+import { cuisine, diet, dishType, nutrition } from "@/db/schema/recipe";
 import { db } from "@/db";
 import { NextResponse } from "next/server";
 
 export async function POST() {
-  const [{ id: philippinesId }] = await db.insert(country).values({
-    name: "Philippines",
-    icon: `${process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL}/philippines-flag.png`,
-    iconSource: "https://vectorflags.com/philippines/ph-circle-01"
-  }).returning({
-    id: country.id
-  });
-
-  const [{ id: filipinoCuisineId }] = await db.insert(cuisine).values({
+  const insertFilipinoCuisineQuery = db.insert(cuisine).values({
     adjective: "Filipino",
+    icon: `${process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL}/philippines-flag.png`,
+    iconSource: "https://vectorflags.com/philippines/ph-circle-01",
     description: "Filipino cuisine is a vibrant and diverse culinary tradition that reflects the rich tapestry of Philippine history and culture. From savory stews to tropical desserts, Filipino dishes are known for their bold flavors, unique ingredients, and colorful presentation."
   }).returning({
     id: cuisine.id
   });
-  
-  const [{ id: usaId }] = await db.insert(country).values({
-    name: "United States of America",
-    icon: `${process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL}/usa-flag.png`,
-    iconSource: "https://vectorflags.com/united-states/us-circle-01"
-  }).returning({
-    id: country.id
-  });
 
-  const [{ id: americanCuisineId }] = await db.insert(cuisine).values({
+  const insertAmericanCuisineQuery = db.insert(cuisine).values({
     adjective: "American",
+    icon: `${process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL}/usa-flag.png`,
+    iconSource: "https://vectorflags.com/united-states/us-circle-01",
     description: "The U.S. is a melting pot of cultures as a result of the many people that came here from various other countries across the globe. A significant part of this equation, too, comes from the cultures of Indigenous peoples who lived on the land well before colonization. With this bountiful combination of culinary traditions, American cuisine has become greater than the sum of its parts and offers something unique. The nation has established several dishes that many consider examples of an American food tradition."
   }).returning({
     id: cuisine.id
   });
-
-  await db.insert(countryToCuisine).values([
-    {
-      countryId: philippinesId,
-      cuisineId: filipinoCuisineId
-    },
-    {
-      countryId: usaId,
-      cuisineId: americanCuisineId
-    }
-  ]);
   
-  await db.insert(nutrition).values([
+  const insertNutritionQuery = db.insert(nutrition).values([
     {
       name: "Calories",
       description: "A unit of energy present in all foods.",
@@ -91,7 +68,7 @@ export async function POST() {
     }
   ]);
 
-  await db.insert(diet).values([
+  const insertDietsQuery = db.insert(diet).values([
     {
       name: "Paleo",
       description: "A completely natural way of eating, but seriously lacks any source of sugar. Therefore, the body will start using fat as the main energy source."
@@ -126,7 +103,7 @@ export async function POST() {
     }
   ]);
 
-  await db.insert(dishType).values([
+  const insertDishTypesQuery = db.insert(dishType).values([
     {
       name: "Main Course",
       description: "The primary dish that is the highlight of a meal. It is usually the most presentable and appetizing dish."
@@ -187,6 +164,14 @@ export async function POST() {
       name: "Fruit",
       description: "Products of fruit-bearing plants that are geared towards human and animal consumption. It is usually consumed on its own."
     }
+  ]);
+
+  await Promise.all([
+    insertFilipinoCuisineQuery,
+    insertAmericanCuisineQuery,
+    insertNutritionQuery,
+    insertDietsQuery,
+    insertDishTypesQuery
   ]);
 
   return NextResponse.json({ message: "Insert successful!" });

@@ -24,22 +24,8 @@ export default async function Page({ params }: { params: Promise<{ recipe_id: st
       cuisine: {
         columns: {
           id: true,
-          adjective: true
-        },
-        with: {
-          countryOrigins: {
-            limit: 1,
-            columns: {},
-            with: {
-              country: {
-                columns: {
-                  id: true,
-                  name: true,
-                  icon: true
-                }
-              }
-            }
-          }
+          adjective: true,
+          icon: true
         }
       },
       diets: {
@@ -101,19 +87,9 @@ export default async function Page({ params }: { params: Promise<{ recipe_id: st
   const cuisinesQuery = db.query.cuisine.findMany({
     orderBy: (cuisines, { asc }) => [asc(cuisines.adjective)],
     columns: {
-      description: false
-    },
-    with: {
-      countryOrigins: {
-        columns: {},
-        with: {
-          country: {
-            columns: {
-              icon: true
-            }
-          }
-        }
-      }
+      id: true,
+      adjective: true,
+      icon: true
     }
   });
 

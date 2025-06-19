@@ -252,36 +252,10 @@ export const cuisine = pgTable("cuisine", (t) => ({
   adjective: t.varchar("cuisine_adjective", {
     length: 50
   }).notNull(),
+  icon: t.text("cuisine_icon").notNull(),
+  iconSource: t.text("cuisine_icon_source").notNull(),
   description: t.text("cuisine_desc").notNull()
 }));
-
-export const country = pgTable("country", (t) => ({
-  id: t.text("country_id")
-    .primaryKey()
-    .$default(() => nanoid()),
-  name: t.varchar("country_name", {
-    length: 50
-  }).notNull().unique(),
-  icon: t.text("country_icon").notNull(),
-  iconSource: t.text("country_icon_source").notNull()
-}));
-
-export const countryToCuisine = pgTable("country_to_cuisine", (t) => ({
-  countryId: t.text("country_id")
-    .notNull()
-    .references(() => country.id, {
-      onDelete: "cascade"
-    }),
-  cuisineId: t.text("cuisine_id")
-    .notNull()
-    .references(() => cuisine.id, {
-      onDelete: "cascade"
-    })
-}), (t) => [
-  primaryKey({
-    columns: [t.countryId, t.cuisineId]
-  })
-]);
 
 export const recipeReview = pgTable("recipe_review", (t) => ({
   id: t.text("review_id")
@@ -466,23 +440,7 @@ export const recipeToDietRelations = relations(recipeToDiet, ({ one }) => ({
 
 export const cuisineRelations = relations(cuisine, ({ many }) => ({
   recipesFromCuisine: many(recipe),
-  users: many(userToCuisine),
-  countryOrigins: many(countryToCuisine)
-}));
-
-export const countryRelations = relations(country, ({ many }) => ({
-  cuisines: many(countryToCuisine)
-}));
-
-export const countryToCuisineRelations = relations(countryToCuisine, ({ one }) => ({
-  country: one(country, {
-    fields: [countryToCuisine.countryId],
-    references: [country.id]
-  }),
-  cuisine: one(cuisine, {
-    fields: [countryToCuisine.cuisineId],
-    references: [cuisine.id]
-  })
+  users: many(userToCuisine)
 }));
 
 export const recipeReviewRelations = relations(recipeReview, ({ one, many }) => ({

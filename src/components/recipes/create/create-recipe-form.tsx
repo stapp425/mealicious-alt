@@ -42,11 +42,7 @@ type CreateRecipeFormProps = {
   readonly cuisines: {
     id: string;
     adjective: string;
-    countryOrigins: {
-      country: {
-          icon: string;
-      };
-    }[];
+    icon: string;
   }[];
   readonly diets: Omit<InferSelectModel<typeof diet>, "description">[];
   readonly dishTypes: Omit<InferSelectModel<typeof dishType>, "description">[];
@@ -90,13 +86,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
       cuisine: {
         id: "",
         adjective: "",
-        countryOrigins: [
-          {
-            country: {
-              icon: ""
-            }
-          }
-        ]
+        icon: ""
       },
       diets: [],
       dishTypes: [],
@@ -253,6 +243,12 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
                       No cuisines found.
                     </CommandEmpty>
                     <CommandGroup>
+                      <CommandItem
+                        className="font-semibold p-2"
+                        onSelect={() => setValue("cuisine", undefined)}
+                      >
+                        None
+                      </CommandItem>
                       {
                         cuisines.map((c) => (
                           <CommandItem
@@ -261,17 +257,13 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
                             onSelect={(val) => setValue("cuisine", cuisines.find(({ adjective }) => adjective === val)!)}
                           >
                             <div className="flex items-center gap-2">
-                              {
-                                c.countryOrigins[0].country.icon && (
-                                  <Image
-                                    src={c.countryOrigins[0].country.icon} 
-                                    alt={`Origin of ${c.adjective} cuisine`}
-                                    width={35}
-                                    height={35}
-                                    className="rounded-full shadow-sm"
-                                  />
-                                )
-                              }
+                              <Image
+                                src={c.icon} 
+                                alt={`Origin of ${c.adjective} cuisine`}
+                                width={35}
+                                height={35}
+                                className="rounded-full shadow-sm"
+                              />
                               {c.adjective}
                             </div>
                             <Check

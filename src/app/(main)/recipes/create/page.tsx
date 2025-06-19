@@ -11,19 +11,9 @@ export default async function Page() {
   const cuisinesFetch = db.query.cuisine.findMany({
     orderBy: (cuisines, { asc }) => [asc(cuisines.adjective)],
     columns: {
-      description: false
-    },
-    with: {
-      countryOrigins: {
-        columns: {},
-        with: {
-          country: {
-            columns: {
-              icon: true
-            }
-          }
-        }
-      }
+      id: true,
+      adjective: true,
+      icon: true
     }
   });
 

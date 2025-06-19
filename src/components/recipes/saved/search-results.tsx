@@ -1,9 +1,7 @@
-import { Sort, View, Filter } from "@/lib/types";
+import { Sort, Filter } from "@/lib/types";
 import { Info, SearchX } from "lucide-react";
 import { db } from "@/db";
-import { 
-  country, 
-  countryToCuisine, 
+import {
   cuisine, 
   diet, 
   recipe, 
@@ -16,28 +14,24 @@ import Pagination from "@/components/recipes/saved/pagination";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import RecipeResult from "@/components/recipes/saved/recipe-result";
-import { 
-  cn,
-  MAX_GRID_RECIPE_DISPLAY_LIMIT, 
-  MAX_LIST_RECIPE_DISPLAY_LIMIT 
-} from "@/lib/utils";
+import { MAX_LIST_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
 
 type SearchResultsProps = {
   query: string;
   sort: Sort | null;
   filters: Filter[];
-  view: View;
   page: number;
 };
 
-export default async function SearchResults({ query, sort, filters, view, page }: SearchResultsProps) {
+const MAX_DIET_DISPLAY_LIMIT = 4;
+
+export default async function SearchResults({ query, sort, filters, page }: SearchResultsProps) {
   const session = await auth();
 
   if (!session?.user)
     redirect("/login");
 
   const { user } = session;
-  const recipeDisplayLimit = view === "list" ? MAX_LIST_RECIPE_DISPLAY_LIMIT : MAX_GRID_RECIPE_DISPLAY_LIMIT;
   
   const orderByClauses: Record<Sort, SQL> = {
     title: asc(recipe.title),
@@ -59,55 +53,83 @@ export default async function SearchResults({ query, sort, filters, view, page }
     diets: sql<{
       id: string;
       name: string;
-    }[] | null>`
-      JSON_AGG(
-        JSON_BUILD_OBJECT(
-          'id', ${diet.id},
-          'name', ${diet.name}
-        )
-      ) FILTER (WHERE ${diet.id} IS NOT NULL)
-    `.as("diets"),
+    }[]>`"recipe_to_diet_sub"."data"`.as("diets"),
     cuisine: sql<{
+      id: string;
       adjective: string;
-      countries: {
-        id: string;
-        icon: string;
-      }[];
-    } | null>`
-      JSON_BUILD_OBJECT(
-        'adjective', ${cuisine.adjective},
-        'countries', JSON_AGG(
-          JSON_BUILD_OBJECT(
-            'id', ${country.id},
-            'icon', ${country.icon}
-          )
-        )
-      )
-    `.as("cuisine"),
+      icon: string;
+    } | null>`"cuisine_sub"."data"`,
     sourceName: recipe.sourceName,
     sourceUrl: recipe.sourceUrl,
     saveDate: savedRecipe.saveDate,
-    isFavorite: sql<boolean>`CASE WHEN ${recipeFavorite.recipeId} IS NOT NULL THEN TRUE ELSE FALSE END`.as("is_favorite"),
+    isFavorite: sql<boolean>`CASE WHEN "favorite_sub"."data" IS NOT NULL THEN TRUE ELSE FALSE END`.as("is_favorite"),
     isAuthor: sql<boolean>`CASE WHEN ${recipe.createdBy} = ${user.id!} THEN TRUE ELSE FALSE END`.as("is_author")
   }).from(savedRecipe)
     .where(and(
       eq(savedRecipe.userId, user.id!),
-      ilike(recipe.title, `%${query}%`),
+      query ? ilike(recipe.title, `%${query}%`) : undefined,
       ...filters.map((f) => filterClauses[f])
     ))
     .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
-    .leftJoin(cuisine, eq(recipe.cuisineId, cuisine.id))
-    .leftJoin(countryToCuisine, eq(cuisine.id, countryToCuisine.cuisineId))
-    .leftJoin(country, eq(countryToCuisine.countryId, country.id))
-    .leftJoin(recipeToDiet, eq(recipe.id, recipeToDiet.recipeId))
-    .leftJoin(diet, eq(recipeToDiet.dietId, diet.id))
-    .leftJoin(recipeFavorite, and(
-      eq(savedRecipe.userId, recipeFavorite.userId),
-      eq(savedRecipe.recipeId, recipeFavorite.recipeId)
-    ))
-    .limit(recipeDisplayLimit)
-    .offset(page * recipeDisplayLimit)
-    .groupBy(recipe.id, savedRecipe.saveDate, cuisine.id, recipeFavorite.recipeId)
+    .leftJoinLateral(
+      db.select({
+        data: sql`
+          json_build_object(
+            'id', ${cuisine.id}, 
+            'adjective', ${cuisine.adjective}, 
+            'icon', ${cuisine.icon}
+          )
+        `.as("data")
+      }).from(cuisine)
+        .where(eq(cuisine.id, recipe.cuisineId))
+        .as("cuisine_sub"),
+      sql`true`
+    )
+    .leftJoinLateral(
+      db.select({
+        diets: sql`
+          coalesce(
+            json_agg("diets_sub"."data"),
+            '[]'::json
+          )
+        `.as("data")
+      }).from(recipeToDiet)
+        .where(eq(recipe.id, recipeToDiet.recipeId))
+        .innerJoinLateral(
+          db.select({
+            diet: sql`
+              json_build_object(
+                'id', ${diet.id},
+                'name', ${diet.name}
+              )
+            `.as("data")
+          }).from(diet)
+            .where(eq(recipeToDiet.dietId, diet.id))
+            .limit(MAX_DIET_DISPLAY_LIMIT)
+            .as("diets_sub"),
+          sql`true`
+        )
+        .as("recipe_to_diet_sub"),
+      sql`true`
+    )
+    .leftJoinLateral(
+      db.select({
+        data: sql`
+          json_build_object(
+            'user_id', ${recipeFavorite.userId},
+            'recipe_id', ${recipeFavorite.recipeId}
+          )
+        `.as("data")
+      }).from(recipeFavorite)
+        .where(and(
+          eq(savedRecipe.userId, recipeFavorite.userId),
+          eq(savedRecipe.recipeId, recipeFavorite.recipeId)
+        ))
+        .as("favorite_sub"),
+      sql`true`
+    )
+    .limit(MAX_LIST_RECIPE_DISPLAY_LIMIT)
+    .offset(page * MAX_LIST_RECIPE_DISPLAY_LIMIT)
     .orderBy(...(sort ? [orderByClauses[sort]] : []));
 
   const savedRecipesCountQuery = db.select({ count: count() })
@@ -124,7 +146,7 @@ export default async function SearchResults({ query, sort, filters, view, page }
     ));
   
   const [savedRecipes, [{ count: savedRecipesCount }]] = await Promise.all([savedRecipesQuery, savedRecipesCountQuery]);
-  const totalPages = Math.ceil(savedRecipesCount / recipeDisplayLimit);
+  const totalPages = Math.ceil(savedRecipesCount / MAX_LIST_RECIPE_DISPLAY_LIMIT);
   
   return (
     <div className="flex-1 flex flex-col gap-3">
@@ -138,10 +160,7 @@ export default async function SearchResults({ query, sort, filters, view, page }
             <Info size={16}/>
             You can click on a recipe to show more details.
           </div>
-          <div className={cn({
-            "flex flex-col gap-3": view === "list",
-            "grid grid-cols-2 gap-3": view === "grid"
-          })}>
+          <div className="flex flex-col gap-3">
             {savedRecipes.map((r) => <RecipeResult key={r.id} recipe={r}/>)}
           </div>
           </>

@@ -12,8 +12,6 @@ import { useState } from "react";
 import { useAction } from "next-safe-action/hooks";
 import { deleteRecipe, toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/db";
 import { toast } from "sonner";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { views } from "@/lib/types";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -35,8 +33,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 
-const MAX_DIET_DISPLAY_LIMIT = 4;
-
 type RecipeResultProps = {
   recipe: {
     id: string;
@@ -47,13 +43,11 @@ type RecipeResultProps = {
     diets: {
       id: string;
       name: string;
-    }[] | null;
+    }[];
     cuisine: {
-      adjective: string | null;
-      countries: {
-        id: string;
-        icon: string;
-      }[];
+      id: string;
+      adjective: string;
+      icon: string;
     } | null;
     sourceName: string | null;
     sourceUrl: string | null;
@@ -66,7 +60,6 @@ type RecipeResultProps = {
 export default function RecipeResult({ recipe }: RecipeResultProps) {
   const [isFavorite, setIsFavorite] = useState<boolean>(recipe.isFavorite);
   const [open, setOpen] = useState<boolean>(false);
-  const [view] = useQueryState("view", parseAsStringLiteral(views).withDefault("list"));
   const { refresh } = useRouter();
   const { executeAsync: executeDeleteRecipe, isExecuting: isDeleteRecipeExecuting } = useAction(deleteRecipe, {
     onSuccess: ({ data }) => {
@@ -93,15 +86,88 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
     }
   });
 
-  const LayoutRecipeResult = view === "list" ? ListRecipeResult : GridRecipeResult;
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <LayoutRecipeResult
-          recipe={recipe}
-          isFavorite={isFavorite}
-        />
+        <div className="cursor-pointer bg-sidebar flex flex-col md:flex-row justify-between gap-4 border border-border p-4 rounded-md hover:bg-muted transition-colors">
+          <div className="relative w-full md:w-[250px] h-[300px] min-h-[200px] md:h-auto">
+            <Image 
+              src={recipe.image}
+              alt={`Image of ${recipe.title}`}
+              fill
+              className="block size-full rounded-sm object-cover"
+            />
+            {
+              isFavorite && (
+                <div className="absolute top-2 left-2 flex justify-center items-center size-8 bg-rose-400 rounded-md">
+                  <Heart size={18} className="text-white"/>
+                </div>
+              )
+            }
+          </div>
+          <div className="flex-1 flex flex-col gap-3">
+            <div className="flex justify-between items-start gap-3">
+              <h2 className="font-bold text-2xl line-clamp-2 text-wrap break-all truncate text-left">{recipe.title}</h2>
+              {
+                recipe.cuisine && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Image 
+                        src={recipe.cuisine.icon}
+                        alt={`Flag of ${recipe.cuisine.adjective} cuisine`}
+                        width={35}
+                        height={35}
+                        className="object-cover rounded-full"
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{recipe.cuisine.adjective}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              }
+            </div>
+            {
+              recipe.isAuthor && (
+                <div className="flex items-center gap-2 text-orange-400 text-sm font-semibold">
+                  <Medal />
+                  You created this recipe
+                </div>
+              )
+            }
+            {
+              recipe.diets && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {
+                    recipe.diets.map((d) => (
+                      <div key={d.id} className="bg-mealicious-primary text-white font-semibold text-xs px-3 py-1 rounded-full">
+                        {d.name}
+                      </div>
+                    ))
+                  }
+                </div>
+              )
+            }
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <Clock size={14}/> {Math.floor(Number(recipe.prepTime))} min
+            </div>
+            <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-end gap-2 mt-auto">
+              <i className="text-muted-foreground text-sm">
+                {getRecipeSaveDateDifference(recipe.saveDate)}
+              </i>
+              {
+                (recipe.sourceName && recipe.sourceUrl) && (
+                  <div className="flex flex-row-reverse md:flex-row items-center gap-2 underline">
+                    <Link href={recipe.sourceUrl} target="_blank">
+                      {recipe.sourceName}
+                    </Link>
+                    <Earth />
+                  </div>
+                )
+              }
+            </div>
+          </div>
+        </div>
       </DialogTrigger>
       <DialogContent className="p-4 w-fit">
         <VisuallyHidden>
@@ -115,7 +181,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
           </DialogHeader>
         </VisuallyHidden>
         <div className="w-[300px] flex flex-col gap-2">
-          <div className="relative w-full h-[175px] sm:h-[225px]">
+          <div className="relative w-full h-[175px] md:h-[225px]">
             <Image 
               src={recipe.image || defaultImage}
               alt={`Image of ${recipe.title}`}
@@ -236,10 +302,10 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
             )
           }
           {
-            (recipe.cuisine && recipe.cuisine.adjective && recipe.cuisine.countries.length > 0) && (
+            recipe.cuisine && (
               <div className="border border-border flex items-center gap-3 rounded-md p-2">
                 <Image 
-                  src={recipe.cuisine.countries[0].icon}
+                  src={recipe.cuisine.icon}
                   alt={`Flag of ${recipe.cuisine.adjective} cuisine`}
                   width={35}
                   height={35}
@@ -252,18 +318,11 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
             (recipe.diets && recipe.diets.length > 0) && (
               <div className="flex flex-wrap items-center gap-2">
                 {
-                  recipe.diets.slice(0, MAX_DIET_DISPLAY_LIMIT).map((d) => (
+                  recipe.diets.map((d) => (
                     <div key={d.id} className="bg-mealicious-primary text-white font-semibold text-xs px-3 py-1 rounded-full">
                       {d.name}
                     </div>
                   ))
-                }
-                {
-                  recipe.diets.length > MAX_DIET_DISPLAY_LIMIT && (
-                    <div className="bg-mealicious-primary-muted text-white font-semibold text-xs px-3 py-1 rounded-full">
-                      ...
-                    </div>
-                  )
                 }
               </div>
             )
@@ -296,141 +355,5 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-type LayoutRecipeResultProps = RecipeResultProps & {
-  isFavorite: boolean;
-} & React.ComponentProps<"button">;
-
-function ListRecipeResult({ recipe, isFavorite, ...props }: LayoutRecipeResultProps) {
-  return (
-    <button
-      {...props}
-      className="cursor-pointer bg-sidebar flex flex-col sm:flex-row justify-between gap-4 border border-border p-4 rounded-md"
-    >
-      <div className="relative w-full sm:aspect-10/7 sm:w-[250px] h-[200px] md:h-auto max-h-[200px] sm:max-h-none">
-        {
-          recipe.image && (
-            <Image 
-              src={recipe.image}
-              alt={`Image of ${recipe.title}`}
-              fill
-              className="block size-full rounded-sm object-cover"
-            />
-          )
-        }
-        {
-          isFavorite && (
-            <div className="absolute top-2 left-2 flex justify-center items-center size-8 bg-rose-400 rounded-md">
-              <Heart size={18} className="text-white"/>
-            </div>
-          )
-        }
-      </div>
-      <div className="flex-1 flex flex-col gap-3">
-        <div className="flex justify-between items-start gap-3">
-          <h2 className="font-bold text-2xl line-clamp-2 text-wrap break-all truncate text-left">{recipe.title}</h2>
-          {
-            (recipe.cuisine && recipe.cuisine.adjective && recipe.cuisine.countries.length > 0) && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Image 
-                    src={recipe.cuisine.countries[0].icon || defaultImage}
-                    alt={`Flag of ${recipe.cuisine.adjective} cuisine`}
-                    width={35}
-                    height={35}
-                    className="object-cover rounded-full"
-                  />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{recipe.cuisine.adjective}</p>
-                </TooltipContent>
-              </Tooltip>
-            )
-          }
-        </div>
-        {
-          recipe.isAuthor && (
-             <div className="flex items-center gap-2 text-orange-400 text-sm font-semibold">
-              <Medal />
-              You created this recipe
-            </div>
-          )
-        }
-        {
-          recipe.diets && (
-            <div className="flex flex-wrap items-center gap-2">
-              {
-                recipe.diets.slice(0, MAX_DIET_DISPLAY_LIMIT).map((d) => (
-                  <div key={d.id} className="bg-mealicious-primary text-white font-semibold text-xs px-3 py-1 rounded-full">
-                    {d.name}
-                  </div>
-                ))
-              }
-              {
-                recipe.diets.length > MAX_DIET_DISPLAY_LIMIT && (
-                  <div className="bg-mealicious-primary-muted text-white font-semibold text-xs px-3 py-1 rounded-full">
-                    ...
-                  </div>
-                )
-              }
-            </div>
-          )
-        }
-        <div className="flex items-center gap-2 font-semibold text-sm">
-          <Clock size={14}/> {Math.floor(Number(recipe.prepTime))} min
-        </div>
-        <div className="flex flex-col-reverse lg:flex-row justify-between items-start lg:items-end gap-2 mt-auto">
-          <i className="text-muted-foreground text-sm">
-            {getRecipeSaveDateDifference(recipe.saveDate)}
-          </i>
-          {
-            (recipe.sourceName && recipe.sourceUrl) && (
-              <div className="flex flex-row-reverse lg:flex-row items-center gap-2 underline">
-                <Link href={recipe.sourceUrl} target="_blank">
-                  {recipe.sourceName}
-                </Link>
-                <Earth />
-              </div>
-            )
-          }
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function GridRecipeResult({ recipe, isFavorite, ...props }: LayoutRecipeResultProps) {
-  return (
-    <button 
-      {...props}
-      className="cursor-pointer relative bg-sidebar border border-border flex flex-col items-start gap-3 rounded-md p-2.5 sm:p-4"
-    >
-      <div className="relative w-full h-[100px] sm:h-[175px]">
-        {
-          recipe.image && (
-            <Image 
-              src={recipe.image}
-              alt={`Image of ${recipe.title}`}
-              fill
-              className="rounded-sm object-cover"
-            />
-          )
-        }
-        {
-          isFavorite && (
-            <div className="absolute top-2 left-2 flex justify-center items-center size-8 bg-rose-400 rounded-md">
-              <Heart size={18} className="text-white"/>
-            </div>
-          )
-        }
-      </div>
-      <h2 className="font-bold line-clamp-1 break-all truncate">{recipe.title}</h2>
-      <div className="flex items-center gap-2 font-semibold text-sm mt-auto">
-        <Clock size={14}/>
-        {Math.floor(Number(recipe.prepTime))} mins
-      </div>
-    </button>
   );
 }

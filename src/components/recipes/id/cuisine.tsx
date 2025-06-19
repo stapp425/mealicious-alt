@@ -11,14 +11,9 @@ import { parseAsBoolean, useQueryState } from "nuqs";
 type CuisineProps = {
   cuisine: {
     id: string;
-    description: string;
     adjective: string;
-    countryOrigins: {
-      country: {
-        id: string;
-        icon: string;
-      };
-    }[];
+    icon: string;
+    description: string;
   }; 
 };
 
@@ -46,7 +41,7 @@ export default function Cuisine({ cuisine }: CuisineProps) {
         <div className="flex justify-between items-center gap-3">
           <div className="flex items-center gap-3">
             <Image 
-              src={cuisine.countryOrigins[0].country.icon}
+              src={cuisine.icon}
               alt={`Flag of ${cuisine.adjective} cuisine`}
               width={35}
               height={35}

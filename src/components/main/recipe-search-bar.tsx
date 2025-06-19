@@ -85,9 +85,7 @@ export default function RecipeSearchBar() {
           <div className="text-muted-foreground flex justify-between items-center py-2 px-4">
             <Input 
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-              }}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search Recipe..."
               className="border-none bg-transparent! focus-visible:ring-0 p-0 shadow-none"
             />
@@ -128,7 +126,10 @@ export default function RecipeSearchBar() {
                                     className="mealicious-button text-left w-full font-semibold flex items-center gap-4 py-2.5 px-3 transition-colors rounded-sm"
                                   >
                                     <Search size={14}/>
-                                    <span className="truncate max-w-[200px] sm:max-w-[375px]">{i.title}</span>
+                                    <div className="flex flex-col items-start">
+                                      <span className="font-semibold truncate max-w-[200px] sm:max-w-[375px]">{i.title}</span>
+                                      <span className="font-semibold text-sm text-slate-200 hidden sm:block">Recipe</span>
+                                    </div>
                                     <ArrowRight size={16} className="ml-auto"/>
                                   </button>
                                 </li>
@@ -150,7 +151,7 @@ export default function RecipeSearchBar() {
                         label: query,
                         isQuery: true
                       })}
-                      className="cursor-pointer flex items-center gap-3 hover:underline"
+                      className="cursor-pointer flex items-center gap-3 hover:underline mt-1"
                     >
                       <Search size={14}/>
                       <h1 className="font-semibold text-sm">Search for &quot;{query}&quot;</h1>
@@ -173,10 +174,13 @@ export default function RecipeSearchBar() {
                         <Link
                           href={s.category === "query" ? `/recipes/search?query=${s.label}` : `/recipes/${s.id}`}
                           onClick={() => setOpen(false)}
-                          className="font-semibold border border-border bg-sidebar cursor-pointer hover:bg-muted text-left w-full truncate flex items-center gap-4 p-3 transition-colors rounded-sm"
+                          className="border border-border bg-sidebar cursor-pointer hover:bg-muted text-left w-full truncate flex items-center gap-4 p-3 transition-colors rounded-sm"
                         >
-                          <Clock stroke="var(--muted-foreground)" size={18}/>
-                          <span className="truncate max-w-[200px] sm:max-w-[375px]">{s.label}</span>
+                          <Clock stroke="var(--muted-foreground)" size={24}/>
+                          <div className="flex flex-col items-start">
+                            <span className="font-semibold truncate max-w-[200px] sm:max-w-[375px]">{s.label}</span>
+                            <span className="font-semibold text-sm text-muted-foreground hidden sm:block">{s.category ? "Query" : "Recipe"}</span>
+                          </div>
                           <div
                             onClick={(e) => {
                               e.stopPropagation();

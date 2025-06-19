@@ -309,18 +309,11 @@ const getRecipeDetails = cache(async (recipeId: string, userId?: string) => {
       },
       recipeStatistics: true,
       cuisine: {
-        with: {
-          countryOrigins: {
-            columns: {},
-            with: {
-              country: {
-                columns: {
-                  id: true,
-                  icon: true
-                }
-              }
-            }
-          }
+        columns: {
+          id: true,
+          adjective: true,
+          description: true,
+          icon: true
         }
       },
       diets: {

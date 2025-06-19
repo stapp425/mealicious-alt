@@ -42,11 +42,7 @@ type EditRecipeFormProps = {
   readonly cuisines: {
     id: string;
     adjective: string;
-    countryOrigins: {
-      country: {
-        icon: string;
-      };
-    }[];
+    icon: string;
   }[];
   readonly diets: Omit<InferSelectModel<typeof diet>, "description">[];
   readonly dishTypes: Omit<InferSelectModel<typeof dishType>, "description">[];
@@ -68,13 +64,7 @@ type EditRecipeFormProps = {
     cuisine: {
       id: string;
       adjective: string;
-      countryOrigins: {
-        country: {
-          name: string;
-          id: string;
-          icon: string;
-        };
-      }[];
+      icon: string;
     } | null;
     diets: {
       diet: {
@@ -166,7 +156,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
       cuisine: {
         id: recipe.cuisine?.id,
         adjective: recipe.cuisine?.adjective,
-        countryOrigins: recipe.cuisine?.countryOrigins
+        icon: recipe.cuisine?.icon
       },
       cookTime: Number(recipe.cookTime),
       prepTime: Number(recipe.prepTime),
@@ -207,8 +197,6 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
   });
 
   const onSubmit = handleSubmit(async (data) => {
-    console.log("isPublic:", data.isPublic);
-    
     try {
       const { image, ...dataRest } = data;
       const recipeEditionResult = await updateRecipe({ editedRecipe: dataRest });
@@ -347,6 +335,12 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
                       No cuisines found.
                     </CommandEmpty>
                     <CommandGroup>
+                      <CommandItem
+                        className="font-semibold p-2"
+                        onSelect={() => setValue("cuisine", undefined)}
+                      >
+                        None
+                      </CommandItem>
                       {
                         cuisines.map((c) => (
                           <CommandItem
@@ -355,17 +349,13 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
                             onSelect={(val) => setValue("cuisine", cuisines.find(({ adjective }) => adjective === val)!)}
                           >
                             <div className="flex items-center gap-2">
-                              {
-                                c.countryOrigins[0].country.icon && (
-                                  <Image
-                                    src={c.countryOrigins[0].country.icon} 
-                                    alt={`Origin of ${c.adjective} cuisine`}
-                                    width={35}
-                                    height={35}
-                                    className="rounded-full shadow-sm"
-                                  />
-                                )
-                              }
+                              <Image
+                                src={c.icon} 
+                                alt={`Origin of ${c.adjective} cuisine`}
+                                width={35}
+                                height={35}
+                                className="rounded-full shadow-sm"
+                              />
                               {c.adjective}
                             </div>
                             <Check

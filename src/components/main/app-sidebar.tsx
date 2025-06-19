@@ -16,7 +16,7 @@ import Image from "next/image";
 import Link from "next/link";
 import siteLogo from "@/img/logo/mealicious-logo.svg";
 import SidebarUser from "@/components/main/sidebar-user";
-import { Separator } from "../ui/separator";
+import { Separator } from "@/components/ui/separator";
 
 type AppSidebarProps = {
   username: string;
