@@ -23,7 +23,7 @@ type SearchResultsProps = {
   page: number;
 };
 
-const MAX_DIET_DISPLAY_LIMIT = 4;
+const MAX_DIET_DISPLAY_LIMIT = 3;
 
 export default async function SearchResults({ query, sort, filters, page }: SearchResultsProps) {
   const session = await auth();
@@ -93,23 +93,20 @@ export default async function SearchResults({ query, sort, filters, page }: Sear
             '[]'::json
           )
         `.as("data")
-      }).from(recipeToDiet)
-        .where(eq(recipe.id, recipeToDiet.recipeId))
-        .innerJoinLateral(
-          db.select({
-            diet: sql`
-              json_build_object(
-                'id', ${diet.id},
-                'name', ${diet.name}
-              )
-            `.as("data")
-          }).from(diet)
-            .where(eq(recipeToDiet.dietId, diet.id))
-            .limit(MAX_DIET_DISPLAY_LIMIT)
-            .as("diets_sub"),
-          sql`true`
-        )
-        .as("recipe_to_diet_sub"),
+      }).from(
+        db.select({
+          data: sql`
+            json_build_object(
+              'id', ${diet.id},
+              'name', ${diet.name}
+            )
+          `.as("data")
+        }).from(recipeToDiet)
+          .where(eq(recipeToDiet.recipeId, recipe.id))
+          .innerJoin(diet, eq(recipeToDiet.dietId, diet.id))
+          .limit(MAX_DIET_DISPLAY_LIMIT)
+          .as("diets_sub")
+      ).as("recipe_to_diet_sub"),
       sql`true`
     )
     .leftJoinLateral(

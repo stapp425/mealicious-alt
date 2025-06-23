@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: MetadataProps): Promise<Metad
     notFound();
 
   const title = `${foundRecipe.title} | Mealicious`;
-  const description = foundRecipe.description || "No description available.";
+  const description = foundRecipe.description || "No description is available.";
   const image = foundRecipe.image;
   
   return {

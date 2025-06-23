@@ -2,7 +2,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { Unit } from "@/db/data/unit";
+import { Unit } from "@/lib/types";
 import { Slot } from "@radix-ui/react-slot";
 import { Info, Minus, Plus } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";

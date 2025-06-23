@@ -2,7 +2,7 @@
 
 import { toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/db";
 import { cn } from "@/lib/utils";
-import { Download, Heart, Loader2, X } from "lucide-react";
+import { ArrowDownToLine, Heart, Loader2, X } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -80,10 +80,10 @@ export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedPr
   
   const label = isSaved ? "Unsave" : "Save";
   const Icon = isAuthor
-    ? Download
+    ? ArrowDownToLine
     : isSaved 
       ? X
-      : Download;
+      : ArrowDownToLine;
   
   return (
     <button 
@@ -96,7 +96,7 @@ export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedPr
       className={cn(
         "text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center lg:gap-4.5 py-2 md:py-3 rounded-sm transition-colors",
         isAuthor 
-          ? "bg-green-500"
+          ? "bg-green-500 gap-2"
           : isSaved
             ? "cursor-pointer disabled:cursor-not-allowed disabled:bg-red-300 bg-red-500 hover:bg-red-700"
             : "cursor-pointer disabled:cursor-not-allowed disabled:bg-green-300 bg-green-500 hover:bg-green-700"

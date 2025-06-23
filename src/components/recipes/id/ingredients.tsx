@@ -4,7 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { Unit, units } from "@/db/data/unit";
+import { Unit, units } from "@/lib/types";
 import { Info } from "lucide-react";
 
 type IngredientsProps = {

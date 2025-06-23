@@ -19,7 +19,7 @@ export default function Breadcrumbs() {
   return (
     <Breadcrumb className={cn(
       pathSegments.length === 0 && "hidden",
-      "hidden lg:block"
+      "hidden md:block"
     )}>
       <BreadcrumbList>
         <BreadcrumbItem>

@@ -24,7 +24,7 @@ export default function Unauthorized() {
           Go to Dashboard
         </button>
       </div>
-      <title>(401) Recipe Not Authorized | Mealicious</title>
+      <title>(401) Not Authorized | Mealicious</title>
     </div>
   );
 }

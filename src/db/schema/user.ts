@@ -4,7 +4,7 @@ import { relations, sql } from "drizzle-orm";
 import { account, session } from "./auth";
 import { meal } from "@/db/schema/meal";
 import { plan } from "@/db/schema/plan";
-import { Unit } from "@/db/data/unit";
+import { Unit } from "@/lib/types";
 import { nanoid } from "nanoid";
 
 export const user = pgTable("user", (t) => ({

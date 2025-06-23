@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { MAX_DIETS_LENGTH, RecipeEdition } from "@/lib/zod";
 import { InferSelectModel } from "drizzle-orm";
 import { useMemo, useState } from "react";
-import { UseFormSetValue } from "react-hook-form";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import {
   Command,
   CommandEmpty,
@@ -26,14 +26,18 @@ import { Check, ChevronDown, Info } from "lucide-react";
 type Diet = Omit<InferSelectModel<typeof diet>, "description">;
 
 type RecipeDietsProps = {
-  className?: string;
   readonly diets: Diet[]; // diets from database
-  formDietValues: Diet[]; // diets from form
-  setDiets: UseFormSetValue<RecipeEdition>;
-  message?: string;
 };
 
-export default function RecipeDiets({ className, diets, formDietValues, setDiets, message }: RecipeDietsProps) {
+export default function RecipeDiets({ diets }: RecipeDietsProps) {
+  const {
+    control,
+    formState: {
+      errors
+    }
+  } = useFormContext<RecipeEdition>();
+  const { append, remove } = useFieldArray({ control, name: "diets" });
+  const formDietValues = useWatch({ control, name: "diets" });
   const [diet, setDiet] = useState<Diet>({
     id: "",
     name: ""
@@ -45,7 +49,7 @@ export default function RecipeDiets({ className, diets, formDietValues, setDiets
   }, [formDietValues, diets]);
   
   return (
-    <div className={cn("field-container flex flex-col gap-3", className)}>
+    <div className="field-container flex flex-col gap-3">
       <h1 className="font-bold text-2xl">Diets</h1>
       <div className="flex-1 flex flex-col gap-3">
         <div className="relative flex justify-between gap-3">
@@ -73,9 +77,7 @@ export default function RecipeDiets({ className, diets, formDietValues, setDiets
                         <CommandItem
                           key={d.id}
                           value={d.name}
-                          onSelect={(val) => {
-                            setDiet(diets.find((d) => d.name === val)!);
-                          }}
+                          onSelect={(val) => setDiet(diets.find((d) => d.name === val)!)}
                         >
                           {d.name}
                           <Check
@@ -96,7 +98,7 @@ export default function RecipeDiets({ className, diets, formDietValues, setDiets
             type="button"
             disabled={!diet.id || !diet.name || formDietValues.length >= MAX_DIETS_LENGTH}
             onClick={() => {
-              setDiets("diets", [...formDietValues, diet]);
+              append(diet);
               setDiet({
                 id: "",
                 name: ""
@@ -117,12 +119,12 @@ export default function RecipeDiets({ className, diets, formDietValues, setDiets
             </div>
             <div className="flex flex-wrap gap-1.5">
               {
-                formDietValues.map((d) => (
+                formDietValues.map((d, index) => (
                   <button
                     type="button"
                     key={d.id}
-                    onClick={() => setDiets("diets", [...formDietValues.filter((fd) => fd.id !== d.id)])}
-                    className="cursor-pointer bg-orange-500 text-white text-xs font-semibold min-w-[50px] hover:bg-red-500 hover:text-white px-3 py-1 rounded-full transition-colors"
+                    onClick={() => remove(index)}
+                    className="cursor-pointer mealicious-button text-white text-xs font-semibold min-w-[50px] hover:bg-red-500 hover:text-white px-3 py-1 rounded-full transition-colors"
                   >
                     {d.name}
                   </button>
@@ -142,10 +144,10 @@ export default function RecipeDiets({ className, diets, formDietValues, setDiets
         </span>
       </div>
       {
-        message && (
+        errors.diets?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {message}
+            {errors.diets.message}
           </div>
         )
       }

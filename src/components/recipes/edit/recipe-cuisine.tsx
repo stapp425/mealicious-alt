@@ -1,0 +1,90 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { RecipeEdition } from "@/lib/zod";
+import { Check, ChevronDown } from "lucide-react";
+import { useFormContext, useWatch } from "react-hook-form";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
+
+type RecipeCuisineProps = {
+  readonly cuisines: {
+    id: string;
+    adjective: string;
+    icon: string;
+  }[];
+};
+
+export default function RecipeCuisine({ cuisines }: RecipeCuisineProps) {
+  const { control, setValue } = useFormContext<RecipeEdition>();
+  const currentCuisine = useWatch({ control, name: "cuisine" });
+  
+  return (
+    <div className="field-container flex flex-col gap-3">
+      <h2 className="font-bold text-2xl">
+        Cuisine
+      </h2>
+      <p className="font-semibold text-muted-foreground">
+        Add the type of cuisine for this recipe here. (optional)
+      </p>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className="cursor-pointer flex-1 justify-between"
+          >
+            {currentCuisine?.id && currentCuisine?.adjective ? currentCuisine.adjective : "Select a cuisine..."}
+            <ChevronDown className="opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[clamp(250px,25vw,450px)] p-0" align="end">
+          <Command>
+            <CommandInput placeholder="Search cuisine..." className="h-9" />
+            <CommandList>
+              <CommandEmpty>
+                No cuisines found.
+              </CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  className="font-semibold p-2"
+                  onSelect={() => setValue("cuisine", undefined)}
+                >
+                  None
+                </CommandItem>
+                {
+                  cuisines.map((c) => (
+                    <CommandItem
+                      key={c.id}
+                      value={c.adjective}
+                      onSelect={(val) => setValue("cuisine", cuisines.find(({ adjective }) => adjective === val)!)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src={c.icon} 
+                          alt={`Origin of ${c.adjective} cuisine`}
+                          width={35}
+                          height={35}
+                          className="rounded-full shadow-sm"
+                        />
+                        {c.adjective}
+                      </div>
+                      <Check
+                        className={cn(
+                          "ml-auto",
+                          c.id === currentCuisine?.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))
+                }
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}

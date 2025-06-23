@@ -1,7 +1,6 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { ImageDataSchema, RecipeCreation } from "@/lib/zod";
 import { Info, Plus } from "lucide-react";
 import { 
@@ -11,22 +10,23 @@ import {
 } from "react";
 import Image from "next/image";
 import defaultRecipeImage from "@/img/default/default-background.jpg";
-import { UseFormSetValue } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
-type ImageUploaderProps = {
-  className?: string;
-  image: File | null;
-  setImage: UseFormSetValue<RecipeCreation>;
-  message?: string;
-};
-
-export default function RecipeImageUploader({ className, image, setImage, message }: ImageUploaderProps) {
+export default function RecipeImageUploader() {
+  const {
+    setValue,
+    control,
+    formState: {
+      errors
+    }
+  } = useFormContext<RecipeCreation>();
+  const image = useWatch({ control, name: "image" });
   const [imageURL, setImageURL] = useState<string | null>(null);
   const addImageButton = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if(image) {
+    if (image) {
       const url = URL.createObjectURL(image);
       setImageURL(url);
     }
@@ -38,7 +38,7 @@ export default function RecipeImageUploader({ className, image, setImage, messag
   }, [image]);
   
   return (
-    <div className={cn(`bg-sidebar border border-border h-[425px] flex flex-col overflow-hidden relative group rounded-md`, className)}>
+    <div className="bg-sidebar border border-border h-[425px] flex flex-col overflow-hidden relative group rounded-md">
       <Input
         ref={addImageButton}
         type="file"
@@ -60,7 +60,7 @@ export default function RecipeImageUploader({ className, image, setImage, messag
             return;
           }
 
-          setImage("image", addedImage);
+          setValue("image", addedImage);
         }}
         className="hidden"
       />
@@ -97,10 +97,10 @@ export default function RecipeImageUploader({ className, image, setImage, messag
               </button>
             </div>
             {
-              message && (
+              errors?.image?.message && (
                 <div className="error-label">
                   <Info />
-                  {message}
+                  {errors.image.message}
                 </div>
               )
             }

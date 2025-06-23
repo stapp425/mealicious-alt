@@ -95,7 +95,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
               src={recipe.image}
               alt={`Image of ${recipe.title}`}
               fill
-              className="block size-full rounded-sm object-cover"
+              className="block size-full rounded-sm object-cover object-center"
             />
             {
               isFavorite && (
@@ -107,7 +107,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
           </div>
           <div className="flex-1 flex flex-col gap-3">
             <div className="flex justify-between items-start gap-3">
-              <h2 className="font-bold text-2xl line-clamp-2 text-wrap break-all truncate text-left">{recipe.title}</h2>
+              <h2 className="font-bold text-2xl text-wrap hyphens-auto line-clamp-2 grow-0 text-left">{recipe.title}</h2>
               {
                 recipe.cuisine && (
                   <Tooltip>

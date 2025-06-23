@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { SearchParams } from "nuqs";
 import { parseAsString, parseAsIndex, createLoader } from "nuqs/server";
 import { Separator } from "@/components/ui/separator";
+import { Metadata } from "next";
 
 const loadSearchParams = createLoader({
   query: parseAsString.withDefault(""),
@@ -15,6 +16,11 @@ const loadSearchParams = createLoader({
 
 type PageProps = {
   searchParams: Promise<SearchParams>;
+};
+
+export const metadata: Metadata = {
+  title: "Recipe Search Page | Mealicious",
+  description: "Search for public mealicious recipes here!"
 };
 
 export default async function Page({ searchParams }: PageProps) {

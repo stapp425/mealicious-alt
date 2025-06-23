@@ -1,7 +1,7 @@
 "use client";
 
 import { Separator } from "@/components/ui/separator";
-import { Unit, units } from "@/db/data/unit";
+import { Unit, units } from "@/lib/types";
 import { format } from "date-fns";
 import { Clock, Printer } from "lucide-react";
 import { useRef } from "react";

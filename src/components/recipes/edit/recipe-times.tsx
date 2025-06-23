@@ -1,27 +1,42 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { RecipeEdition } from "@/lib/zod";
-import { Clock, Info } from "lucide-react";
-import { UseFormRegister } from "react-hook-form";
+import { Clock, Info, Microwave, Clipboard } from "lucide-react";
+import { useFormContext } from "react-hook-form";
 
-type RecipeTimeProps = {
-  className?: string,
-  register: UseFormRegister<RecipeEdition>,
-  recipeTimesDetails: {
-    icon: typeof Clock,
-    label: string,
-    field: "cookTime" | "prepTime" | "readyTime"
-    message?: string
-  }[]
+type RecipeTimeDetail = {
+  icon: typeof Clock;
+  label: string;
+  field: "prepTime" | "cookTime" | "readyTime";
 };
 
-export default function RecipeTimes({ className, recipeTimesDetails, register }: RecipeTimeProps) {
-  const errorMessage = recipeTimesDetails.find((rt) => rt.message)?.message;
+const recipeTimesDetails: RecipeTimeDetail[] = [
+  {
+    icon: Clock,
+    label: "Prep Time",
+    field: "prepTime"
+  },
+  {
+    icon: Microwave,
+    label: "Cook Time",
+    field: "cookTime"
+  },
+  {
+    icon: Clipboard,
+    label: "Ready Time",
+    field: "readyTime"
+  }
+];
+
+export default function RecipeTimes() {
+  const {
+    register,
+    formState: { errors }
+  } = useFormContext<RecipeEdition>();
   
   return (
-    <div className={cn("field-container flex flex-col justify-between gap-3", className)}>
+    <div className="field-container flex flex-col justify-between gap-3">
       <h1 className="font-bold text-2xl required-field">Times</h1>
       <p className="text-muted-foreground font-semibold">
         Add preparation times for this recipe.
@@ -47,22 +62,31 @@ export default function RecipeTimes({ className, recipeTimesDetails, register }:
                 />
                 <span className="font-semibold">mins</span>
               </div>
-              {
-                rt.message && (
-                  <div className="error-label m-0 p-2 absolute top-4 right-4">
-                    <Info size={18}/>
-                  </div>
-                )
-              }
             </div>
           ))
         }
       </div>
       {
-        errorMessage && (
+        errors.prepTime?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errorMessage}
+            {errors.prepTime.message}
+          </div>
+        )
+      }
+      {
+        errors.cookTime?.message && (
+          <div className="error-text text-sm">
+            <Info size={16}/>
+            {errors.cookTime.message}
+          </div>
+        )
+      }
+      {
+        errors.readyTime?.message && (
+          <div className="error-text text-sm">
+            <Info size={16}/>
+            {errors.readyTime.message}
           </div>
         )
       }

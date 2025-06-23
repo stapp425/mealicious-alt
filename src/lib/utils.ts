@@ -6,6 +6,8 @@ import { Rating } from "@/lib/types";
 export const MAX_LIST_RECIPE_DISPLAY_LIMIT = 10;
 export const MAX_GRID_RECIPE_DISPLAY_LIMIT = 20;
 
+export const MAX_RECIPE_RESULT_DISPLAY_LIMIT = 5;
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }

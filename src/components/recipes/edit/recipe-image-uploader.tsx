@@ -1,7 +1,6 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { ImageDataSchema, RecipeEdition } from "@/lib/zod";
 import { Info, Plus } from "lucide-react";
 import { 
@@ -11,23 +10,27 @@ import {
 } from "react";
 import Image from "next/image";
 import defaultRecipeImage from "@/img/default/default-background.jpg";
-import { UseFormSetValue } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 type ImageUploaderProps = {
-  className?: string;
-  image: File | null;
-  setImage: UseFormSetValue<RecipeEdition>;
-  message?: string;
   recipeImageUrl: string;
 };
 
-export default function RecipeImageUploader({ recipeImageUrl, className, image, setImage, message }: ImageUploaderProps) {
+export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderProps) {
+  const {
+    setValue,
+    control,
+    formState: {
+      errors
+    }
+  } = useFormContext<RecipeEdition>();
+  const image = useWatch({ control, name: "image" });
   const [imageURL, setImageURL] = useState<string>(recipeImageUrl);
   const addImageButton = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if(image) {
+    if (image) {
       const url = URL.createObjectURL(image);
       setImageURL(url);
     }
@@ -39,7 +42,7 @@ export default function RecipeImageUploader({ recipeImageUrl, className, image, 
   }, [image]);
   
   return (
-    <div className={cn(`bg-sidebar border border-border h-[425px] flex flex-col overflow-hidden relative group rounded-md`, className)}>
+    <div className="bg-sidebar border border-border h-[425px] flex flex-col overflow-hidden relative group rounded-md">
       <Input
         ref={addImageButton}
         type="file"
@@ -61,7 +64,7 @@ export default function RecipeImageUploader({ recipeImageUrl, className, image, 
             return;
           }
 
-          setImage("image", addedImage);
+          setValue("image", addedImage);
         }}
         className="hidden"
       />
@@ -89,7 +92,7 @@ export default function RecipeImageUploader({ recipeImageUrl, className, image, 
                   type="button"
                   onClick={() => {
                     setImageURL(recipeImageUrl);
-                    setImage("image", null);
+                    setValue("image", null);
                   }}
                   className="cursor-pointer bg-red-500 hover:bg-red-700 font-semibold text-white text-nowrap text-xs py-1 px-3 rounded-md"
                 >
@@ -112,10 +115,10 @@ export default function RecipeImageUploader({ recipeImageUrl, className, image, 
               </button>
             </div>
             {
-              message && (
+              errors?.image?.message && (
                 <div className="error-label">
                   <Info />
-                  {message}
+                  {errors.image.message}
                 </div>
               )
             }

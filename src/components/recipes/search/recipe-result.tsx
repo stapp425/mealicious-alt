@@ -63,9 +63,10 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
           className="rounded-sm object-cover"
         />
         {
-          recipe.sourceName && recipe.sourceUrl && (
+          recipe.sourceUrl && (
             <Link
               href={recipe.sourceUrl}
+              target="_blank"
               className="absolute bottom-2 left-2 bg-white text-black p-1.5 rounded-sm"
             >
               <Earth size={20}/>

@@ -66,7 +66,7 @@ export default function RecipeSearchBar() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button className="mealicious-button font-semibold text-sm flex items-center gap-3 rounded-full py-2 px-5">
-          Search
+          Quick Recipe Search
           <Search size={16}/>
         </button>
       </DialogTrigger>

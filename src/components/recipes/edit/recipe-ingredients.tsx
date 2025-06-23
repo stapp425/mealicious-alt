@@ -10,12 +10,13 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Unit, unitAbbreviations } from "@/db/data/unit";
+import { Unit, unitAbbreviations } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MAX_INGREDIENT_AMOUNT, MAX_INGREDIENT_NAME_LENGTH, MAX_INGREDIENTS_LENGTH, RecipeEdition, UnitSchema } from "@/lib/zod";
 import { Info, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
-import { UseFormSetValue } from "react-hook-form";
+import { useEffect, useMemo, useState } from "react";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import { useDebouncedCallback } from "use-debounce";
 import z from "zod";
 
 type Ingredient = {
@@ -26,37 +27,33 @@ type Ingredient = {
   note?: string;
 };
 
-type RecipeIngredientsProps = {
-  className?: string;
-  formIngredientValues: Ingredient[];
-  setIngredients: UseFormSetValue<RecipeEdition>;
-  message?: string
-};
+const IngredientInputSchema = z.object({
+  name: z.string().nonempty({
+    message: "Name cannot be empty."
+  }).max(MAX_INGREDIENT_NAME_LENGTH, {
+    message: `Name cannot have more than ${MAX_INGREDIENT_NAME_LENGTH.toLocaleString()} characters.`
+  }),
+  amount: z.number().positive({
+    message: "Amount must be positive."
+  }).max(MAX_INGREDIENT_AMOUNT, {
+    message: `Amount must be at most ${MAX_INGREDIENT_AMOUNT.toLocaleString()}.`
+  }),
+  unit: UnitSchema,
+  isAllergen: z.boolean(),
+  note: z.optional(z.string())
+});
 
-export default function RecipeIngredients({ className, formIngredientValues, setIngredients, message }: RecipeIngredientsProps) {
-  const [isTouched, setIsTouched] = useState<boolean>(false);
-  
-  const IngredientInputSchema = useMemo(() => {
-    const formIngredientValuesSet = new Set(formIngredientValues.map((fi) => fi.name));
-    return z.object({
-      name: z.string().nonempty({
-        message: "Name cannot be empty."
-      }).max(MAX_INGREDIENT_NAME_LENGTH, {
-        message: `Name cannot have more than ${MAX_INGREDIENT_NAME_LENGTH.toLocaleString()} characters.`
-      }),
-      amount: z.number().positive({
-        message: "Amount must be positive."
-      }).max(MAX_INGREDIENT_AMOUNT, {
-        message: `Amount must be at most ${MAX_INGREDIENT_AMOUNT.toLocaleString()}.`
-      }),
-      unit: UnitSchema,
-      isAllergen: z.boolean(),
-      note: z.optional(z.string())
-    }).refine(({ name }) => !formIngredientValuesSet.has(name), {
-      message: "Ingredient name must be unique."
-    })
-  }, [formIngredientValues]);
-  
+export default function RecipeIngredients() {
+  const {
+    control,
+    formState: {
+      errors
+    }
+  } = useFormContext<RecipeEdition>();
+  const { append, remove } = useFieldArray({ control, name: "ingredients" });
+  const formIngredientValues = useWatch({ control, name: "ingredients" });
+  const [touched, setTouched] = useState<boolean>(false);
+  const [error, setError] = useState<string>();
   const [ingredient, setIngredient] = useState<Ingredient>({
     name: "",
     amount: 0,
@@ -65,16 +62,33 @@ export default function RecipeIngredients({ className, formIngredientValues, set
     note: ""
   });
 
-  const parsedIngredientInput = IngredientInputSchema.safeParse(ingredient);
-  const error = parsedIngredientInput.error?.errors[0].message;
+  const formIngredientValuesSet = useMemo(
+    () => new Set(formIngredientValues.map((fi) => fi.name)),
+    [formIngredientValues]
+  );
+  
+  const validateInput = useDebouncedCallback(() => {
+    const parsedIngredientInput = IngredientInputSchema.refine(({ name }) => !formIngredientValuesSet.has(name), {
+      message: "Ingredient name must be unique."
+    }).safeParse(ingredient);
+    
+    if (parsedIngredientInput.success)
+      setError(undefined);
+    else
+      setError(parsedIngredientInput.error.errors[0]?.message);
+  }, 250);
+
+  useEffect(() => {
+    validateInput();
+  }, [ingredient]);
   
   return (
-    <div className={cn("field-container flex flex-col gap-3", className)}>
+    <div className="field-container flex flex-col gap-3">
       <h1 className="text-2xl font-bold required-field">Ingredients</h1>
       <div className="flex justify-between items-end">
         <p className="font-semibold text-muted-foreground">Add ingredients to your recipe here.</p>
         {
-          (isTouched && error) && (
+          (touched && error) && (
             <div className="error-text">
               <Info size={14}/>
               {error}
@@ -93,7 +107,7 @@ export default function RecipeIngredients({ className, formIngredientValues, set
             placeholder="Amount"
             onChange={(e) => {
               const { value } = e.target;
-              if (!isTouched) setIsTouched(true);
+              if (!touched) setTouched(true);
               setIngredient((i) => ({ 
                 ...i,
                 amount: Number(value)
@@ -102,7 +116,7 @@ export default function RecipeIngredients({ className, formIngredientValues, set
             className="w-[100px]"
           />
           <Select value={ingredient.unit} onValueChange={(val) => {
-            if (!isTouched) setIsTouched(true);
+            if (!touched) setTouched(true);
             setIngredient((i) => ({ ...i, unit: val as Unit["abbreviation"] }));
           }}>
             <SelectTrigger className="w-[100px]">
@@ -126,7 +140,7 @@ export default function RecipeIngredients({ className, formIngredientValues, set
           autoCorrect="off"
           onChange={(e) => {
             const { value } = e.target;
-            if (!isTouched) setIsTouched(true);
+            if (!touched) setTouched(true);
             setIngredient((i) => ({
               ...i,
               name: value
@@ -139,7 +153,7 @@ export default function RecipeIngredients({ className, formIngredientValues, set
         placeholder="Note (optional)"
         onChange={(e) => {
           const { value } = e.target;
-          if (!isTouched) setIsTouched(true);
+          if (!touched) setTouched(true);
           
           setIngredient((i) => ({
             ...i,
@@ -165,9 +179,9 @@ export default function RecipeIngredients({ className, formIngredientValues, set
       </div>
       <button
         type="button"
-        disabled={!parsedIngredientInput.success || formIngredientValues.length >= MAX_INGREDIENT_AMOUNT}
+        disabled={!!error || formIngredientValues.length >= MAX_INGREDIENT_AMOUNT}
         onClick={() => {
-          setIngredients("ingredients", [...formIngredientValues, ingredient]);
+          append(ingredient);
           setIngredient({
             name: "",
             amount: 0,
@@ -175,7 +189,7 @@ export default function RecipeIngredients({ className, formIngredientValues, set
             isAllergen: false,
             note: ""
           });
-          setIsTouched(false);
+          setTouched(false);
         }}
         className="mealicious-button font-semibold flex justify-center items-center gap-3 py-2 rounded-md"
       >
@@ -197,12 +211,11 @@ export default function RecipeIngredients({ className, formIngredientValues, set
           </div>
           <div className="flex flex-col gap-3">
             {
-              formIngredientValues.map((i) => (
+              formIngredientValues.map((i, index) => (
                 <button
                   type="button"
                   key={i.name}
-                  onClick={() => setIngredients("ingredients", [...formIngredientValues.filter((fi) => fi.name !== i.name)]
-                  )}
+                  onClick={() => remove(index)}
                   className="cursor-pointer text-left overflow-hidden group items-center border border-border rounded-md hover:border-red-500 dark:hover:border-red-500 hover:bg-red-500 transition-colors shadow-sm"
                 >
                   <div className="flex flex-col gap-0.5 p-3">
@@ -232,10 +245,10 @@ export default function RecipeIngredients({ className, formIngredientValues, set
         )
       }
       { 
-        message && (
+        errors.ingredients?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {message}
+            {errors.ingredients.message}
           </div>
         )
       }

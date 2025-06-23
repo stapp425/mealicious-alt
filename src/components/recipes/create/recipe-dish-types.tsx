@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { InferSelectModel } from "drizzle-orm";
 import { dishType } from "@/db/schema/recipe";
-import { UseFormSetValue } from "react-hook-form";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { MAX_DISH_TYPES_LENGTH, RecipeCreation } from "@/lib/zod";
 import { useMemo, useState } from "react";
 import { Separator } from "@/components/ui/separator";
@@ -27,26 +27,30 @@ import { Separator } from "@/components/ui/separator";
 type DishType = Omit<InferSelectModel<typeof dishType>, "description">;
 
 type RecipeDishTypes = {
-  className?: string;
   readonly dishTypes: DishType[]; // dish types from database
-  formDishTypeValues: DishType[]; // dish types from form
-  setDishTypes: UseFormSetValue<RecipeCreation>;
-  message?: string;
 };
 
-export default function RecipeDishTypes({ className, dishTypes, formDishTypeValues, setDishTypes, message }: RecipeDishTypes) {
+export default function RecipeDishTypes({ dishTypes }: RecipeDishTypes) {
+  const {
+    control,
+    formState: {
+      errors
+    }
+  } = useFormContext<RecipeCreation>();
+  const { append, remove } = useFieldArray({ control, name: "dishTypes" });
+  const formDishTypeValues = useWatch({ control, name: "dishTypes" });
   const [dishType, setDishType] = useState<DishType>({
     id: "",
     name: ""
   });
 
   const remainingDishTypes = useMemo(() => {
-    const formDishTypeValuesSet = new Set(formDishTypeValues.map((fdt) => fdt.id));
-    return dishTypes.filter(({ id }) => !formDishTypeValuesSet.has(id));
+    const formDietValuesSet = new Set(formDishTypeValues.map((fd) => fd.id));
+    return dishTypes.filter(({ id }) => !formDietValuesSet.has(id));
   }, [formDishTypeValues, dishTypes]);
   
   return (
-    <div className={cn("field-container flex flex-col gap-3", className)}>
+    <div className="field-container flex flex-col gap-3">
       <h1 className="font-bold text-2xl">Dish Types</h1>
       <div className="flex-1 flex flex-col gap-3">
         <div className="relative flex justify-between gap-3">
@@ -74,9 +78,7 @@ export default function RecipeDishTypes({ className, dishTypes, formDishTypeValu
                         <CommandItem
                           key={dt.id}
                           value={dt.name}
-                          onSelect={(val) => {
-                            setDishType(dishTypes.find((dt) => dt.name === val)!);
-                          }}
+                          onSelect={(val) => setDishType(dishTypes.find((dt) => dt.name === val)!)}
                         >
                           {dt.name}
                           <Check
@@ -104,7 +106,7 @@ export default function RecipeDishTypes({ className, dishTypes, formDishTypeValu
               formDishTypeValues.length >= MAX_DISH_TYPES_LENGTH
             }
             onClick={() => {
-              setDishTypes("dishTypes", [...formDishTypeValues,  dishType]);
+              append(dishType);
               setDishType({
                 id: "",
                 name: ""
@@ -123,14 +125,14 @@ export default function RecipeDishTypes({ className, dishTypes, formDishTypeValu
               <Info size={16}/>
               You can remove a dish type by clicking on it.
             </div>
-            <div className="flex flex-wrap gap-x-1 gap-y-2">
+            <div className="flex flex-wrap gap-2">
               {
-                formDishTypeValues.map((dt) => (
+                formDishTypeValues.map((dt, index) => (
                   <button
                     type="button"
                     key={dt.id}
-                    onClick={() => setDishTypes("dishTypes", [...formDishTypeValues.filter((fdt) => fdt.id !== dt.id)])}
-                    className="cursor-pointer bg-orange-500 text-white font-semibold hover:bg-red-500 hover:text-white py-2 px-6 rounded-md odd:last:col-span-2 transition-colors"
+                    onClick={() => remove(index)}
+                    className="cursor-pointer mealicious-button text-white font-semibold hover:bg-red-500 hover:text-white py-2 px-6 rounded-md odd:last:col-span-2 transition-colors"
                   >
                     {dt.name}
                   </button>
@@ -150,10 +152,10 @@ export default function RecipeDishTypes({ className, dishTypes, formDishTypeValu
         </span>
       </div>
       {
-        message && (
+        errors.dishTypes?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {message}
+            {errors.dishTypes.message}
           </div>
         )
       }

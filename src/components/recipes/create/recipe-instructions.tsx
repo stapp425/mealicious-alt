@@ -5,52 +5,45 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { MAX_INSTRUCTION_CONTENT_LENGTH, MAX_INSTRUCTION_TIME_AMOUNT, MAX_INSTRUCTION_TITLE_LENGTH, MAX_INSTRUCTIONS_LENGTH, RecipeCreation } from "@/lib/zod";
-import { Clock, Info, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
-import { UseFormSetValue } from "react-hook-form";
+import { ArrowDown, ArrowUp, Clock, Info, Plus } from "lucide-react";
+import { useState } from "react";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import z from "zod";
 
-type RecipeInstructionsProps = {
-  className?: string;
-  setInstructions: UseFormSetValue<RecipeCreation>;
-  formInstructionValues: {
-    title: string;
-    time: number;
-    description: string;
-  }[];
-  message?: string
-};
+const InstructionInputSchema = z.object({
+  title: z.string({
+    required_error: "An instruction title is required."
+  }).nonempty({
+    message: "Instruction title cannot be empty."
+  }).max(MAX_INSTRUCTION_TITLE_LENGTH, {
+    message: `Instruction title length cannot exceed ${MAX_INSTRUCTION_TITLE_LENGTH.toLocaleString()} characters.`
+  }),
+  time: z.coerce.number({
+    required_error: "An instruction time is required."
+  }).positive({
+    message: "Instruction time must be positive."
+  }).max(MAX_INSTRUCTION_TIME_AMOUNT, {
+    message: `Instruction time cannot exceed ${MAX_INSTRUCTION_TIME_AMOUNT.toLocaleString()}.`
+  }),
+  description: z.string({
+    required_error: "A description is required."
+  }).nonempty({
+    message: "Description cannot be empty."
+  }).max(MAX_INSTRUCTION_CONTENT_LENGTH, {
+    message: `A maximum of ${MAX_INSTRUCTION_CONTENT_LENGTH.toLocaleString()} characters are allowed.`
+  })
+});
 
-
-
-export default function RecipeInstructions({ className, setInstructions, formInstructionValues, message }: RecipeInstructionsProps) {
+export default function RecipeInstructions() {
+  const {
+    control,
+    formState: {
+      errors
+    }
+  } = useFormContext<RecipeCreation>();
+  const { append, remove, swap } = useFieldArray({ control, name: "instructions" });
+  const formInstructionValues = useWatch({ control, name: "instructions" });
   const [isTouched, setIsTouched] = useState<boolean>(false);
-  const InstructionInputSchema = useMemo(() => z.object({
-      title: z.string({
-        required_error: "An instruction title is required."
-      }).nonempty({
-        message: "Instruction title cannot be empty."
-      }).max(MAX_INSTRUCTION_TITLE_LENGTH, {
-        message: `Instruction title length cannot exceed ${MAX_INSTRUCTION_TITLE_LENGTH.toLocaleString()} characters.`
-      }),
-      time: z.coerce.number({
-        required_error: "An instruction time is required."
-      }).positive({
-        message: "Instruction time must be positive."
-      }).max(MAX_INSTRUCTION_TIME_AMOUNT, {
-        message: `Instruction time cannot exceed ${MAX_INSTRUCTION_TIME_AMOUNT.toLocaleString()}.`
-      }),
-      description: z.string({
-        required_error: "A description is required."
-      }).nonempty({
-        message: "Description cannot be empty."
-      }).max(MAX_INSTRUCTION_CONTENT_LENGTH, {
-        message: `A maximum of ${MAX_INSTRUCTION_CONTENT_LENGTH.toLocaleString()} characters are allowed.`
-      })
-    }).refine((val) => formInstructionValues.every((fi) => fi.title !== val.title), {
-      message: "Title already exists in instructions."
-    }), [formInstructionValues]
-  );
 
   const [instruction, setInstruction] = useState<z.infer<typeof InstructionInputSchema>>({
     title: "",
@@ -62,7 +55,7 @@ export default function RecipeInstructions({ className, setInstructions, formIns
   const error = parsedInstruction.error?.errors[0]?.message;
   
   return (
-    <div className={cn("field-container flex flex-col gap-3", className)}>
+    <div className="field-container flex flex-col gap-3">
       <h1 className="text-2xl font-bold after:content-['*'] after:text-red-500">Instructions</h1>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
         <p className="font-semibold text-muted-foreground">
@@ -128,7 +121,7 @@ export default function RecipeInstructions({ className, setInstructions, formIns
         type="button"
         disabled={!parsedInstruction.success}
         onClick={() => {
-          setInstructions("instructions", [...formInstructionValues, instruction]);
+          append(instruction);
           setInstruction({
             title: "",
             time: 0,
@@ -158,14 +151,13 @@ export default function RecipeInstructions({ className, setInstructions, formIns
             <div className="flex flex-col gap-3">
               { 
                 formInstructionValues.map((i, index) => (
-                  <button
-                    type="button"
+                  <div
                     key={index}
-                    onClick={() => setInstructions("instructions", [...formInstructionValues.filter((fi) => fi.title !== i.title)])}
-                    className="cursor-pointer flex flex-col items-start gap-3 text-left overflow-hidden group border border-border rounded-md hover:border-red-500 dark:hover:border-red-500 hover:bg-red-500 p-3 transition-colors shadow-sm"
+                    onClick={() => remove(index)}
+                    className="cursor-pointer hover:bg-muted flex flex-col items-start gap-3 text-left overflow-hidden group border border-border rounded-md p-3 transition-colors shadow-sm"
                   >
                     <div className="w-full flex justify-between items-start gap-4">
-                      <div className="mealicious-button size-10 flex justify-center items-center group-hover:bg-red-700 p-3 rounded-full">
+                      <div className="mealicious-button size-10 flex justify-center items-center p-3 rounded-full">
                         {index + 1}
                       </div>
                       <div className="flex-1 flex flex-col gap-0.5 items-start">
@@ -177,7 +169,31 @@ export default function RecipeInstructions({ className, setInstructions, formIns
                       </div>
                     </div>
                     <p className="flex-1 text-left group-hover:text-white break-all">{i.description}</p>
-                  </button>
+                    <div className="flex gap-2.5">
+                      <button
+                        type="button"
+                        disabled={index <= 0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          swap(index, index - 1);
+                        }}
+                        className="font-semibold text-sm shrink-0 mealicious-button flex justify-center items-center gap-2 p-2 size-8 rounded-full"
+                      >
+                        <ArrowUp size={14}/>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index >= formInstructionValues.length - 1}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          swap(index, index + 1);
+                        }}
+                        className="font-semibold text-sm shrink-0 mealicious-button flex justify-center items-center gap-2 p-2 size-8 rounded-full"
+                      >
+                        <ArrowDown size={14}/>
+                      </button>
+                    </div>
+                  </div>
                 ))
               }
             </div>
@@ -186,10 +202,10 @@ export default function RecipeInstructions({ className, setInstructions, formIns
         )
       }
       { 
-        message && (
+        errors.instructions?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {message}
+            {errors.instructions.message}
           </div> 
         )
       }

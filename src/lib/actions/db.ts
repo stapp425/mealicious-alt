@@ -1,13 +1,25 @@
 "use server";
 
 import { authActionClient } from "@/safe-action";
-import { ImageDataSchema, RecipeCreationSchema, RecipeEditionSchema, RecipeSearchIndexDeletionSchema, RecipeSearchIndexInsertionSchema, RecipeSearchIndexSchema, ReviewCreationSchema } from "@/lib/zod";
+import {
+  ImageDataSchema,
+  MealCreationSchema,
+  MealEditionSchema,
+  RecipeCreationSchema,
+  RecipeEditionSchema,
+  RecipeSearchIndexDeletionSchema,
+  RecipeSearchIndexInsertionSchema,
+  RecipeSearchIndexSchema,
+  ReviewCreationSchema
+} from "@/lib/zod";
 import { db } from "@/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, exists, ilike, sql } from "drizzle-orm";
 import z from "zod";
 import { 
   ingredient, 
   instruction, 
+  meal, 
+  mealToRecipe, 
   recipe, 
   recipeFavorite, 
   recipeReview, 
@@ -193,7 +205,7 @@ export const updateRecipe = authActionClient
     const updateRecipeQuery = db.update(recipe)
       .set({
         title: editedRecipe.title,
-        description: editedRecipe.description,
+        description: editedRecipe.description || null,
         isPublic: editedRecipe.isPublic,
         cuisineId: editedRecipe.cuisine?.id || null,
         sourceName: editedRecipe.source?.name || null,
@@ -604,6 +616,125 @@ export const toggleReviewLike = authActionClient
     };
   });
 
+export const createMeal = authActionClient
+  .schema(z.object({
+    createdMeal: MealCreationSchema
+  }))
+  .action(async ({
+    ctx: { user },
+    parsedInput: { createdMeal }
+  }) => {
+    const [{ mealId }] = await db.insert(meal)
+      .values({
+        title: createdMeal.title,
+        description: createdMeal.description || undefined,
+        createdBy: user.id!,
+        tags: createdMeal.tags,
+        type: createdMeal.type
+      })
+      .returning({
+        mealId: meal.id
+      });
+
+    await db.insert(mealToRecipe)
+      .values(createdMeal.recipes.map((r) => ({
+        mealId: mealId,
+        recipeId: r.id
+      })));
+
+    revalidatePath("/meals");
+
+    return {
+      success: true as const,
+      message: "Meal successfully created!"
+    };
+  });
+
+export const updateMeal = authActionClient
+  .schema(z.object({
+    editedMeal: MealEditionSchema
+  }))
+  .action(async ({ ctx: { user }, parsedInput: { editedMeal } }) => {
+    const foundMeal = await db.query.meal.findFirst({
+      where: (meal, { eq }) => eq(meal.id, editedMeal.id),
+      columns: {
+        id: true,
+        createdBy: true
+      }
+    });
+
+    if (!foundMeal)
+      throw new Error("Meal does not exist.");
+
+    if (foundMeal.createdBy !== user.id)
+      throw new Error("You are not authorized to edit this meal.");
+
+    const updateMealQuery = db.update(meal)
+      .set({
+        title: editedMeal.title,
+        description: editedMeal.description || undefined,
+        tags: editedMeal.tags,
+        type: editedMeal.type,
+        updatedAt: new Date()
+      })
+      .where(eq(meal.id, foundMeal.id));
+
+    const deleteMealToRecipeQuery = db.delete(mealToRecipe)
+      .where(eq(mealToRecipe.mealId, foundMeal.id));
+
+    await Promise.all([
+      updateMealQuery,
+      deleteMealToRecipeQuery
+    ]);
+
+    await db.insert(mealToRecipe)
+      .values(editedMeal.recipes.map((r) => ({
+        mealId: foundMeal.id,
+        recipeId: r.id
+      })));
+
+    revalidatePath("/meals");
+
+    return {
+      success: true as const,
+      message: "Meal successfully edited!"
+    };
+  });
+
+export const deleteMeal = authActionClient
+  .schema(z.object({
+    mealId: z.string().nonempty({
+      message: "Meal ID cannot be empty."
+    })
+  }))
+  .action(async ({ 
+    ctx: { user },
+    parsedInput: { mealId }
+  }) => {
+    const foundMeal = await db.query.meal.findFirst({
+      where: (meal, { eq }) => eq(meal.id, mealId),
+      columns: {
+        id: true,
+        createdBy: true
+      }
+    });
+
+    if (!foundMeal)
+      throw new Error("Meal does not exist.");
+
+    if (foundMeal.createdBy !== user.id)
+      throw new Error("You are not authorized to delete this meal.");
+
+    await db.delete(meal).where(eq(meal.id, foundMeal.id));
+
+    revalidatePath("/meals");
+
+    return {
+      success: true as const,
+      message: "Meal successfully deleted!"
+    };
+  });
+
 export async function getReviewsByRecipe({ recipeId, limit, offset, userId }: { recipeId: string; limit: number; offset: number; userId?: string; }) {
   return db.query.recipeReview.findMany({
     where: (review, { eq, isNotNull, and }) => and(
@@ -679,4 +810,56 @@ export async function deleteRecipeQueryIndex(recipeId: string) {
     success: true as const,
     message: "Recipe query index successfully deleted!"
   };
+}
+
+export async function getSavedRecipesForMealForm({ userId, query, limit, offset }: { userId: string; query: string; limit: number; offset: number; }) {
+  return db.select({
+    recipes: sql<{
+      id: string;
+      title: string;
+      image: string;
+      description: string | null;
+    }[]>`
+      coalesce(
+        json_agg("saved_recipe_sub"."data"),
+        '[]'::json
+      )
+    `.as("recipes")
+  }).from(
+      db.select({ 
+        data: sql`
+          json_build_object(
+            'id', ${recipe.id},
+            'title', ${recipe.title},
+            'image', ${recipe.image},
+            'description', ${recipe.description}
+          )
+        `.as("data")
+      }).from(savedRecipe)
+        .where(and(
+          eq(savedRecipe.userId, userId),
+          ilike(recipe.title, `%${query}%`)
+        ))
+        .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
+        .limit(limit)
+        .offset(offset)
+        .orderBy(desc(savedRecipe.saveDate))
+        .as("saved_recipe_sub")
+    );
+}
+
+export async function getSavedRecipesForMealFormCount({ userId, query }: { userId: string, query: string }) {
+  return db.select({ count: count() })
+    .from(savedRecipe)
+    .where(and(
+      eq(savedRecipe.userId, userId),
+      exists(
+        db.select({ title: recipe.title })
+          .from(recipe)
+          .where(and(
+            eq(savedRecipe.recipeId, recipe.id),
+            ilike(recipe.title, `%${query}%`)
+          ))
+      )
+    ))
 }

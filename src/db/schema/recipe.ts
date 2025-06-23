@@ -2,7 +2,7 @@ import { sql, relations, InferInsertModel } from "drizzle-orm";
 import { pgTable, check, unique, primaryKey } from "drizzle-orm/pg-core";
 import { user, userToCuisine, userToDiet, userToDishType, userToNutrition } from "./user";
 import { mealToRecipe } from "./meal";
-import { Unit } from "@/db/data/unit";
+import { Unit } from "@/lib/types";
 import { nanoid } from "nanoid";
 
 export const recipe = pgTable("recipe", (t) => ({
@@ -122,7 +122,6 @@ export const instruction = pgTable("instruction", (t) => ({
 }), (t) => [
   check("index_check", sql`${t.index} > 0`),
   unique().on(t.recipeId, t.index),
-  unique().on(t.recipeId, t.title),
   check("instruction_time_check", sql`${t.time} > 0`)
 ]);
 
@@ -188,7 +187,8 @@ export const ingredient = pgTable("ingredient", (t) => ({
   }).notNull(),
   note: t.text("ing_note")
 }), (t) => [
-  check("unit_amount_check", sql`${t.amount} > 0`)
+  check("unit_amount_check", sql`${t.amount} > 0`),
+  unique().on(t.recipeId, t.name)
 ]);
 
 export const dishType = pgTable("dish_type", (t) => ({

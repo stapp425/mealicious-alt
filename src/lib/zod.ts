@@ -1,5 +1,5 @@
 import z from "zod";
-import { Unit, units } from "@/db/data/unit";
+import { MealType, mealTypes, Unit, units } from "@/lib/types";
 
 export const MAX_FILE_SIZE = 1024 * 1024 * 5; // 5MB
 
@@ -89,6 +89,10 @@ export const ImageDataSchema = z.object({
   })
 });
 
+export const MealTypeSchema = z.custom<MealType>((val) => val && typeof val === "string", {
+  message: "Value must be a valid meal type."
+}).refine((val) => mealTypes.includes(val));
+
 export const SignInFormSchema = z.object({
   email: EmailSchema,
   password: z.string({
@@ -129,10 +133,10 @@ export const MAX_INSTRUCTION_TITLE_LENGTH = 100;
 export const MAX_INSTRUCTION_TIME_AMOUNT = 999.99;
 export const MAX_INSTRUCTION_CONTENT_LENGTH = 500;
 export const MAX_INSTRUCTIONS_LENGTH = 50;
-
+export const MAX_MEAL_RECIPES = 5;
 export const MAX_REVIEW_CONTENT_LENGTH = 256;
 
-export const RecipeFormSchema = z.object({
+const RecipeFormSchema = z.object({
   title: z
     .string({
       required_error: "A title is required."
@@ -168,23 +172,23 @@ export const RecipeFormSchema = z.object({
   cookTime: z.coerce.number({
     required_error: "An amount is required."
   }).positive({
-    message: "Time must be positive."
+    message: "Cook time must be positive."
   }).max(MAX_COOK_TIME_AMOUNT, {
-    message: `Time cannot exceed ${MAX_COOK_TIME_AMOUNT.toLocaleString()}.`
+    message: `Cook time cannot exceed ${MAX_COOK_TIME_AMOUNT.toLocaleString()}.`
   }),
   prepTime: z.coerce.number({
     required_error: "An amount is required."
   }).positive({
-    message: "Time must be positive."
+    message: "Prep time must be positive."
   }).max(MAX_PREP_TIME_AMOUNT, {
-    message: `Time cannot exceed ${MAX_PREP_TIME_AMOUNT.toLocaleString()}.`
+    message: `Prep time cannot exceed ${MAX_PREP_TIME_AMOUNT.toLocaleString()}.`
   }),
   readyTime: z.coerce.number({
     required_error: "An amount is required."
   }).positive({
-    message: "Time must be positive."
+    message: "Ready time must be positive."
   }).max(MAX_READY_TIME_AMOUNT, {
-    message: `Time cannot exceed ${MAX_READY_TIME_AMOUNT.toLocaleString()}.`
+    message: `Ready time cannot exceed ${MAX_READY_TIME_AMOUNT.toLocaleString()}.`
   }),
   servingSize: z.object({
     amount: z.coerce.number({
@@ -264,8 +268,8 @@ export const RecipeFormSchema = z.object({
     adjective: z.string({
       required_error: "A cuisine adjective is required."
     }),
-    icon: z.string().nonempty({
-      message: "Cuisine icon cannot be empty."
+    icon: z.string({
+      required_error: "A cuisine icon is required."
     })
   })),
   instructions: z.array(z.object({
@@ -386,3 +390,39 @@ export const RecipeSearchSchema = z.object({
 });
 
 export type RecipeSearch = z.infer<typeof RecipeSearchSchema>;
+
+const MealFormSchema = z.object({
+  title: z.string().nonempty({
+    message: "Meal title cannot be empty."
+  }),
+  description: z.optional(z.string()),
+  tags: z.array(z.string().nonempty({
+    message: "Tag cannot be empty."
+  })),
+  type: MealTypeSchema,
+  recipes: z.array(z.object({
+    id: IdSchema,
+    title: z.string().nonempty({
+      message: "Recipe title cannot be empty."
+    }),
+    description: z.nullable(z.string()),
+    image: z.string().nonempty({
+      message: "Recipe image cannot be empty."
+    })
+  })).min(1, {
+    message: "A meal should have at least 1 recipe included."
+  }).max(MAX_MEAL_RECIPES, {
+    message: `A meal can have at most ${MAX_MEAL_RECIPES.toLocaleString()} recipes`
+  })
+});
+
+export const MealCreationSchema = MealFormSchema
+
+export const MealEditionSchema = MealFormSchema.extend({
+  id: IdSchema.nonempty({
+    message: "Meal ID cannot be empty."
+  })
+});
+
+export type MealCreation = z.infer<typeof MealCreationSchema>;
+export type MealEdition = z.infer<typeof MealEditionSchema>;
