@@ -41,7 +41,7 @@ export default function EditMealForm({ userId, meal }: EditMealFormProps) {
       toast.success(data?.message);
       replace(`/meals`);
     },
-    onError: () => toast.error("Failed to create meal.")
+    onError: () => toast.error("Failed to edit meal.")
   });
   
   const editMealForm = useForm<MealEdition>({
@@ -74,7 +74,7 @@ export default function EditMealForm({ userId, meal }: EditMealFormProps) {
           type="submit" 
           className="flex mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
         >
-          {editMealForm.formState.isSubmitting ? <Loader2 className="animate-spin"/> : "Create Meal"}
+          {editMealForm.formState.isSubmitting ? <Loader2 className="animate-spin"/> : "Edit Meal"}
         </button>
       </form>
     </FormProvider>
