@@ -1,4 +1,4 @@
-export const MAX_REVIEW_DISPLAY_LIMIT = 1;
+export const MAX_REVIEW_DISPLAY_LIMIT = 5;
 
 export const sorts = ["title", "prepTime", "saveDate"] as const;
 export const filters = ["created", "favorited"] as const;

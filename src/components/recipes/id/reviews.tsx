@@ -178,7 +178,7 @@ const ReviewCard = memo(({ review, isReviewLiked, isAuthor, setReviews }: Review
   });
   const { executeAsync: executeToggleLike, isExecuting: isExecuteToggleLikeExecuting } = useAction(toggleReviewLike, {
     onSuccess: ({ data }) => {
-      setIsLiked((l) => !l);
+      setIsLiked(data?.isLiked || false);
       setLikeCount((c) => data?.isLiked ? c + 1 : c - 1);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError || "Something went wrong.")
