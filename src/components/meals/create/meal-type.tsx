@@ -1,7 +1,7 @@
 "use client";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mealTypes } from "@/lib/types";
+import { type MealType, mealTypes } from "@/lib/types";
 import { MealCreation } from "@/lib/zod";
 import { Info } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
@@ -22,7 +22,7 @@ export default function MealType() {
       <p className="text-muted-foreground font-semibold">
         Add a meal type to your meal here.
       </p>
-      <Select value={mealType} onValueChange={(val) => setValue("type", val)}>
+      <Select value={mealType} onValueChange={(val) => setValue("type", val as MealType)}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Meal Type"/>
         </SelectTrigger>

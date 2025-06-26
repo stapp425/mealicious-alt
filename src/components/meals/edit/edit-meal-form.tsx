@@ -13,6 +13,7 @@ import MealType from "@/components/meals/edit/meal-type";
 import MealRecipeSearch from "@/components/meals/edit/meal-recipe-search";
 import { Loader2 } from "lucide-react";
 import { updateMeal } from "@/lib/actions/db";
+import { MealType as MealFormType } from "@/lib/types";
 
 type EditMealFormProps = {
   userId: string;
@@ -20,7 +21,7 @@ type EditMealFormProps = {
     id: string;
     title: string;
     description: string | null;
-    type: string;
+    type: MealFormType;
     tags: string[];
     createdBy: string | null;
     includedRecipes: {

@@ -33,7 +33,6 @@ export default function CreateMealForm({ userId }: CreateMealFormProps) {
     defaultValues: {
       title: "",
       description: "",
-      type: "",
       tags: [],
       recipes: []
     }
