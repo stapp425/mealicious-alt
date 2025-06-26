@@ -66,7 +66,7 @@ export default async function SearchResults({ count, searchParams }: SearchResul
           .innerJoin(dietTable, eq(recipeToDiet.dietId, dietTable.id))
           .where(and(
             eq(recipeToDiet.recipeId, recipe.id),
-            ilike(dietTable.name, `%${diet}%`),
+            eq(dietTable.name, diet),
           ))
       ) : undefined,
       dishType ? exists(
@@ -75,7 +75,7 @@ export default async function SearchResults({ count, searchParams }: SearchResul
           .innerJoin(dishTypeTable, eq(recipeToDishType.dishTypeId, dishTypeTable.id))
           .where(and(
             eq(recipeToDishType.recipeId, recipe.id),
-            ilike(dishTypeTable.name, `%${dishType}%`),
+            eq(dishTypeTable.name, dishType),
           ))
       ) : undefined,
       cuisine ? exists(
@@ -83,7 +83,7 @@ export default async function SearchResults({ count, searchParams }: SearchResul
           .from(cuisineTable)
           .where(and(
             eq(cuisineTable.id, recipe.cuisineId),
-            ilike(cuisineTable.adjective, `%${cuisine}%`)
+            eq(cuisineTable.adjective, cuisine)
           ))
       ) : undefined
     ))

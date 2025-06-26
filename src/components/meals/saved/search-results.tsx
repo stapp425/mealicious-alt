@@ -97,7 +97,7 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
       </div>
       <div className={cn(
         meals.length > 0
-          ? "w-full grid lg:grid-cols-2 gap-3"
+          ? "columns-xs *:break-inside-avoid space-y-3 sm:space-y-5"
           : "bg-sidebar border border-border w-full flex flex-col justify-center items-center gap-6 py-10 px-8 rounded-md"
       )}>
         {

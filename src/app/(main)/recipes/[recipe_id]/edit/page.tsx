@@ -52,7 +52,6 @@ export default async function Page({ params }: { params: Promise<{ recipe_id: st
       },
       nutritionalFacts: {
         columns: {
-          id: true,
           amount: true,
           unit: true
         },

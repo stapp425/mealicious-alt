@@ -67,7 +67,6 @@ type EditRecipeFormProps = {
       };
     }[];
     nutritionalFacts: {
-      id: string;
       unit: Unit["abbreviation"];
       amount: string;
       nutrition: {
@@ -96,7 +95,6 @@ type EditRecipeFormProps = {
 };
 
 type Nutrition = {
-  id: string;
   unit: Unit["abbreviation"];
   amount: string;
   nutrition: {

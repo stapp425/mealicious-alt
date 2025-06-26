@@ -21,7 +21,6 @@ export default async function Page({ params }: PageProps) {
       },
       nutritionalFacts: {
         columns: {
-          id: true,
           amount: true,
           unit: true
         },
@@ -29,8 +28,7 @@ export default async function Page({ params }: PageProps) {
           nutrition: {
             columns: {
               id: true,
-              name: true,
-              isMacro: true
+              name: true
             }
           }
         }

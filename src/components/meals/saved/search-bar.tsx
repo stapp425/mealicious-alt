@@ -58,7 +58,7 @@ export default function SearchBar() {
       <form onSubmit={onSubmit} className="w-full flex flex-col items-start gap-3">
         <div className="w-full flex justify-between items-center gap-3">
           <Input 
-            placeholder="Search Meal..."
+            placeholder="Meal Title (optional)"
             {...register("query")}
           />
           <button

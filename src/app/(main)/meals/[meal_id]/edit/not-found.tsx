@@ -12,7 +12,7 @@ export default function NotFound() {
       <div className="bg-sidebar border border-border w-full max-w-[500px] flex flex-col justify-center items-center gap-6 mx-auto py-10 px-8 rounded-md">
         <SearchX size={96}/>
         <h1 className="text-xl text-center font-bold">
-          The requested recipe was not found!
+          The requested meal was not found!
         </h1>
         <Separator />
         <button onClick={() => back()} className="mealicious-button flex items-center gap-2 font-semibold text-white py-2 px-4 rounded-md">

@@ -34,7 +34,7 @@ export function Favorite({ recipeId, isRecipeFavorite, favoriteCount }: Favorite
         isExecuting ? (
           <Loader2 size={24} className="animate-spin"/>
         ) : (
-          <div className="w-full flex flex-col lg:flex-row justify-center items-center gap-1.5 lg:gap-3">
+          <div className="w-full flex flex-col lg:flex-row justify-center items-center gap-1.5 lg:gap-4.5">
             <Heart size={28} fill={isFavorite ? "white" : "none"}/>
             <div className="flex flex-col">
               <span className="font-semibold hidden md:block">{isFavorite ? "Unfavorite" : "Favorite"}</span>
@@ -86,9 +86,9 @@ export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedPr
       disabled={isExecuting || isAuthor}
       onClick={async () => await executeAsync({ recipeId })}
       className={cn(
-        "text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center lg:gap-4.5 py-2 md:py-3 rounded-sm transition-colors",
+        "text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center gap-1.5 lg:gap-4.5 py-2 md:py-3 rounded-sm transition-colors",
         isAuthor 
-          ? "bg-green-500 gap-1.5"
+          ? "bg-green-500"
           : isSaved
             ? "cursor-pointer disabled:cursor-not-allowed disabled:bg-red-300 bg-red-500 hover:bg-red-700"
             : "cursor-pointer disabled:cursor-not-allowed disabled:bg-green-300 bg-green-500 hover:bg-green-700"

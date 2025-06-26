@@ -140,9 +140,6 @@ export const nutrition = pgTable("nutrition", (t) => ({
 }));
 
 export const recipeToNutrition = pgTable("recipe_to_nutrition", (t) => ({
-  id: t.text("rn_id")
-    .primaryKey()
-    .$default(() => nanoid()),
   recipeId: t.text("recipe_id")
     .notNull()
     .references(() => recipe.id, {

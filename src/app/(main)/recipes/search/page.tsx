@@ -73,7 +73,7 @@ export default async function Page({ searchParams }: PageProps) {
           .innerJoin(dietTable, eq(recipeToDiet.dietId, dietTable.id))
           .where(and(
             eq(recipeToDiet.recipeId, recipe.id),
-            ilike(dietTable.name, `%${loadedSearchParams.diet}%`),
+            eq(dietTable.name, loadedSearchParams.diet),
           ))
       ) : undefined,
       loadedSearchParams.dishType ? exists(
@@ -82,7 +82,7 @@ export default async function Page({ searchParams }: PageProps) {
           .innerJoin(dishTypeTable, eq(recipeToDishType.dishTypeId, dishTypeTable.id))
           .where(and(
             eq(recipeToDishType.recipeId, recipe.id),
-            ilike(dishTypeTable.name, `%${loadedSearchParams.dishType}%`),
+            eq(dishTypeTable.name, loadedSearchParams.dishType),
           ))
       ) : undefined,
       loadedSearchParams.cuisine ? exists(
@@ -90,7 +90,7 @@ export default async function Page({ searchParams }: PageProps) {
           .from(cuisineTable)
           .where(and(
             eq(cuisineTable.id, recipe.cuisineId),
-            ilike(cuisineTable.adjective, `%${loadedSearchParams.cuisine}%`)
+            eq(cuisineTable.adjective, loadedSearchParams.cuisine)
           ))
       ) : undefined
     ));

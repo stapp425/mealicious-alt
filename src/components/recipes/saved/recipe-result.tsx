@@ -67,7 +67,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
   const { executeAsync: executeDeleteRecipe, isExecuting: isDeleteRecipeExecuting } = useAction(deleteRecipe, {
     onSuccess: ({ data }) => {
       setOpen(false);
-      toast.warning(data?.message || "Recipe has been deleted!");
+      toast.warning(data?.message || "Recipe has been succesfully deleted!");
       refresh();
     },
     onError: ({ error: { serverError } }) => toast.error(serverError || "Something went wrong.")

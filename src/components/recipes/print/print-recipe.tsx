@@ -19,12 +19,12 @@ type PrintRecipeProps = {
       name: string;
     } | null;
     nutritionalFacts: {
-      id: string;
       amount: string;
       unit: string;
       nutrition: {
+        id: string;
         name: string;
-      } | null;
+      };
     }[];
     ingredients: {
       id: string;
@@ -82,8 +82,8 @@ export default function PrintRecipe({ recipe }: PrintRecipeProps) {
               const foundUnit = units.find((u) => u.abbreviation === n.unit)!;
 
               return (
-                <li key={n.id} className="list-inside list-disc">
-                  <b>{n.nutrition?.name}</b>: {n.amount} {Number(n.amount) !== 1 ? foundUnit.pluralName : foundUnit.name} ({n.unit})
+                <li key={n.nutrition.id} className="list-inside list-disc">
+                  <b>{n.nutrition.name}</b>: {n.amount} {Number(n.amount) !== 1 ? foundUnit.pluralName : foundUnit.name} ({n.unit})
                 </li>
               );
             })
