@@ -135,6 +135,7 @@ export const MAX_INSTRUCTION_CONTENT_LENGTH = 500;
 export const MAX_INSTRUCTIONS_LENGTH = 50;
 export const MAX_MEAL_RECIPES = 5;
 export const MAX_REVIEW_CONTENT_LENGTH = 256;
+export const MAX_MEAL_CALORIES = 10000;
 
 const RecipeFormSchema = z.object({
   title: z
@@ -426,3 +427,18 @@ export const MealEditionSchema = MealFormSchema.extend({
 
 export type MealCreation = z.infer<typeof MealCreationSchema>;
 export type MealEdition = z.infer<typeof MealEditionSchema>;
+
+export const MealSearchSchema = z.object({
+  query: z.string(),
+  mealType: z.optional(MealTypeSchema),
+  maxCalories: z.coerce.number()
+    .int({
+      message: "Amount must be an integer."
+    }).nonnegative({
+      message: "Amount must be not negative."
+    }).max(MAX_MEAL_CALORIES, {
+      message: `Amount must be at most ${MAX_MEAL_CALORIES}`
+    })
+});
+
+export type MealSearch = z.infer<typeof MealSearchSchema>;

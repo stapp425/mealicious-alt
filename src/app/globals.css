@@ -159,4 +159,8 @@
   .error-text {
     @apply flex items-center gap-2 text-xs text-red-500
   }
+
+  @page {
+    margin: 0.25in;
+  }
 }

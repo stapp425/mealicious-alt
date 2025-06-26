@@ -27,18 +27,14 @@ export function Favorite({ recipeId, isRecipeFavorite, favoriteCount }: Favorite
   return (
     <button 
       disabled={isExecuting}
-      onClick={async () => {
-        await executeAsync({
-          recipeId 
-        });
-      }}
+      onClick={async () => await executeAsync({ recipeId })}
       className="cursor-pointer disabled:bg-rose-300 bg-rose-400 hover:bg-rose-500 text-white text-xs sm:text-sm flex flex-col justify-center items-center py-2 md:py-3 rounded-sm transition-colors"
     >
       {
         isExecuting ? (
           <Loader2 size={24} className="animate-spin"/>
         ) : (
-          <div className="w-full flex flex-col lg:flex-row justify-center items-center lg:gap-3">
+          <div className="w-full flex flex-col lg:flex-row justify-center items-center gap-1.5 lg:gap-3">
             <Heart size={28} fill={isFavorite ? "white" : "none"}/>
             <div className="flex flex-col">
               <span className="font-semibold hidden md:block">{isFavorite ? "Unfavorite" : "Favorite"}</span>
@@ -88,15 +84,11 @@ export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedPr
   return (
     <button 
       disabled={isExecuting || isAuthor}
-      onClick={async () => {
-        await executeAsync({ 
-          recipeId
-        });
-      }}
+      onClick={async () => await executeAsync({ recipeId })}
       className={cn(
         "text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center lg:gap-4.5 py-2 md:py-3 rounded-sm transition-colors",
         isAuthor 
-          ? "bg-green-500 gap-2"
+          ? "bg-green-500 gap-1.5"
           : isSaved
             ? "cursor-pointer disabled:cursor-not-allowed disabled:bg-red-300 bg-red-500 hover:bg-red-700"
             : "cursor-pointer disabled:cursor-not-allowed disabled:bg-green-300 bg-green-500 hover:bg-green-700"

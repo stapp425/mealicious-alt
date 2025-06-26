@@ -1,6 +1,6 @@
 export const MAX_REVIEW_DISPLAY_LIMIT = 5;
 
-export const sorts = ["title", "prepTime", "saveDate"] as const;
+export const sorts = ["title", "calories", "prepTime", "saveDate"] as const;
 export const filters = ["created", "favorited"] as const;
 
 export type Sort = typeof sorts[number];
@@ -37,7 +37,6 @@ export type Statistics = {
 };
 
 export type Rating = `${"one" | "two" | "three" | "four" | "five"}StarCount`;
-
 
 export const units = [
   {
@@ -138,5 +137,5 @@ export const unitNames = units.map((u) => u.name);
 export const unitPluralNames = units.map((u) => u.pluralName);
 export const unitAbbreviations = units.map((u) => u.abbreviation);
 
-export const mealTypes = ["breakfast", "brunch", "lunch", "dinner", "supper", "snack"];
+export const mealTypes = ["breakfast", "brunch", "lunch", "dinner", "supper", "snack"] as const;
 export type MealType = typeof mealTypes[number];

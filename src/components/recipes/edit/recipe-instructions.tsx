@@ -154,7 +154,7 @@ export default function RecipeInstructions() {
                   <div
                     key={index}
                     onClick={() => remove(index)}
-                    className="cursor-pointer hover:bg-muted flex flex-col items-start gap-3 text-left overflow-hidden group border border-border rounded-md p-3 transition-colors shadow-sm"
+                    className="cursor-pointer hover:bg-muted flex flex-col items-start gap-3 text-left overflow-hidden border border-border rounded-md p-3 transition-colors shadow-sm"
                   >
                     <div className="w-full flex justify-between items-start gap-4">
                       <div className="mealicious-button size-10 flex justify-center items-center p-3 rounded-full">
@@ -168,7 +168,7 @@ export default function RecipeInstructions() {
                         </div>
                       </div>
                     </div>
-                    <p className="flex-1 text-left group-hover:text-white break-all">{i.description}</p>
+                    <p className="flex-1 text-left break-all">{i.description}</p>
                     <div className="flex gap-2.5">
                       <button
                         type="button"

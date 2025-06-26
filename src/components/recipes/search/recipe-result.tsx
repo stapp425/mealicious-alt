@@ -1,11 +1,14 @@
 "use client";
 
-import { ArrowDownToLine, Clock, Earth, Heart, Star } from "lucide-react";
+import { ArrowDownToLine, Clock, Earth, Flame, Heart, Star } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import defaultProfilePicture from "@/img/default/default-pfp.svg";
+import { getDateDifference } from "@/lib/utils";
 
 type RecipeResultProps = {
   recipe: {
@@ -13,15 +16,14 @@ type RecipeResultProps = {
     title: string;
     image: string;
     prepTime: string;
-    sourceName: string | null;
-    sourceUrl: string | null;
-    cuisine: {
+    calories: number;
+    creator: {
       id: string;
-      adjective: string;
-      icon: string;
+      name: string;
+      image: string | null;
     } | null;
-    recipeStatistics: {
-      savedCount: number;
+    statistics: {
+      saveCount: number;
       favoriteCount: number;
       fiveStarCount: number;
       fourStarCount: number;
@@ -29,53 +31,59 @@ type RecipeResultProps = {
       twoStarCount: number;
       oneStarCount: number;
     };
-  };
+    cuisine: {
+      id: string;
+      adjective: string;
+      icon: string;
+    } | null;
+    sourceName: string | null;
+    sourceUrl: string | null;
+    createdAt: Date;
+};
 };
 
 export default function RecipeResult({ recipe }: RecipeResultProps) {
   const { push } = useRouter();
 
   const totalReviewCount = 
-    recipe.recipeStatistics.fiveStarCount + 
-    recipe.recipeStatistics.fourStarCount + 
-    recipe.recipeStatistics.threeStarCount + 
-    recipe.recipeStatistics.twoStarCount + 
-    recipe.recipeStatistics.oneStarCount;
+    recipe.statistics.fiveStarCount + 
+    recipe.statistics.fourStarCount + 
+    recipe.statistics.threeStarCount + 
+    recipe.statistics.twoStarCount + 
+    recipe.statistics.oneStarCount;
 
   const overallRating = (
-    recipe.recipeStatistics.fiveStarCount * 5 + 
-    recipe.recipeStatistics.fourStarCount * 4 + 
-    recipe.recipeStatistics.threeStarCount * 3 + 
-    recipe.recipeStatistics.twoStarCount * 2 + 
-    recipe.recipeStatistics.oneStarCount * 1
+    recipe.statistics.fiveStarCount * 5 + 
+    recipe.statistics.fourStarCount * 4 + 
+    recipe.statistics.threeStarCount * 3 + 
+    recipe.statistics.twoStarCount * 2 + 
+    recipe.statistics.oneStarCount * 1
   ) / totalReviewCount || 0;
   
   return (
     <div 
       onClick={() => push(`/recipes/${recipe.id}`)}
-      className="cursor-pointer relative bg-sidebar hover:bg-muted border border-border flex flex-col items-start gap-4 rounded-md p-4 transition-colors"
+      className="group cursor-pointer relative bg-sidebar hover:bg-muted border border-border flex flex-col items-start gap-2.5 rounded-md p-4 transition-colors"
     >
-      <div className="relative w-full h-[300px] sm:h-[175px] p-3">
+      <div className="relative w-full h-[300px] sm:h-[225px] rounded-sm overflow-hidden">
         <Image 
           src={recipe.image}
           alt={`Image of ${recipe.title}`}
           fill
-          className="rounded-sm object-cover"
+          className="object-cover"
         />
+        <div className="size-full bg-black opacity-0 group-hover:opacity-25 transition-opacity"/>
         {
           recipe.sourceUrl && (
             <Link
               href={recipe.sourceUrl}
               target="_blank"
-              className="absolute bottom-2 left-2 bg-white text-black p-1.5 rounded-sm"
+              className="absolute bottom-3 left-3 bg-white text-black p-1.5 rounded-sm"
             >
               <Earth size={20}/>
             </Link>
           )
         }
-      </div>
-      <div className="w-full flex justify-between items-start gap-3">
-        <h2 className="font-bold line-clamp-2 text-left text-wrap hyphens-auto truncate">{recipe.title}</h2>
         {
           recipe.cuisine && (
             <Tooltip>
@@ -85,7 +93,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                   alt={`Flag of ${recipe.cuisine.adjective} cuisine`}
                   width={35}
                   height={35}
-                  className="object-cover rounded-full"
+                  className="absolute bottom-3 right-3 object-cover rounded-full"
                 />
               </TooltipTrigger>
               <TooltipContent>
@@ -95,26 +103,53 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
           )
         }
       </div>
-      <div className="flex items-center gap-2 font-semibold text-sm mt-auto">
-        <Clock size={14}/>
-        {Math.floor(Number(recipe.prepTime))} mins
+      <h2 className="font-bold line-clamp-2 text-left text-wrap hyphens-auto truncate">{recipe.title}</h2>
+      <div className="flex items-center gap-3 min-h-[25px]">
+        <div className="flex items-center gap-1.5 font-semibold text-sm">
+          <Flame size={14} fill="var(--primary)"/>
+          <span>{Number(recipe.calories).toLocaleString()} Calories</span>
+        </div>
+        <Separator orientation="vertical"/>
+        <div className="flex items-center gap-1.5 font-semibold text-sm">
+          <Clock size={14}/>
+          <span>{Math.floor(Number(recipe.prepTime))} min</span>
+        </div>
       </div>
-      <div className="w-full border border-border flex items-center rounded-sm">
-        <div className="flex-1 flex flex-col justify-center items-center gap-0.75 py-2 rounded-sm">
-          <Star size={28} fill="#ffba00" strokeWidth={0}/>
+      {
+        recipe.creator && (
+          <div className="flex items-center gap-2">
+            <Avatar>
+              <AvatarImage 
+                src={recipe.creator.image || defaultProfilePicture}
+                alt={`Profile picture of ${recipe.creator.name}`}
+              />
+              <AvatarFallback className="bg-mealicious-primary text-white">
+                {recipe.creator.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="font-semibold text-sm">{recipe.creator.name}</span>
+          </div>
+        )
+      }
+      <div className="min-h-[25px] flex items-center gap-3 mt-auto">
+        <div className="flex-1 flex items-center gap-1.25 rounded-sm">
+          <Star size={20} fill="#ffba00" strokeWidth={0}/>
           <span className="font-semibold">{overallRating > 0 ? overallRating.toFixed(1) : "-"}</span>
         </div>
         <Separator orientation="vertical"/>
-        <div className="flex-1 flex flex-col justify-center items-center gap-0.75 py-2 rounded-sm">
-          <Heart size={28} fill="#ff637e" strokeWidth={0}/>
-          <span className="font-semibold">{recipe.recipeStatistics.favoriteCount || "-"}</span>
+        <div className="flex-1 flex items-center gap-1.25 rounded-sm">
+          <Heart size={20} fill="#ff637e" strokeWidth={0}/>
+          <span className="font-semibold">{recipe.statistics.favoriteCount || "-"}</span>
         </div>
         <Separator orientation="vertical"/>
-        <div className="flex-1 flex flex-col justify-center items-center gap-0.75 py-2 rounded-sm">
-          <ArrowDownToLine size={28}/>
-          <span className="font-semibold">{recipe.recipeStatistics.favoriteCount || "-"}</span>
+        <div className="flex-1 flex items-center gap-1.25 rounded-sm">
+          <ArrowDownToLine size={20} stroke="var(--muted-foreground)"/>
+          <span className="font-semibold">{recipe.statistics.favoriteCount || "-"}</span>
         </div>
       </div>
+      <span className="italic text-muted-foreground text-sm">
+        Created {getDateDifference(recipe.createdAt)} ago
+      </span>
     </div>
   );
 }

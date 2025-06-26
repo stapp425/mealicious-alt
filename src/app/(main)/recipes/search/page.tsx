@@ -5,6 +5,20 @@ import { SearchParams } from "nuqs";
 import { parseAsString, parseAsIndex, createLoader } from "nuqs/server";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
+import { Suspense } from "react";
+import { nanoid } from "nanoid";
+import Pagination from "@/components/recipes/search/pagination";
+import {
+  recipe,
+  recipeToDiet,
+  diet as dietTable,
+  recipeToDishType,
+  dishType as dishTypeTable,
+  cuisine as cuisineTable
+} from "@/db/schema";
+import { and, count, eq, exists, ilike } from "drizzle-orm";
+import { MAX_GRID_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
+import SearchResultsSkeleton from "@/components/recipes/search/search-results-skeleton";
 
 const loadSearchParams = createLoader({
   query: parseAsString.withDefault(""),
@@ -19,12 +33,12 @@ type PageProps = {
 };
 
 export const metadata: Metadata = {
-  title: "Recipe Search Page | Mealicious",
+  title: "Recipe Search | Mealicious",
   description: "Search for public mealicious recipes here!"
 };
 
 export default async function Page({ searchParams }: PageProps) {
-  const { query, cuisine, diet, dishType, page } = await loadSearchParams(searchParams);
+  const loadedSearchParams = await loadSearchParams(searchParams);
 
   const dietsQuery = db.query.diet.findMany({
     columns: {
@@ -48,29 +62,63 @@ export default async function Page({ searchParams }: PageProps) {
     }
   });
 
-  const [diets, dishTypes, cuisines] = await Promise.all([
+  const searchRecipesCountQuery = db.select({ count: count() })
+    .from(recipe)
+    .where(and(
+      eq(recipe.isPublic, true),
+      ilike(recipe.title, `%${loadedSearchParams.query}%`),
+      loadedSearchParams.diet ? exists(
+        db.select()
+          .from(recipeToDiet)
+          .innerJoin(dietTable, eq(recipeToDiet.dietId, dietTable.id))
+          .where(and(
+            eq(recipeToDiet.recipeId, recipe.id),
+            ilike(dietTable.name, `%${loadedSearchParams.diet}%`),
+          ))
+      ) : undefined,
+      loadedSearchParams.dishType ? exists(
+        db.select()
+          .from(recipeToDishType)
+          .innerJoin(dishTypeTable, eq(recipeToDishType.dishTypeId, dishTypeTable.id))
+          .where(and(
+            eq(recipeToDishType.recipeId, recipe.id),
+            ilike(dishTypeTable.name, `%${loadedSearchParams.dishType}%`),
+          ))
+      ) : undefined,
+      loadedSearchParams.cuisine ? exists(
+        db.select()
+          .from(cuisineTable)
+          .where(and(
+            eq(cuisineTable.id, recipe.cuisineId),
+            ilike(cuisineTable.adjective, `%${loadedSearchParams.cuisine}%`)
+          ))
+      ) : undefined
+    ));
+
+  const [diets, dishTypes, cuisines, [{ count: searchedRecipesCount }]] = await Promise.all([
     dietsQuery,
     dishTypesQuery,
-    cuisinesQuery
+    cuisinesQuery,
+    searchRecipesCountQuery
   ]);
   
   return (
     <div className="flex-1 max-w-[750px] text-center sm:text-left w-full flex flex-col gap-4 p-4 mx-auto">
       <h1 className="font-bold text-4xl">Recipe Search</h1>
-      <h2 className="font-semibold text-lg text-muted-foreground">Search your favorite recipes here!</h2>
+      <h2 className="font-semibold text-lg text-muted-foreground">Search mealicious recipes here!</h2>
       <SearchBar
         cuisines={cuisines}
         diets={diets}
         dishTypes={dishTypes}
       />
       <Separator />
-      <SearchResults 
-        query={query}
-        cuisine={cuisine}
-        diet={diet}
-        dishType={dishType}
-        page={page}
-      />
+      <Suspense key={nanoid()} fallback={<SearchResultsSkeleton />}>
+        <SearchResults 
+          count={searchedRecipesCount}
+          searchParams={loadedSearchParams}
+        />
+      </Suspense>
+      <Pagination totalPages={Math.ceil(searchedRecipesCount / MAX_GRID_RECIPE_DISPLAY_LIMIT)}/>
     </div>
   );
 }

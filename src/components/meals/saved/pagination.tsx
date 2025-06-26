@@ -10,7 +10,7 @@ type PaginationProps = {
 };
 
 export default function Pagination({ totalPages }: PaginationProps) {
-  const pagination = useQueryPagination({ totalPages });
+  const pagination = useQueryPagination(totalPages);
 
   return (
     <div className="flex items-center h-12 gap-3 mx-auto mt-auto">
@@ -32,9 +32,9 @@ export default function Pagination({ totalPages }: PaginationProps) {
           <button
             key={`page-${p}`}
             onClick={() => pagination.setToPage(p - 1)}
-            disabled={p - 1 === pagination.page}
+            disabled={p - 1 === pagination.currentPage}
             className={cn(
-              pagination.page === p - 1 ? "bg-mealicious-primary text-white" : "border border-foreground text-foreground",
+              pagination.currentPage === p - 1 ? "bg-mealicious-primary text-white" : "border border-foreground text-foreground",
               "cursor-pointer disabled:cursor-not-allowed h-full flex justify-center items-center min-w-10 font-semibold px-3 rounded-md transition-colors"
             )}
           >

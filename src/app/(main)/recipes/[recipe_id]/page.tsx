@@ -163,7 +163,7 @@ export default async function Page({ params }: PageProps) {
                 target="_blank"
                 className="absolute top-3 left-3 max-w-[150px] bg-background text-foreground font-semibold text-sm flex items-center gap-2 py-1.5 px-3 rounded-sm shadow-md"
               >
-                <Earth size={16}/>
+                <Earth size={16} className="shrink-0"/>
                 <span className="truncate underline">{foundRecipe.sourceName}</span>
               </Link>
             )

@@ -24,10 +24,7 @@ export default function SearchBar() {
           if (e.key !== "Enter") return;
           setPage(0);
         }}
-        onChange={(e) => {
-          const { value } = e.target;
-          setQuery(value);
-        }}
+        onChange={(e) => setQuery(e.target.value)}
       />
       <button
         onClick={() => setPage(0)}

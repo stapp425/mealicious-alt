@@ -1,79 +1,62 @@
 import { db } from "@/db";
-import { diet as dietTable, recipeToDiet, dishType as dishTypeTable, cuisine as cuisineTable, recipeToDishType, recipe } from "@/db/schema";
+import { 
+  diet as dietTable, recipeToDiet,
+  dishType as dishTypeTable,
+  cuisine as cuisineTable,
+  recipeToDishType, recipe,
+  user,
+  recipeStatistics,
+  recipeToNutrition,
+  nutrition
+} from "@/db/schema";
 import { MAX_GRID_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
-import Pagination from "@/components/recipes/search/pagination";
-import { and, count, eq, exists, ilike } from "drizzle-orm";
+import { and, eq, exists, ilike, sql } from "drizzle-orm";
 import { Info, SearchX } from "lucide-react";
 import RecipeResult from "@/components/recipes/search/recipe-result";
 
 type SearchResultsProps = {
-  query: string;
-  cuisine: string;
-  diet: string;
-  dishType: string;
-  page: number;
+  count: number;
+  searchParams: {
+    query: string;
+    cuisine: string;
+    diet: string;
+    dishType: string;
+    page: number;
+  }
 };
 
-export default async function SearchResults({ query, cuisine, diet, dishType, page }: SearchResultsProps) {  
-  const searchRecipesQuery = db.query.recipe.findMany({
-    columns: {
-      id: true,
-      title: true,
-      image: true,
-      prepTime: true,
-      sourceName: true,
-      sourceUrl: true
-    },
-    where: (recipe, { and, eq, ilike, exists }) => and(
-      eq(recipe.isPublic, true),
-      ilike(recipe.title, `%${query}%`),
-      diet ? exists(
-        db.select()
-          .from(recipeToDiet)
-          .innerJoin(dietTable, eq(recipeToDiet.dietId, dietTable.id))
-          .where(and(
-            eq(recipeToDiet.recipeId, recipe.id),
-            ilike(dietTable.name, `%${diet}%`),
-          ))
-      ) : undefined,
-      dishType ? exists(
-        db.select()
-          .from(recipeToDishType)
-          .innerJoin(dishTypeTable, eq(recipeToDishType.dishTypeId, dishTypeTable.id))
-          .where(and(
-            eq(recipeToDishType.recipeId, recipe.id),
-            ilike(dishTypeTable.name, `%${dishType}%`),
-          ))
-      ) : undefined,
-      cuisine ? exists(
-        db.select()
-          .from(cuisineTable)
-          .where(and(
-            eq(cuisineTable.id, recipe.cuisineId),
-            ilike(cuisineTable.adjective, `%${cuisine}%`)
-          ))
-      ) : undefined
-    ),
-    with: {
-      recipeStatistics: {
-        columns: {
-          recipeId: false
-        }
-      },
-      cuisine: {
-        columns: {
-          id: true,
-          adjective: true,
-          icon: true
-        }
-      }
-    },
-    limit: MAX_GRID_RECIPE_DISPLAY_LIMIT,
-    offset: page * MAX_GRID_RECIPE_DISPLAY_LIMIT
-  });
-
-  const searchRecipesCountQuery = db.select({ count: count() })
-    .from(recipe)
+export default async function SearchResults({ count, searchParams }: SearchResultsProps) {  
+  const { query, cuisine, diet, dishType, page } = searchParams;
+  
+  const searchedRecipes = await db.select({
+    id: recipe.id,
+    title: recipe.title,
+    image: recipe.image,
+    prepTime: recipe.prepTime,
+    calories: sql<number>`"recipe_to_nutrition_sub"."calories"`.as("calories"),
+    creator: sql<{
+      id: string;
+      name: string;
+      image: string | null;
+    } | null>`"creator_sub"."data"`.as("creator"),
+    statistics: sql<{
+      saveCount: number;
+      favoriteCount: number;
+      fiveStarCount: number;
+      fourStarCount: number;
+      threeStarCount: number;
+      twoStarCount: number;
+      oneStarCount: number;
+    }>`"recipe_stats_sub"."data"`.as("stats"),
+    cuisine: sql<{
+      id: string;
+      adjective: string;
+      icon: string;
+    } | null>`"cuisine_sub"."data"`.as("cuisine"),
+    sourceName: recipe.sourceName,
+    sourceUrl: recipe.sourceUrl,
+    createdAt: recipe.createdAt
+  }).from(recipe)
     .where(and(
       eq(recipe.isPublic, true),
       ilike(recipe.title, `%${query}%`),
@@ -103,18 +86,75 @@ export default async function SearchResults({ query, cuisine, diet, dishType, pa
             ilike(cuisineTable.adjective, `%${cuisine}%`)
           ))
       ) : undefined
-    ));
-
-  const [searchedRecipes, [{ count: searchedRecipesCount }]] = await Promise.all([searchRecipesQuery, searchRecipesCountQuery]);
-  const totalPages = Math.ceil(searchedRecipesCount / MAX_GRID_RECIPE_DISPLAY_LIMIT);
+    ))
+    .leftJoinLateral(
+      db.select({
+        data: sql`
+          json_build_object(
+            'id', ${user.id},
+            'name', ${user.name},
+            'image', ${user.image}
+          )
+        `.as("data")
+      }).from(user)
+        .where(eq(recipe.createdBy, user.id))
+        .as("creator_sub"),
+      sql`true`
+    )
+    .innerJoinLateral(
+      db.select({
+        data: sql`
+          json_build_object(
+            'saveCount', ${recipeStatistics.savedCount},
+            'favoriteCount', ${recipeStatistics.favoriteCount},
+            'fiveStarCount', ${recipeStatistics.fiveStarCount},
+            'fourStarCount', ${recipeStatistics.fourStarCount},
+            'threeStarCount', ${recipeStatistics.threeStarCount},
+            'twoStarCount', ${recipeStatistics.twoStarCount},
+            'oneStarCount', ${recipeStatistics.oneStarCount}
+          )
+        `.as("data")
+      }).from(recipeStatistics)
+        .where(eq(recipeStatistics.recipeId, recipe.id))
+        .as("recipe_stats_sub"),
+      sql`true`
+    )
+    .leftJoinLateral(
+      db.select({
+        data: sql`
+          json_build_object(
+            'id', ${cuisineTable.id},
+            'adjective', ${cuisineTable.adjective},
+            'icon', ${cuisineTable.icon}
+          )
+        `.as("data")
+      }).from(cuisineTable)
+        .where(eq(cuisineTable.id, recipe.cuisineId))
+        .as("cuisine_sub"),
+      sql`true`
+    )
+    .leftJoinLateral(
+      db.select({
+        calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
+      }).from(recipeToNutrition)
+        .where(and(
+          eq(recipeToNutrition.recipeId, recipe.id),
+          eq(nutrition.name, "Calories")
+        ))
+        .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
+        .as("recipe_to_nutrition_sub"),
+      sql`true`
+    )
+    .limit(MAX_GRID_RECIPE_DISPLAY_LIMIT)
+    .offset(page * MAX_GRID_RECIPE_DISPLAY_LIMIT);
 
   return (
     <div className="flex-1 w-full flex flex-col gap-3">
       {
         searchedRecipes.length > 0 ? (
           <>
-          <h2 className="font-bold text-2xl">
-            Search Results ({searchedRecipesCount})
+          <h2 className="font-bold text-2xl text-left">
+            Search Results ({count})
           </h2>
           <div className="flex w-full items-center gap-2 text-sm">
             <Info size={16}/>
@@ -134,7 +174,6 @@ export default async function SearchResults({ query, cuisine, diet, dishType, pa
           </div>
         )
       }
-      <Pagination pages={totalPages}/>
     </div>
   );
 }

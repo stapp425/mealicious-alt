@@ -216,14 +216,14 @@ export default function RecipeIngredients() {
                   type="button"
                   key={i.name}
                   onClick={() => remove(index)}
-                  className="cursor-pointer text-left overflow-hidden group items-center border border-border rounded-md hover:border-red-500 dark:hover:border-red-500 hover:bg-red-500 transition-colors shadow-sm"
+                  className="hover:bg-muted cursor-pointer text-left overflow-hidden items-center border border-border rounded-md transition-colors shadow-sm"
                 >
                   <div className="flex flex-col gap-0.5 p-3">
-                    <div className="flex justify-between items-center group-hover:text-white">
+                    <div className="flex justify-between items-center">
                       <h1 className="font-bold text-xl">{i.amount} {i.unit}</h1>
                       {i.isAllergen && <span className="font-semibold text-muted-foreground">(Allergen)</span>}
                     </div>
-                    <span className="w-full line-clamp-1 text-xl font-semibold text-muted-foreground group-hover:text-white">
+                    <span className="w-full line-clamp-1 text-xl font-semibold text-muted-foreground">
                       {i.name}
                     </span>
                   </div>

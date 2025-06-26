@@ -2,32 +2,28 @@ import { generatePagination } from "@/lib/utils";
 import { parseAsIndex, useQueryState } from "nuqs";
 import { useCallback, useState } from "react";
 
-type UsePaginationProps = {
-  totalPages: number;
-};
-
-export function usePagination({ totalPages }: UsePaginationProps) {
-  const [page, setPage] = useState<number>(0);
-  const isFirstPage = page <= 0;
-  const isLastPage = page >= totalPages - 1;
-  const list = generatePagination(page, totalPages);
+export function usePagination(totalPages: number) {
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const isFirstPage = currentPage <= 0;
+  const isLastPage = currentPage >= totalPages - 1;
+  const list = generatePagination(currentPage, totalPages);
 
   const setToPage = useCallback((newPage: number) => {
-    setPage(Math.min(Math.max(newPage, 0), totalPages))
+    setCurrentPage(Math.min(Math.max(newPage, 0), totalPages))
   }, [totalPages]);
 
   const incrementPage = useCallback(() => {
-    setPage((p) => Math.min(p + 1, totalPages - 1));
+    setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
   }, [totalPages]);
 
   const decrementPage = useCallback(() => {
-    setPage((p) => Math.max(p - 1, 0));
+    setCurrentPage((p) => Math.max(p - 1, 0));
   }, []);
 
   return {
     isFirstPage,
     isLastPage,
-    page,
+    currentPage,
     setToPage,
     incrementPage,
     decrementPage,
@@ -35,36 +31,35 @@ export function usePagination({ totalPages }: UsePaginationProps) {
   };
 }
 
-export function useQueryPagination({ totalPages }: UsePaginationProps) {
-  const [page, setPage] = useQueryState(
+export function useQueryPagination(totalPages: number) {
+  const [currentPage, setCurrentPage] = useQueryState(
     "page",
     parseAsIndex
       .withDefault(0)
       .withOptions({
-        shallow: false,
-        throttleMs: 500
-      })
+        shallow: false
+      }),
   );
-  const isFirstPage = page <= 0;
-  const isLastPage = page >= totalPages - 1;
-  const list = generatePagination(page, totalPages);
+  const isFirstPage = currentPage <= 0;
+  const isLastPage = currentPage >= totalPages - 1;
+  const list = generatePagination(currentPage, totalPages);
 
   const setToPage = useCallback((newPage: number) => {
-    setPage(Math.min(Math.max(newPage, 0), totalPages))
+    setCurrentPage(Math.min(Math.max(newPage, 0), totalPages))
   }, [totalPages]);
 
   const incrementPage = useCallback(() => {
-    setPage((p) => Math.min(p + 1, totalPages - 1));
+    setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
   }, [totalPages]);
 
   const decrementPage = useCallback(() => {
-    setPage((p) => Math.max(p - 1, 0));
+    setCurrentPage((p) => Math.max(p - 1, 0));
   }, []);
 
   return {
     isFirstPage,
     isLastPage,
-    page,
+    currentPage,
     setToPage,
     incrementPage,
     decrementPage,

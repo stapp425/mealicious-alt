@@ -74,10 +74,10 @@ export default function SearchBar({ cuisines, diets, dishTypes }: SearchBarProps
   const onSubmit = handleSubmit(({ query, cuisine, diet, dishType }) => {
     const searchParams = new URLSearchParams();
 
-    if (query) searchParams.append("query", query);
-    if (cuisine?.adjective) searchParams.append("cuisine", cuisine.adjective);
-    if (diet?.name) searchParams.append("diet", diet.name);
-    if (dishType?.name) searchParams.append("dishType", dishType.name);
+    if (query) searchParams.set("query", query);
+    if (cuisine?.adjective) searchParams.set("cuisine", cuisine.adjective);
+    if (diet?.name) searchParams.set("diet", diet.name);
+    if (dishType?.name) searchParams.set("dishType", dishType.name);
 
     replace(`/recipes/search/?${searchParams.toString()}`);
   });

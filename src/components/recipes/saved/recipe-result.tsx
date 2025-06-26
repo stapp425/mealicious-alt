@@ -1,11 +1,11 @@
 "use client";
 
-import { Clock, Earth, EllipsisVertical, Heart, Loader2, Medal, Pencil, SquareArrowOutUpRight, Trash2, X } from "lucide-react";
+import { Clock, Earth, EllipsisVertical, Flame, Heart, Loader2, Medal, Pencil, SquareArrowOutUpRight, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Root as VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import Link from "next/link";
 import Image from "next/image";
-import { getRecipeSaveDateDifference } from "@/lib/utils";
+import { getDateDifference } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import defaultImage from "@/img/default/default-background.jpg";
 import { useState } from "react";
@@ -32,6 +32,7 @@ import {
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
 
 type RecipeResultProps = {
   recipe: {
@@ -39,6 +40,7 @@ type RecipeResultProps = {
     title: string;
     description: string | null;
     image: string;
+    calories: number;
     prepTime: string;
     diets: {
       id: string;
@@ -61,6 +63,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
   const [isFavorite, setIsFavorite] = useState<boolean>(recipe.isFavorite);
   const [open, setOpen] = useState<boolean>(false);
   const { refresh } = useRouter();
+  
   const { executeAsync: executeDeleteRecipe, isExecuting: isDeleteRecipeExecuting } = useAction(deleteRecipe, {
     onSuccess: ({ data }) => {
       setOpen(false);
@@ -69,12 +72,14 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
     },
     onError: ({ error: { serverError } }) => toast.error(serverError || "Something went wrong.")
   });
+
   const { executeAsync: executeToggleFavorite, isExecuting: isToggleFavoriteExecuting } = useAction(toggleRecipeFavorite, {
     onSuccess: ({ data }) => {
       setIsFavorite(data?.isFavorite || false)
     },
     onError: ({ error: { serverError } }) => toast.error(serverError || "Something went wrong.")
   });
+
   const { executeAsync: executeToggleSaved, isExecuting: isToggleSavedExecuting } = useAction(toggleSavedListRecipe, {
     onSuccess: () => {
       setOpen(false);
@@ -90,13 +95,14 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <div className="cursor-pointer bg-sidebar flex flex-col md:flex-row justify-between gap-4 border border-border p-4 rounded-md hover:bg-muted transition-colors">
-          <div className="relative w-full md:w-[250px] h-[300px] min-h-[200px] md:h-auto">
+          <div className="group relative w-full md:w-[250px] h-[300px] min-h-[150px] md:h-auto rounded-sm overflow-hidden">
             <Image 
               src={recipe.image}
               alt={`Image of ${recipe.title}`}
               fill
-              className="block size-full rounded-sm object-cover object-center"
+              className="block size-full object-cover object-center"
             />
+            <div className="size-full bg-black opacity-0 group-hover:opacity-25 transition-opacity"/>
             {
               isFavorite && (
                 <div className="absolute top-2 left-2 flex justify-center items-center size-8 bg-rose-400 rounded-md">
@@ -136,7 +142,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
               )
             }
             {
-              recipe.diets && (
+              recipe.diets.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
                   {
                     recipe.diets.map((d) => (
@@ -148,12 +154,20 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                 </div>
               )
             }
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              <Clock size={14}/> {Math.floor(Number(recipe.prepTime))} min
+            <div className="flex items-center gap-3 min-h-[25px]">
+              <div className="flex items-center gap-1.5 font-semibold text-sm">
+                <Flame size={14} fill="var(--primary)"/>
+                <span>{Number(recipe.calories).toLocaleString()} Calories</span>
+              </div>
+              <Separator orientation="vertical"/>
+              <div className="flex items-center gap-1.5 font-semibold text-sm">
+                <Clock size={14}/>
+                <span>{Math.floor(Number(recipe.prepTime))} min</span>
+              </div>
             </div>
             <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-end gap-2 mt-auto">
               <i className="text-muted-foreground text-sm">
-                {getRecipeSaveDateDifference(recipe.saveDate)}
+                Saved {getDateDifference(recipe.saveDate)} ago
               </i>
               {
                 (recipe.sourceName && recipe.sourceUrl) && (
@@ -337,20 +351,20 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
           }
           {
             (recipe.sourceName && recipe.sourceUrl) && (
-              <div className="flex items-end gap-3 truncate">
+              <div className="flex items-end gap-2.5 truncate">
+                <Earth className="shrink-0"/>
                 <Link 
                   href={recipe.sourceUrl}
                   target="_blank"
-                  className="underline"
+                  className="underline truncate"
                 >
                   {recipe.sourceName}
                 </Link>
-                <Earth />
               </div>
             )
           }
           <i className="text-muted-foreground text-sm">
-            {getRecipeSaveDateDifference(recipe.saveDate)}
+            Saved {getDateDifference(recipe.saveDate)} ago
           </i>
         </div>
       </DialogContent>

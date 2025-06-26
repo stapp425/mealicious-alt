@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { filters, Sort, sorts } from "@/lib/types";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { parseAsArrayOf, parseAsIndex, parseAsStringLiteral, useQueryStates } from "nuqs";
 
 export default function ResultOptions() {
@@ -13,8 +13,7 @@ export default function ResultOptions() {
     sort: parseAsStringLiteral(sorts),
     filters: parseAsArrayOf(parseAsStringLiteral(filters)).withDefault([])
   }, {
-    shallow: false,
-    throttleMs: 500
+    shallow: false
   });
 
   return (
@@ -51,7 +50,7 @@ export default function ResultOptions() {
                 }))}
                 className="cursor-pointer"
               >
-                Clear
+                <X />
               </Button>
             )
           }
@@ -95,7 +94,7 @@ export default function ResultOptions() {
                 }))}
                 className="cursor-pointer"
               >
-                Clear
+                <X />
               </Button>
             )
           }

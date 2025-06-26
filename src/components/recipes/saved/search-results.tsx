@@ -4,51 +4,51 @@ import { db } from "@/db";
 import {
   cuisine, 
   diet, 
+  nutrition, 
   recipe, 
   recipeFavorite, 
   recipeToDiet, 
+  recipeToNutrition, 
   savedRecipe
 } from "@/db/schema";
-import { eq, and, ilike, sql, asc, desc, count, SQL } from "drizzle-orm";
-import Pagination from "@/components/recipes/saved/pagination";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import { eq, and, ilike, sql, asc, desc, SQL, isNotNull } from "drizzle-orm";
 import RecipeResult from "@/components/recipes/saved/recipe-result";
 import { MAX_LIST_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
 
 type SearchResultsProps = {
-  query: string;
-  sort: Sort | null;
-  filters: Filter[];
-  page: number;
+  count: number;
+  userId: string;
+  searchParams: {
+    query: string;
+    sort: Sort | null;
+    filters: Filter[];
+    page: number;
+  };
 };
 
 const MAX_DIET_DISPLAY_LIMIT = 3;
 
-export default async function SearchResults({ query, sort, filters, page }: SearchResultsProps) {
-  const session = await auth();
-
-  if (!session?.user)
-    redirect("/login");
-
-  const { user } = session;
+export default async function SearchResults({ count, userId, searchParams }: SearchResultsProps) {
+  const { query, sort, filters, page } = searchParams;
   
   const orderByClauses: Record<Sort, SQL> = {
     title: asc(recipe.title),
+    calories: asc(sql`"recipe_to_nutrition_sub"."calories"`),
     prepTime: asc(recipe.prepTime),
     saveDate: desc(savedRecipe.saveDate)
   };
   
   const filterClauses: Record<Filter, SQL> = {
-    created: eq(sql<boolean>`CASE WHEN ${recipe.createdBy} = ${user.id!} THEN TRUE ELSE FALSE END`, true),
-    favorited: eq(sql<boolean>`CASE WHEN ${recipeFavorite.recipeId} IS NOT NULL THEN TRUE ELSE FALSE END`, true)
+    created: eq(recipe.createdBy, userId),
+    favorited: isNotNull(sql`"favorite_sub"."is_favorite"`)
   };
 
-  const savedRecipesQuery = db.select({
+  const savedRecipes = await db.select({
     id: recipe.id,
     title: recipe.title,
     description: recipe.description,
     image: recipe.image,
+    calories: sql<number>`"recipe_to_nutrition_sub"."calories"`.as("calories"),
     prepTime: recipe.prepTime,
     diets: sql<{
       id: string;
@@ -62,11 +62,11 @@ export default async function SearchResults({ query, sort, filters, page }: Sear
     sourceName: recipe.sourceName,
     sourceUrl: recipe.sourceUrl,
     saveDate: savedRecipe.saveDate,
-    isFavorite: sql<boolean>`CASE WHEN "favorite_sub"."data" IS NOT NULL THEN TRUE ELSE FALSE END`.as("is_favorite"),
-    isAuthor: sql<boolean>`CASE WHEN ${recipe.createdBy} = ${user.id!} THEN TRUE ELSE FALSE END`.as("is_author")
+    isFavorite: sql<boolean>`"favorite_sub"."is_favorite"`.as("is_favorite"),
+    isAuthor: sql<boolean>`CASE WHEN ${recipe.createdBy} = ${userId} THEN TRUE ELSE FALSE END`.as("is_author")
   }).from(savedRecipe)
     .where(and(
-      eq(savedRecipe.userId, user.id!),
+      eq(savedRecipe.userId, userId),
       query ? ilike(recipe.title, `%${query}%`) : undefined,
       ...filters.map((f) => filterClauses[f])
     ))
@@ -111,12 +111,21 @@ export default async function SearchResults({ query, sort, filters, page }: Sear
     )
     .leftJoinLateral(
       db.select({
-        data: sql`
-          json_build_object(
-            'user_id', ${recipeFavorite.userId},
-            'recipe_id', ${recipeFavorite.recipeId}
-          )
-        `.as("data")
+        calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
+      }).from(recipeToNutrition)
+        .where(and(
+          eq(recipeToNutrition.recipeId, recipe.id),
+          eq(nutrition.name, "Calories")
+        ))
+        .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
+        .as("recipe_to_nutrition_sub"),
+      sql`true`
+    )
+    .leftJoinLateral(
+      db.select({
+        isFavorite: sql`
+          CASE WHEN ${recipeFavorite.userId} IS NOT NULL AND ${recipeFavorite.recipeId} IS NOT NULL THEN TRUE ELSE FALSE END
+        `.as("is_favorite")
       }).from(recipeFavorite)
         .where(and(
           eq(savedRecipe.userId, recipeFavorite.userId),
@@ -128,27 +137,11 @@ export default async function SearchResults({ query, sort, filters, page }: Sear
     .limit(MAX_LIST_RECIPE_DISPLAY_LIMIT)
     .offset(page * MAX_LIST_RECIPE_DISPLAY_LIMIT)
     .orderBy(...(sort ? [orderByClauses[sort]] : []));
-
-  const savedRecipesCountQuery = db.select({ count: count() })
-    .from(savedRecipe)
-    .where(and(
-      eq(savedRecipe.userId, user.id!),
-      ilike(recipe.title, `%${query}%`),
-      ...filters.map((f) => filterClauses[f])
-    ))
-    .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
-    .leftJoin(recipeFavorite, and(
-      eq(savedRecipe.userId, recipeFavorite.userId),
-      eq(savedRecipe.recipeId, recipeFavorite.recipeId)
-    ));
-  
-  const [savedRecipes, [{ count: savedRecipesCount }]] = await Promise.all([savedRecipesQuery, savedRecipesCountQuery]);
-  const totalPages = Math.ceil(savedRecipesCount / MAX_LIST_RECIPE_DISPLAY_LIMIT);
   
   return (
     <div className="flex-1 flex flex-col gap-3">
       <h2 className="font-bold text-2xl">
-        Search Results ({savedRecipesCount})
+        Search Results ({count})
       </h2>
       {
         savedRecipes.length > 0 ? (
@@ -171,7 +164,6 @@ export default async function SearchResults({ query, sort, filters, page }: Sear
           </div>
         )
       }
-      <Pagination pages={totalPages}/>
     </div>
   );
 }

@@ -54,7 +54,7 @@ export default function PrintRecipe({ recipe }: PrintRecipeProps) {
   const servingSizeUnit = units.find((u) => u.abbreviation === recipe.servingSizeUnit)!;
   
   return (
-    <div ref={printContent} className="flex-1 bg-background flex flex-col gap-2 max-w-[750px] min-h-full mx-auto print:mx-0 p-4 print:p-8">
+    <div ref={printContent} className="flex-1 bg-background flex flex-col gap-2 max-w-[750px] min-h-full mx-auto p-6 print:max-w-none">
       <section className="flex flex-col items-start gap-2">
         <h1 className="font-bold text-4xl hyphens-auto">{recipe.title}</h1>
         <button onClick={() => handlePrint()} className="cursor-pointer font-semibold bg-slate-600 hover:bg-slate-700 text-white text-sm flex items-center gap-2 print:hidden py-2 px-5 rounded-sm transition-colors">
@@ -118,7 +118,7 @@ export default function PrintRecipe({ recipe }: PrintRecipeProps) {
             recipe.instructions.map((i) => (
               <li
                 key={i.id}
-                className="flex flex-col items-start gap-1.5 text-left overflow-hidden"
+                className="flex flex-col items-start gap-1.5 text-left overflow-hidden print:break-inside-avoid"
               >
                 <h2 className="font-bold text-lg hyphens-auto line-clamp-2 -mt-1">{i.index}. {i.title}</h2>
                 <div className="font-semibold text-sm text-nowrap flex items-center gap-1.5 text-muted-foreground">
