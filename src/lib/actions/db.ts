@@ -5,6 +5,7 @@ import {
   ImageDataSchema,
   MealCreationSchema,
   MealEditionSchema,
+  PlanCreationSchema,
   RecipeCreationSchema,
   RecipeEditionSchema,
   RecipeSearchIndexDeletionSchema,
@@ -20,6 +21,9 @@ import {
   instruction, 
   meal, 
   mealToRecipe, 
+  nutrition, 
+  plan, 
+  planToMeal, 
   recipe, 
   recipeFavorite, 
   recipeReview, 
@@ -37,6 +41,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2 } from "@/r2-client";
 import axios from "axios";
 import { searchClient, writeClient } from "@/algolia";
+import { format } from "date-fns";
 
 export async function generatePresignedUrlForImageUpload(params: { name: string; type: string; size: number; }) {
   const parsedBody = ImageDataSchema.safeParse(params);
@@ -735,6 +740,36 @@ export const deleteMeal = authActionClient
     };
   });
 
+export const createPlan = authActionClient
+  .schema(z.object({
+    createdPlan: PlanCreationSchema
+  }))
+  .action(async ({
+    ctx: { user },
+    parsedInput: { createdPlan }
+  }) => {
+    const [{ planId }] = await db.insert(plan).values({
+      title: createdPlan.title,
+      description: createdPlan.description || undefined,
+      tags: createdPlan.tags,
+      createdBy: user.id,
+      date: createdPlan.date
+    }).returning({
+      planId: plan.id
+    });
+
+    await db.insert(planToMeal).values(createdPlan.meals.map((m) => ({
+      planId,
+      mealId: m.id,
+      time: format(m.time, "HH:mm:00")
+    })));
+
+    return {
+      success: true,
+      message: "Plan successfully created!"
+    };
+  });
+
 export async function getReviewsByRecipe({ recipeId, limit, offset, userId }: { recipeId: string; limit: number; offset: number; userId?: string; }) {
   return db.query.recipeReview.findMany({
     where: (review, { eq, isNotNull, and }) => and(
@@ -861,5 +896,74 @@ export async function getSavedRecipesForMealFormCount({ userId, query }: { userI
             ilike(recipe.title, `%${query}%`)
           ))
       )
-    ))
+    ));
 }
+
+export async function getSavedMealsForPlanForm({ userId, query, limit, offset }: { userId: string; query: string; limit: number; offset: number; }) {
+  return db.select({
+    id: meal.id,
+    title: meal.title,
+    type: meal.type,
+    calories: sql<number>`"meal_to_recipe_sub"."total_calories"`.as("total_calories"),
+    recipes: sql<{
+      id: string;
+      title: string;
+    }[]>`"meal_to_recipe_sub"."recipes"`.as("recipes")
+  }).from(meal)
+    .where(and(
+      eq(meal.createdBy, userId),
+      ilike(meal.title, `%${query}%`)
+    ))
+    .innerJoinLateral(
+      db.select({
+        calories: sql`sum("recipe_sub"."calories")`.as("total_calories"),
+        recipes: sql`
+          coalesce(
+            json_agg("recipe_sub"."recipe"),
+            '[]'::json
+          )
+        `.as("recipes")
+      }).from(mealToRecipe)
+        .where(eq(mealToRecipe.mealId, meal.id))
+        .innerJoinLateral(
+          db.select({
+            calories: sql`"recipe_to_nutrition_sub"."calories"`.as("calories"),
+            recipe: sql`
+              json_build_object(
+                'id', ${recipe.id},
+                'title', ${recipe.title}
+              )
+            `.as("recipe")
+          }).from(recipe)
+            .where(eq(mealToRecipe.recipeId, recipe.id))
+            .leftJoinLateral(
+              db.select({
+                calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
+              }).from(recipeToNutrition)
+                .where(and(
+                  eq(recipeToNutrition.recipeId, recipe.id),
+                  eq(nutrition.name, "Calories")
+                ))
+                .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
+                .as("recipe_to_nutrition_sub"),
+              sql`true`
+            )
+            .as("recipe_sub"),
+          sql`true`
+        )
+        .as("meal_to_recipe_sub"),
+      sql`true`
+    )
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getSavedMealsForPlanFormCount({ userId, query }: { userId: string, query: string }) {
+  return db.select({ count: count() })
+    .from(meal)
+    .where(and(
+      eq(meal.createdBy, userId),
+      ilike(meal.title, `%${query}%`)
+    ));
+}
+

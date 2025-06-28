@@ -17,13 +17,13 @@ export default function RecipeDescription() {
   const currentDescription = useWatch({ control, name: "description" });
   
   return (
-    <div className="field-container flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold">Description</h1>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
         <p className="text-muted-foreground font-semibold">
           Add a brief description about your recipe here. (optional)
         </p>
-        <span className={cn(currentDescription && currentDescription.length > MAX_DESCRIPTION_LENGTH && "text-red-500")}>
+        <span className={cn(currentDescription && currentDescription.length > MAX_DESCRIPTION_LENGTH && "text-red-500", "shrink-0")}>
           <b className="text-xl">{currentDescription?.length || 0}</b> / {MAX_DESCRIPTION_LENGTH}
         </span>
       </div>

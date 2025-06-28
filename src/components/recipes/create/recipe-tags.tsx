@@ -18,7 +18,7 @@ export default function RecipeTags() {
   const [tag, setTag] = useState<string>("");
   
   return (
-    <div className="field-container flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold">Tags</h1>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
         <p className="font-semibold text-muted-foreground">

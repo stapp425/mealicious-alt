@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { MAX_TITLE_LENGTH, MealEdition } from "@/lib/zod";
+import { MAX_MEAL_TITLE_LENGTH, MealEdition } from "@/lib/zod";
 import { Info } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 
@@ -15,7 +15,7 @@ export default function MealTitle() {
   const title = useWatch({ control, name: "title" });
   
   return (
-    <div className="field-container flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h2 className="required-field font-bold text-2xl">
         Title
       </h2>
@@ -23,8 +23,8 @@ export default function MealTitle() {
         <p className="font-semibold text-muted-foreground">
           Add a title to your meal here.
         </p>
-        <span className={cn(title.length > MAX_TITLE_LENGTH && "text-red-500")}>
-          <b className="text-xl">{title.length}</b> / {MAX_TITLE_LENGTH}
+        <span className={cn(title.length > MAX_MEAL_TITLE_LENGTH && "text-red-500")}>
+          <b className="text-xl">{title.length}</b> / {MAX_MEAL_TITLE_LENGTH}
         </span>
       </div>
       <Input

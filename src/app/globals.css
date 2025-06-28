@@ -121,6 +121,7 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
   --color-mealicious-primary: oklch(47% 0.157 37.304);
   --color-mealicious-primary-muted: oklch(83.7% 0.128 66.29);
+  --color-mealicious-primary-hover: oklch(40.8% 0.123 38.172);
 }
 
 @layer base {

@@ -22,7 +22,7 @@ export default function RecipeCuisine({ cuisines }: RecipeCuisineProps) {
   const currentCuisine = useWatch({ control, name: "cuisine" });
   
   return (
-    <div className="field-container flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h2 className="font-bold text-2xl">
         Cuisine
       </h2>

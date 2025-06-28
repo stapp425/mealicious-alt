@@ -1,5 +1,6 @@
 import z from "zod";
 import { MealType, mealTypes, Unit, units } from "@/lib/types";
+import { add, endOfDay, startOfDay } from "date-fns";
 
 export const MAX_FILE_SIZE = 1024 * 1024 * 5; // 5MB
 
@@ -133,9 +134,14 @@ export const MAX_INSTRUCTION_TITLE_LENGTH = 100;
 export const MAX_INSTRUCTION_TIME_AMOUNT = 999.99;
 export const MAX_INSTRUCTION_CONTENT_LENGTH = 500;
 export const MAX_INSTRUCTIONS_LENGTH = 50;
+export const MAX_MEAL_TITLE_LENGTH = 100;
+export const MAX_MEAL_DESCRIPTION_LENGTH = 250;
 export const MAX_MEAL_RECIPES = 5;
 export const MAX_REVIEW_CONTENT_LENGTH = 256;
 export const MAX_MEAL_CALORIES = 10000;
+export const MAX_PLAN_TITLE_LENGTH = 100;
+export const MAX_PLAN_DESCRIPTION_LENGTH = 100;
+export const MAX_PLAN_MEALS = 5;
 
 const RecipeFormSchema = z.object({
   title: z
@@ -395,8 +401,12 @@ export type RecipeSearch = z.infer<typeof RecipeSearchSchema>;
 const MealFormSchema = z.object({
   title: z.string().nonempty({
     message: "Meal title cannot be empty."
+  }).max(MAX_MEAL_TITLE_LENGTH, {
+    message: `Meal title cannot have more than ${MAX_MEAL_TITLE_LENGTH.toLocaleString()} characters.`
   }),
-  description: z.optional(z.string()),
+  description: z.optional(z.string().max(MAX_MEAL_DESCRIPTION_LENGTH, {
+    message: `Meal description cannot have more than ${MAX_MEAL_DESCRIPTION_LENGTH} characters.`
+  })),
   tags: z.array(z.string().nonempty({
     message: "Tag cannot be empty."
   })),
@@ -418,7 +428,6 @@ const MealFormSchema = z.object({
 });
 
 export const MealCreationSchema = MealFormSchema
-
 export const MealEditionSchema = MealFormSchema.extend({
   id: IdSchema.nonempty({
     message: "Meal ID cannot be empty."
@@ -431,7 +440,7 @@ export type MealEdition = z.infer<typeof MealEditionSchema>;
 export const MealSearchSchema = z.object({
   query: z.string(),
   mealType: z.optional(MealTypeSchema),
-  maxCalories: z.coerce.number()
+  maxCalories: z.number()
     .int({
       message: "Amount must be an integer."
     }).nonnegative({
@@ -442,3 +451,74 @@ export const MealSearchSchema = z.object({
 });
 
 export type MealSearch = z.infer<typeof MealSearchSchema>;
+
+const PlanFormSchema = z.object({
+  title: z.string().nonempty({
+    message: "Plan title cannot be empty."
+  }).max(MAX_PLAN_TITLE_LENGTH, {
+    message: `Plan title cannot have more than ${MAX_PLAN_TITLE_LENGTH.toLocaleString()} characters.`
+  }),
+  date: z.date({
+    required_error: "A plan date is required."
+  }).superRefine((val, ctx) => {
+    const now = new Date();
+    const start = startOfDay(now);
+    const end = endOfDay(add(now, { months: 1 }));
+
+    if (val < start) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Plan date cannot be set on a day that has already passed.",
+        fatal: true
+      });
+    }
+    
+    if (val > end) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Plan date cannot be set on a day more than 1 month in the future.",
+        fatal: true
+      });
+    }
+  }),
+  tags: z.array(z.string().nonempty({
+    message: "Plan tags cannot be empty."
+  })),
+  description: z.nullable(z.string()),
+  meals: z.array(z.object({
+    id: IdSchema,
+    title: z.string().nonempty({
+      message: "Meal title cannot be empty."
+    }).max(MAX_MEAL_TITLE_LENGTH, {
+      message: `Meal title cannot have more than ${MAX_MEAL_TITLE_LENGTH.toLocaleString()} characters.`
+    }),
+    type: MealTypeSchema,
+    calories: z.coerce.number()
+      .int({
+        message: "Amount must be an integer."
+      }).nonnegative({
+        message: "Amount must be not negative."
+      }),
+    recipes: z.array(z.object({
+      id: IdSchema,
+      title: z.string().nonempty({
+        message: "Recipe title cannot be empty."
+      }).max(MAX_TITLE_LENGTH, {
+        message: `Recipe title cannot have more than ${MAX_TITLE_LENGTH.toLocaleString()} characters.`
+      })
+    })),
+    time: z.date()
+  })).min(1, {
+    message: "Meal list should have at least 1 element."
+  }).max(MAX_PLAN_MEALS, {
+    message: `Place cannot have more than ${MAX_PLAN_MEALS.toLocaleString()} meals.`
+  })
+});
+
+export const PlanCreationSchema = PlanFormSchema;
+export const PlanEditionSchema = PlanFormSchema.extend({
+  id: IdSchema
+});
+
+export type PlanCreation = z.infer<typeof PlanCreationSchema>;
+export type PlanEdition = z.infer<typeof PlanEditionSchema>;

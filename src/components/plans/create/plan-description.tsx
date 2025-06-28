@@ -1,30 +1,28 @@
-"use client";
-
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { MAX_MEAL_DESCRIPTION_LENGTH, MealCreation } from "@/lib/zod";
+import { MAX_PLAN_DESCRIPTION_LENGTH, PlanCreation } from "@/lib/zod";
 import { Info } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 
-export default function MealDescription() {
+export default function PlanDescription() {
   const {
     control,
     register,
     formState: {
       errors
     }
-  } = useFormContext<MealCreation>();
+  } = useFormContext<PlanCreation>();
   const currentDescription = useWatch({ control, name: "description" });
   
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold">Description</h1>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end md:gap-3">
         <p className="text-muted-foreground font-semibold">
           Add a brief description about your recipe here. (optional)
         </p>
-        <span className={cn(currentDescription && currentDescription.length > MAX_MEAL_DESCRIPTION_LENGTH && "text-red-500")}>
-          <b className="text-xl">{currentDescription?.length || 0}</b> / {MAX_MEAL_DESCRIPTION_LENGTH}
+        <span className={cn(currentDescription && currentDescription.length > MAX_PLAN_DESCRIPTION_LENGTH && "text-red-500", "shrink-0")}>
+          <b className="text-xl">{currentDescription?.length || 0}</b> / {MAX_PLAN_DESCRIPTION_LENGTH}
         </span>
       </div>
       <Textarea

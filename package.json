@@ -55,6 +55,7 @@
     "nuqs": "^2.4.3",
     "pg": "^8.16.2",
     "react": "^19.1.0",
+    "react-day-picker": "^9.7.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.58.1",
     "react-screen-wake-lock": "^3.1.1",

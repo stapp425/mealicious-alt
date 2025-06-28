@@ -1,4 +1,4 @@
-import { pgTable, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, unique } from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { relations } from "drizzle-orm";
 import { meal } from "./meal";
@@ -14,7 +14,9 @@ export const plan = pgTable("plan", (t) => ({
     .$type<string[]>()
     .notNull()
     .default([]),
-  date: t.timestamp("plan_date").notNull(),
+  date: t.date("plan_date", {
+    mode: "date"
+  }).notNull(),
   createdBy: t.text("plan_created_by").references(() => user.id, {
     onDelete: "cascade"
   }),
@@ -40,11 +42,15 @@ export const planToMeal = pgTable("plan_to_meal", (t) => ({
     .notNull()
     .references(() => meal.id, {
       onDelete: "cascade"
-    })
+    }),
+  time: t.time("pm_time", {
+    precision: 0
+  }).notNull()
 }), (t) => [
   primaryKey({
     columns: [t.planId, t.mealId]
-  })
+  }),
+  unique().on(t.planId, t.mealId, t.time)
 ]);
 
 export const planRelations = relations(plan, ({ one, many }) => ({

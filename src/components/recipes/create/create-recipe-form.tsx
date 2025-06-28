@@ -141,7 +141,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
         className="max-w-[750px] xl:max-w-[1250px] w-full bg-background mx-auto p-4"
       >
         <h1 className="text-4xl font-bold mb-6">Create a Recipe</h1>
-        <div className="flex flex-col xl:flex-row gap-3">
+        <div className="flex flex-col xl:flex-row gap-3 sm:gap-6">
           <div className="w-full xl:w-[500px] flex flex-col gap-3">
             <RecipeImageUploader />
             {mounted && !matches && <RecipeTitle />}

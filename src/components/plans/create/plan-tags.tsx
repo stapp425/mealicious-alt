@@ -1,31 +1,33 @@
+"use client";
+
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { MAX_TAGS_LENGTH, RecipeEdition } from "@/lib/zod";
+import { PlanCreation } from "@/lib/zod";
 import { Info } from "lucide-react";
 import { useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 
-export default function RecipeTags() {
-  const { 
+export default function PlanTags() {
+  const [tag, setTag] = useState<string>("");
+  const {
     control,
     setValue,
     formState: {
       errors
     }
-  } = useFormContext<RecipeEdition>();
+  } = useFormContext<PlanCreation>();
   const tags = useWatch({ control, name: "tags" });
-  const [tag, setTag] = useState<string>("");
   
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold">Tags</h1>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
+      <div className="flex flex-col md:flex-row flex-wrap justify-between items-start gap-3 md:items-end">
         <p className="font-semibold text-muted-foreground">
-          Add extra tags to your recipe here. (optional)
+          Add extra tags to your plan here. (optional)
         </p>
-        <span className={cn(tags.length > MAX_TAGS_LENGTH && "text-red-500")}>
-          <b className="text-xl">{tags.length}</b> / {MAX_TAGS_LENGTH}
+        <span className={cn(tags.length > 10 && "text-red-500")}>
+          <b className="text-xl">{tags.length}</b> / 10
         </span>
       </div>
       {
@@ -43,7 +45,7 @@ export default function RecipeTags() {
           onChange={(e) => setTag(e.target.value)}
         />
         <button
-          disabled={!tag || tags.includes(tag) || tags.length >= MAX_TAGS_LENGTH}
+          disabled={!tag || tags.includes(tag) || tags.length >= 10}
           onClick={() => {
             setValue("tags", [...tags, tag]);
             setTag("");
@@ -61,7 +63,7 @@ export default function RecipeTags() {
             <Info size={16}/>
             You can remove a tag by clicking on it.
           </div>
-          <div className="flex flex-wrap gap-x-1 gap-y-2">
+          <div className="flex flex-wrap gap-2">
             {
               tags.map((t) => (
                 <button

@@ -22,7 +22,7 @@ export default function RecipeNutrition() {
   const nutrition = useWatch({ control, name: "nutrition" });
   
   return (
-    <div className="field-container flex flex-col justify-between">
+    <div className="flex flex-col justify-between">
       <h1 className="font-bold text-2xl required-field">Nutrition</h1>
       {
         errors.servingSize?.amount?.message && (

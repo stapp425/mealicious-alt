@@ -14,7 +14,7 @@ export default function RecipeSource() {
   } = useFormContext<RecipeCreation>();
   
   return (
-    <div className="field-container flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold">Source</h1>
       <p className="text-muted-foreground font-semibold">
         Add a source name and URL if this recipe comes from an external source. (optional)

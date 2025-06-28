@@ -83,7 +83,7 @@ export default function RecipeIngredients() {
   }, [ingredient]);
   
   return (
-    <div className="field-container flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold required-field">Ingredients</h1>
       <div className="flex justify-between items-end">
         <p className="font-semibold text-muted-foreground">Add ingredients to your recipe here.</p>

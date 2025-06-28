@@ -1,7 +1,7 @@
 export default function Page() {
   return (
     <div>
-      Meal Calendar Page
+      Plan Calendar Page
     </div>
   );
 }

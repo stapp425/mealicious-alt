@@ -50,7 +50,7 @@ export default function RecipeDishTypes({ dishTypes }: RecipeDishTypes) {
   }, [formDishTypeValues, dishTypes]);
   
   return (
-    <div className="field-container flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h1 className="font-bold text-2xl">Dish Types</h1>
       <div className="flex-1 flex flex-col gap-3">
         <div className="relative flex justify-between gap-3">

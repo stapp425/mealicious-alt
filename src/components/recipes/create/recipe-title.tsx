@@ -19,7 +19,7 @@ export default function RecipeTitle() {
   const [currentTitle, isPublic] = useWatch({ control, name: ["title", "isPublic"] });
   
   return (
-    <div className="flex flex-col gap-3 field-container">
+    <div className="flex flex-col gap-3">
       <h2 className="required-field font-bold text-2xl">
         Title
       </h2>

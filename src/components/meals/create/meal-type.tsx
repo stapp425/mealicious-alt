@@ -17,7 +17,7 @@ export default function MealType() {
   const mealType = useWatch({ control, name: "type" });
   
   return (
-    <div className="field-container flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h1 className="required-field text-2xl font-bold">Meal Type</h1>
       <p className="text-muted-foreground font-semibold">
         Add a meal type to your meal here.

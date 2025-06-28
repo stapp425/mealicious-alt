@@ -36,7 +36,7 @@ export default function RecipeTimes() {
   } = useFormContext<RecipeEdition>();
   
   return (
-    <div className="field-container flex flex-col justify-between gap-3">
+    <div className="flex flex-col justify-between gap-3">
       <h1 className="font-bold text-2xl required-field">Times</h1>
       <p className="text-muted-foreground font-semibold">
         Add preparation times for this recipe.

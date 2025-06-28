@@ -104,12 +104,27 @@ export function AppSidebar({ username, email, image }: AppSidebarProps) {
                 </SidebarMenuButton>
               </SidebarMenuSubItem>
             </SidebarMenuSub>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <span className="font-semibold text-md">Plan</span>
+            </SidebarMenuButton>
             <SidebarMenuSub>
               <SidebarMenuSubItem>
                 <SidebarMenuButton asChild>
-                  <Link href="/meals/calendar">
-                    Meal Calendar
+                  <Link href="/plans">
+                    Plan Calendar
                     <Calendar />
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuSubItem>
+              <SidebarMenuSubItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/plans/create">
+                    Create Plan
+                    <Pencil />
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuSubItem>

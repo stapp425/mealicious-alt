@@ -55,7 +55,7 @@ export default function RecipeInstructions() {
   const error = parsedInstruction.error?.errors[0]?.message;
   
   return (
-    <div className="field-container flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold after:content-['*'] after:text-red-500">Instructions</h1>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
         <p className="font-semibold text-muted-foreground">
