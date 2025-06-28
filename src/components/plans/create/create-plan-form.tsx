@@ -61,7 +61,7 @@ export default function CreatePlanForm({ userId }: CreatePlanFormProps) {
             <button
               disabled={createPlanForm.formState.isSubmitting}
               type="submit" 
-              className="hidden lg:flex mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
+              className="hidden xl:flex mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
             >
               {createPlanForm.formState.isSubmitting ? <Loader2 className="animate-spin"/> : "Create Plan"}
             </button>
@@ -73,7 +73,7 @@ export default function CreatePlanForm({ userId }: CreatePlanFormProps) {
             <button
               disabled={createPlanForm.formState.isSubmitting}
               type="submit" 
-              className="flex lg:hidden mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
+              className="flex xl:hidden mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
             >
               {createPlanForm.formState.isSubmitting ? <Loader2 className="animate-spin"/> : "Create Plan"}
             </button>
