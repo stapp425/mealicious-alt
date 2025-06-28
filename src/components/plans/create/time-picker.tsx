@@ -30,8 +30,8 @@ export default function TimePicker({ date, setDate, selectedMeal, setSelectedMea
   const periodRef = React.useRef<HTMLButtonElement>(null);
  
   return (
-    <div className="flex items-end gap-2 p-3 *:flex-1">
-      <div className="grid gap-1 text-center">
+    <div className="flex justify-between items-end gap-2 p-3 *:flex-1">
+      <div className="h-full grid gap-1 text-center">
         <Label htmlFor="plan-hours" className="text-xs">
           Hours
         </Label>
@@ -46,7 +46,7 @@ export default function TimePicker({ date, setDate, selectedMeal, setSelectedMea
           className="w-full"
         />
       </div>
-      <div className="grid gap-1 text-center">
+      <div className="h-full grid gap-1 text-center">
         <Label htmlFor="plan-minutes" className="text-xs">
           Minutes
         </Label>
@@ -61,7 +61,7 @@ export default function TimePicker({ date, setDate, selectedMeal, setSelectedMea
           className="w-full"
         />
       </div>
-      <div className="grid gap-1 text-center">
+      <div className="h-full grid gap-1 text-center">
         <Label htmlFor="period" className="text-xs">
           Period
         </Label>
@@ -101,7 +101,7 @@ export default function TimePicker({ date, setDate, selectedMeal, setSelectedMea
           setSelectedMeal(null);
           toast.success("Meal successfully added!");
         }}
-        className="mealicious-button h-10 font-semibold text-sm rounded-md"
+        className="mealicious-button h-9 mb-0.5 font-semibold text-sm rounded-md"
       >
         Add
       </button>
