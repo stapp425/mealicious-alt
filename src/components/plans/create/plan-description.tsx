@@ -30,7 +30,7 @@ export default function PlanDescription() {
         spellCheck={false}
         placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Aliquam nulla facilisi cras fermentum odio eu feugiat pretium nibh."
         autoComplete="off"
-        className="min-h-[100px] break-all flex-1 flex rounded-md"
+        className="min-h-[100px] hyphens-auto text-wrap flex-1 flex rounded-md"
       />
       {
         errors.description?.message &&

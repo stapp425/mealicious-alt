@@ -1,25 +1,24 @@
 "use client";
 
-import { getSavedMealsForPlanForm, getSavedMealsForPlanFormCount } from "@/lib/actions/db";
-import { cn, MAX_MEAL_RESULT_DISPLAY_LIMIT } from "@/lib/utils";
-import { MAX_PLAN_MEALS, PlanCreation } from "@/lib/zod";
+import { getSavedMealsForPlanForm, getSavedMealsForPlanFormCount } from "@/lib/actions/plan";
+import { MAX_MEAL_RESULT_DISPLAY_LIMIT } from "@/lib/utils";
+import { PlanCreation } from "@/lib/zod";
 import { Flame, Info, Loader2, Plus, X } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
-import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useDebouncedCallback } from "use-debounce";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import Pagination from "@/components/plans/create/pagination";
-import TimePicker from "./time-picker";
-import { differenceInMinutes, format, startOfDay } from "date-fns";
-import { MealType } from "@/lib/types";
+import { MealType, mealTypes } from "@/lib/types";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 export type Meal = {
   id: string;
   title: string;
-  type: MealType;
   calories: number;
   recipes: {
     id: string;
@@ -32,8 +31,13 @@ type RecipeSearchProps = {
 };
 
 export default function PlanMealSearch({ userId }: RecipeSearchProps) {
-  const { control, formState: { errors } } = useFormContext<PlanCreation>();
-  const { remove } = useFieldArray({ control, name: "meals" });
+  const { 
+    control,
+    setValue,
+    formState: {
+      errors
+    }
+  } = useFormContext<PlanCreation>();
   const planMealValues = useWatch({ control, name: "meals" });
   
   const [open, setOpen] = useState<boolean>(false);
@@ -43,7 +47,18 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
   const [mealResultsCount, setMealResultsCount] = useState<number>(0);
   const [page, setPage] = useState<number>(0);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
-  const [time, setTime] = useState<Date>(startOfDay(new Date()));
+  const [selectedMealType, setSelectedMealType] = useState<MealType | null>(null);
+
+  const mealTypesDifference = useMemo(
+    () => {
+      const planMealTypesSet = new Set(Object.keys(planMealValues));
+      return mealTypes.filter((mt) => !planMealTypesSet.has(mt));
+    },
+    [planMealValues]
+  );
+  
+  const isEveryMealTypeFilled = Object.keys(planMealValues).length === mealTypes.length;
+  const totalPages = Math.ceil(mealResultsCount / MAX_MEAL_RESULT_DISPLAY_LIMIT);
 
   const debouncedFetchMealResults = useDebouncedCallback(() => {
     fetchMealResults();
@@ -77,13 +92,11 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
   useEffect(() => {
     fetchMealResults();
   }, [page]);
-
+  
   useEffect(() => {
-    if (planMealValues.length >= MAX_PLAN_MEALS)
-      setOpen(false);
-  }, [planMealValues]);
-
-  const totalPages = Math.ceil(mealResultsCount / MAX_MEAL_RESULT_DISPLAY_LIMIT);
+    // Plan has all the meal types available
+    if (isEveryMealTypeFilled) setOpen(false);
+  }, [isEveryMealTypeFilled]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -93,13 +106,11 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
           <p className="font-semibold text-muted-foreground">
             Add meals to your plan here.
           </p>
-          <span className={cn(planMealValues.length > MAX_PLAN_MEALS && "text-red-500")}>
-            <b className="text-xl">{planMealValues.length}</b> / {MAX_PLAN_MEALS}
-          </span>
         </div>
         <DialogTrigger asChild>
           <button
-            disabled={planMealValues.length >= MAX_PLAN_MEALS}
+            type="button"
+            disabled={isEveryMealTypeFilled}
             className="mealicious-button font-semibold text-sm flex justify-center items-center gap-3 rounded-sm py-2 px-12"
           >
             Add Meal
@@ -111,10 +122,10 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
             <VisuallyHidden>
               <DialogHeader>
                 <DialogTitle>
-                  Recipe Search
+                  Meal Search
                 </DialogTitle>
                 <DialogDescription>
-                  Search for Mealicious recipes that you know and love.
+                  Search for meals to insert to the created plan.
                 </DialogDescription>
               </DialogHeader>
             </VisuallyHidden>
@@ -122,7 +133,7 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
               <Input 
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search Recipe..."
+                placeholder="Search Meal..."
                 className="border-none bg-transparent! focus-visible:ring-0 p-0 shadow-none"
               />
               <X
@@ -159,17 +170,12 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
                               <button
                                 type="button"
                                 data-selected={m.id === selectedMeal?.id}
-                                disabled={planMealValues.some((fm) => fm.id === m.id)}
+                                disabled={isEveryMealTypeFilled}
                                 onClick={() => setSelectedMeal(m.id === selectedMeal?.id ? null : m)}
                                 className="group cursor-pointer data-[selected=true]:bg-accent data-[selected=true]:p-2 disabled:cursor-not-allowed text-left w-full flex items-center gap-4 rounded-sm transition-all"
                               >
                                 <div className="w-full flex flex-col items-start gap-2">
-                                  <div className="w-full flex justify-between items-center gap-2">
-                                    <h2 className="font-semibold line-clamp-1 group-disabled:text-secondary">{m.title}</h2>
-                                    <h2 className="min-w-[100px] border border-border text-xs text-center font-semibold rounded-md py-1 px-5">
-                                      {m.type.charAt(0).toUpperCase() + m.type.slice(1)}
-                                    </h2>
-                                  </div>
+                                  <h2 className="font-semibold line-clamp-1 group-disabled:text-secondary">{m.title}</h2>
                                   <div className="group-disabled:text-muted text-muted-foreground font-semibold text-xs flex items-center gap-1">
                                     <Flame size={16} className="fill-muted-foreground group-disabled:fill-muted"/>
                                     <span>{Number(m.calories).toLocaleString()} Calories</span>
@@ -204,56 +210,98 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
               }
             </div>
             <Separator />
-            <TimePicker
-              date={time}
-              setDate={(date) => setTime(date || startOfDay(Date.now()))}
-              selectedMeal={selectedMeal}
-              setSelectedMeal={setSelectedMeal}
-            />
+            <div className="flex justify-between items-end gap-2 p-3 *:flex-1">
+              <Select value={selectedMealType || ""} onValueChange={(val: MealType) => setSelectedMealType(val)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Meal Type..."/>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Types</SelectLabel>
+                    {
+                      mealTypesDifference.map((mt) => (
+                        <SelectItem key={mt} value={mt}>
+                          {mt.charAt(0).toUpperCase() + mt.slice(1)}
+                        </SelectItem>
+                      ))
+                    }
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <button
+                type="button"
+                disabled={!selectedMeal || !selectedMealType || Object.hasOwn(planMealValues, selectedMealType)}
+                onClick={() => {
+                  if (!selectedMealType || !selectedMeal) return;
+                  setValue(
+                    `meals.${selectedMealType}`,
+                    {
+                      id: selectedMeal.id,
+                      title: selectedMeal.title,
+                      calories: selectedMeal.calories,
+                      recipes: selectedMeal.recipes
+                    }
+                  )
+                  setSelectedMeal(null);
+                  setSelectedMealType(null);
+                  toast.success("Meal successfully added!");
+                }}
+                className="max-w-[100px] mealicious-button h-9 mb-0.5 font-semibold text-sm rounded-md"
+              >
+                Add
+              </button>
+            </div>
           </div>
         </DialogContent>
         {
-          planMealValues.length > 0 && (
+          Object.entries(planMealValues).length > 0 && (
             <>
-            <Separator />
             <div className="flex items-center gap-2 text-sm">
               <Info size={16}/>
               You can remove a meal by clicking on it.
             </div>
             <div className="empty:hidden flex flex-col">
               {
-                planMealValues.sort((a, b) => differenceInMinutes(a.time, b.time)).map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => remove(planMealValues.indexOf(m))}
-                    className="cursor-pointer w-full flex gap-4 rounded-sm"
-                  >
-                    <div className="text-left flex items-start gap-4">
-                      <div className="min-w-[100px] flex flex-col gap-1.5 shrink-0 pb-4.5">
-                        <h3 className="font-semibold">{format(m.time, "h:mm a")}</h3>
-                        <span className="bg-mealicious-primary text-white text-xs text-center font-semibold py-1.5 rounded-sm">
-                          {m.type.charAt(0).toUpperCase() + m.type.slice(1)}
+                mealTypes.map((mt) => {
+                  const meal = planMealValues[mt];
+                  return meal ? (
+                    <button
+                      key={mt}
+                      type="button"
+                      onClick={() => setValue(
+                        "meals",
+                        Object.entries(planMealValues).reduce((obj, prop) => {
+                          const mealValue = planMealValues[prop[0] as MealType];
+                          if (mealValue && prop[0] !== mt)
+                            obj[prop[0] as MealType] = mealValue;
+                          return obj;
+                        }, {} as Record<MealType, Meal>)
+                      )}
+                      className="cursor-pointer w-full flex gap-4 rounded-sm"
+                    >
+                      <div className="text-left flex items-start gap-4">
+                        <span className="min-w-[100px] bg-mealicious-primary text-white text-xs text-center font-semibold py-1.5 rounded-sm">
+                          {mt.charAt(0).toUpperCase() + mt.slice(1)}
                         </span>
-                      </div>
-                      <Separator orientation="vertical"/>
-                      <div className="flex flex-col items-start gap-3 pb-4.5">
-                        <h2 className="font-bold line-clamp-2">{m.title}</h2>
-                        <div className="group-disabled:text-muted text-muted-foreground font-semibold text-xs flex items-center gap-1">
-                          <Flame size={16} className="fill-muted-foreground group-disabled:fill-muted"/>
-                          <span>{Number(m.calories).toLocaleString()} Calories</span>
+                        <Separator orientation="vertical"/>
+                        <div className="flex flex-col items-start gap-3 pb-4.5">
+                          <h2 className="font-bold line-clamp-2">{meal.title}</h2>
+                          <div className="group-disabled:text-muted text-muted-foreground font-semibold text-xs flex items-center gap-1">
+                            <Flame size={16} className="fill-muted-foreground group-disabled:fill-muted"/>
+                            <span>{Number(meal.calories).toLocaleString()} Calories</span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {
+                              meal.recipes.map((r) => (
+                                <div key={r.id} className="bg-mealicious-primary text-white font-semibold text-xs rounded-full py-1 px-3">{r.title}</div>
+                              ))
+                            }
+                          </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {
-                            m.recipes.map((r) => (
-                              <div key={r.id} className="bg-mealicious-primary text-white font-semibold text-xs rounded-full py-1 px-3">{r.title}</div>
-                            ))
-                          }
-                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))
+                    </button>
+                  ) : null;
+                })
               }
             </div>
             </>

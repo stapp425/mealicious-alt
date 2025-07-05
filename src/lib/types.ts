@@ -139,3 +139,12 @@ export const unitAbbreviations = units.map((u) => u.abbreviation);
 
 export const mealTypes = ["breakfast", "brunch", "lunch", "dinner", "supper", "snack"] as const;
 export type MealType = typeof mealTypes[number];
+
+export const planViews = ["monthly", "weekly"] as const;
+export type PlanView = typeof planViews[number];
+
+export const morePlansView = ["upcoming", "past"] as const;
+export type MorePlansView = typeof morePlansView[number];
+
+export const morePlansTimeFrame = ["week", "month", "year"] as const;
+export type MorePlansTimeFrame = typeof morePlansTimeFrame[number];

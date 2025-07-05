@@ -3,9 +3,6 @@
 import { authActionClient } from "@/safe-action";
 import {
   ImageDataSchema,
-  MealCreationSchema,
-  MealEditionSchema,
-  PlanCreationSchema,
   RecipeCreationSchema,
   RecipeEditionSchema,
   RecipeSearchIndexDeletionSchema,
@@ -18,12 +15,7 @@ import { and, count, desc, eq, exists, ilike, sql } from "drizzle-orm";
 import z from "zod";
 import { 
   ingredient, 
-  instruction, 
-  meal, 
-  mealToRecipe, 
-  nutrition, 
-  plan, 
-  planToMeal, 
+  instruction,
   recipe, 
   recipeFavorite, 
   recipeReview, 
@@ -41,7 +33,6 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2 } from "@/r2-client";
 import axios from "axios";
 import { searchClient, writeClient } from "@/algolia";
-import { format } from "date-fns";
 
 export async function generatePresignedUrlForImageUpload(params: { name: string; type: string; size: number; }) {
   const parsedBody = ImageDataSchema.safeParse(params);
@@ -49,7 +40,7 @@ export async function generatePresignedUrlForImageUpload(params: { name: string;
   if (!parsedBody.success)
     throw new Error(parsedBody.error.errors[0].message);
   
-  const { name, type, size } = ImageDataSchema.parse(params);
+  const { name, type, size } = parsedBody.data;
 
   const putCommand = new PutObjectCommand({
     Bucket: process.env.NEXT_PUBLIC_IMAGE_BUCKET_NAME!,
@@ -621,155 +612,6 @@ export const toggleReviewLike = authActionClient
     };
   });
 
-export const createMeal = authActionClient
-  .schema(z.object({
-    createdMeal: MealCreationSchema
-  }))
-  .action(async ({
-    ctx: { user },
-    parsedInput: { createdMeal }
-  }) => {
-    const [{ mealId }] = await db.insert(meal)
-      .values({
-        title: createdMeal.title,
-        description: createdMeal.description || undefined,
-        createdBy: user.id!,
-        tags: createdMeal.tags,
-        type: createdMeal.type
-      })
-      .returning({
-        mealId: meal.id
-      });
-
-    await db.insert(mealToRecipe)
-      .values(createdMeal.recipes.map((r) => ({
-        mealId: mealId,
-        recipeId: r.id
-      })));
-
-    revalidatePath("/meals");
-
-    return {
-      success: true as const,
-      message: "Meal successfully created!"
-    };
-  });
-
-export const updateMeal = authActionClient
-  .schema(z.object({
-    editedMeal: MealEditionSchema
-  }))
-  .action(async ({ ctx: { user }, parsedInput: { editedMeal } }) => {
-    const foundMeal = await db.query.meal.findFirst({
-      where: (meal, { eq }) => eq(meal.id, editedMeal.id),
-      columns: {
-        id: true,
-        createdBy: true
-      }
-    });
-
-    if (!foundMeal)
-      throw new Error("Meal does not exist.");
-
-    if (foundMeal.createdBy !== user.id)
-      throw new Error("You are not authorized to edit this meal.");
-
-    const updateMealQuery = db.update(meal)
-      .set({
-        title: editedMeal.title,
-        description: editedMeal.description || undefined,
-        tags: editedMeal.tags,
-        type: editedMeal.type,
-        updatedAt: new Date()
-      })
-      .where(eq(meal.id, foundMeal.id));
-
-    const deleteMealToRecipeQuery = db.delete(mealToRecipe)
-      .where(eq(mealToRecipe.mealId, foundMeal.id));
-
-    await Promise.all([
-      updateMealQuery,
-      deleteMealToRecipeQuery
-    ]);
-
-    await db.insert(mealToRecipe)
-      .values(editedMeal.recipes.map((r) => ({
-        mealId: foundMeal.id,
-        recipeId: r.id
-      })));
-
-    revalidatePath("/meals");
-
-    return {
-      success: true as const,
-      message: "Meal successfully edited!"
-    };
-  });
-
-export const deleteMeal = authActionClient
-  .schema(z.object({
-    mealId: z.string().nonempty({
-      message: "Meal ID cannot be empty."
-    })
-  }))
-  .action(async ({ 
-    ctx: { user },
-    parsedInput: { mealId }
-  }) => {
-    const foundMeal = await db.query.meal.findFirst({
-      where: (meal, { eq }) => eq(meal.id, mealId),
-      columns: {
-        id: true,
-        createdBy: true
-      }
-    });
-
-    if (!foundMeal)
-      throw new Error("Meal does not exist.");
-
-    if (foundMeal.createdBy !== user.id)
-      throw new Error("You are not authorized to delete this meal.");
-
-    await db.delete(meal).where(eq(meal.id, foundMeal.id));
-
-    revalidatePath("/meals");
-
-    return {
-      success: true as const,
-      message: "Meal successfully deleted!"
-    };
-  });
-
-export const createPlan = authActionClient
-  .schema(z.object({
-    createdPlan: PlanCreationSchema
-  }))
-  .action(async ({
-    ctx: { user },
-    parsedInput: { createdPlan }
-  }) => {
-    const [{ planId }] = await db.insert(plan).values({
-      title: createdPlan.title,
-      description: createdPlan.description || undefined,
-      tags: createdPlan.tags,
-      createdBy: user.id,
-      date: createdPlan.date
-    }).returning({
-      planId: plan.id
-    });
-
-    await db.insert(planToMeal).values(createdPlan.meals.map((m) => ({
-      planId,
-      mealId: m.id,
-      time: format(m.time, "HH:mm:00")
-    })));
-
-    return {
-      success: true,
-      message: "Plan successfully created!"
-    };
-  });
-
 export async function getReviewsByRecipe({ recipeId, limit, offset, userId }: { recipeId: string; limit: number; offset: number; userId?: string; }) {
   return db.query.recipeReview.findMany({
     where: (review, { eq, isNotNull, and }) => and(
@@ -898,72 +740,3 @@ export async function getSavedRecipesForMealFormCount({ userId, query }: { userI
       )
     ));
 }
-
-export async function getSavedMealsForPlanForm({ userId, query, limit, offset }: { userId: string; query: string; limit: number; offset: number; }) {
-  return db.select({
-    id: meal.id,
-    title: meal.title,
-    type: meal.type,
-    calories: sql<number>`"meal_to_recipe_sub"."total_calories"`.as("total_calories"),
-    recipes: sql<{
-      id: string;
-      title: string;
-    }[]>`"meal_to_recipe_sub"."recipes"`.as("recipes")
-  }).from(meal)
-    .where(and(
-      eq(meal.createdBy, userId),
-      ilike(meal.title, `%${query}%`)
-    ))
-    .innerJoinLateral(
-      db.select({
-        calories: sql`sum("recipe_sub"."calories")`.as("total_calories"),
-        recipes: sql`
-          coalesce(
-            json_agg("recipe_sub"."recipe"),
-            '[]'::json
-          )
-        `.as("recipes")
-      }).from(mealToRecipe)
-        .where(eq(mealToRecipe.mealId, meal.id))
-        .innerJoinLateral(
-          db.select({
-            calories: sql`"recipe_to_nutrition_sub"."calories"`.as("calories"),
-            recipe: sql`
-              json_build_object(
-                'id', ${recipe.id},
-                'title', ${recipe.title}
-              )
-            `.as("recipe")
-          }).from(recipe)
-            .where(eq(mealToRecipe.recipeId, recipe.id))
-            .leftJoinLateral(
-              db.select({
-                calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
-              }).from(recipeToNutrition)
-                .where(and(
-                  eq(recipeToNutrition.recipeId, recipe.id),
-                  eq(nutrition.name, "Calories")
-                ))
-                .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
-                .as("recipe_to_nutrition_sub"),
-              sql`true`
-            )
-            .as("recipe_sub"),
-          sql`true`
-        )
-        .as("meal_to_recipe_sub"),
-      sql`true`
-    )
-    .limit(limit)
-    .offset(offset);
-}
-
-export async function getSavedMealsForPlanFormCount({ userId, query }: { userId: string, query: string }) {
-  return db.select({ count: count() })
-    .from(meal)
-    .where(and(
-      eq(meal.createdBy, userId),
-      ilike(meal.title, `%${query}%`)
-    ));
-}
-

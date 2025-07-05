@@ -105,7 +105,7 @@ export default function MealRecipeSearch({ userId }: RecipeSearchProps) {
                   Recipe Search
                 </DialogTitle>
                 <DialogDescription>
-                  Search for Mealicious recipes that you know and love.
+                  Search for recipes to insert to the created meal.
                 </DialogDescription>
               </DialogHeader>
             </VisuallyHidden>

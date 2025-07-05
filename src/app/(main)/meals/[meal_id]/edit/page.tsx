@@ -27,7 +27,6 @@ export default async function Page({ params }: PageProps) {
       id: true,
       title: true,
       description: true,
-      type: true,
       tags: true,
       createdBy: true
     },

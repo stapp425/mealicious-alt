@@ -18,12 +18,11 @@ type SearchResultsProps = {
 };
 
 export default async function SearchResults({ count, userId, searchParams }: SearchResultsProps) {
-  const { page, query, mealType, maxCalories } = searchParams;
+  const { page, query, maxCalories } = searchParams;
   const meals = await db.select({
     id: meal.id,
     title: meal.title,
     description: meal.description,
-    type: meal.type,
     tags: meal.tags,
     calories: sql<number>`"meal_to_recipe_sub"."total_calories"`,
     recipes: sql<{
@@ -36,7 +35,6 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
     .where(and(
       eq(meal.createdBy, userId),
       query ? ilike(meal.title, `%${query}%`) : undefined,
-      mealType ? eq(meal.type, mealType) : undefined,
       maxCalories > 0 ? lte(sql`"meal_to_recipe_sub"."total_calories"`, maxCalories) : undefined
     ))
     .innerJoinLateral(

@@ -3,7 +3,7 @@
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { deleteMeal } from "@/lib/actions/db";
+import { deleteMeal } from "@/lib/actions/meal";
 import { cn } from "@/lib/utils";
 import { EllipsisVertical, Flame, Loader2, Pencil, Search, Trash2 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
@@ -17,7 +17,6 @@ type MealResultProps = {
     id: string;
     title: string;
     description: string | null;
-    type: string;
     tags: string[];
     calories: number;
     recipes: {
@@ -145,9 +144,6 @@ export default function MealResult({ meal }: MealResultProps) {
             </div>
           ))
         }
-      </div>
-      <div className="min-w-[150px] w-fit bg-mealicious-primary tracking-wider text-white text-center font-bold mx-auto mt-auto py-1 px-5 rounded-full">
-        {meal.type.toUpperCase()}
       </div>
     </div>
   );

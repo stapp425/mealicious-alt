@@ -4,7 +4,6 @@ import { user } from "./user";
 import { recipe } from "./recipe";
 import { planToMeal } from "./plan";
 import { nanoid } from "nanoid";
-import { MealType } from "@/lib/types";
 
 export const meal = pgTable("meal", (t) => ({
   id: t.text("meal_id")
@@ -12,9 +11,6 @@ export const meal = pgTable("meal", (t) => ({
     .$default(() => nanoid()),
   title: t.varchar("meal_title", { length: 100 }).notNull(),
   description: t.text("meal_desc"),
-  type: t.text("meal_type")
-    .$type<MealType>()
-    .notNull(),
   tags: t.json("meal_tags")
     .$type<string[]>()
     .notNull()

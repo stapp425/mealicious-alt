@@ -7,9 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import MealTags from "@/components/meals/create/meal-tags";
 import MealDescription from "@/components/meals/create/meal-description";
 import MealTitle from "@/components/meals/create/meal-title";
-import MealType from "@/components/meals/create/meal-type";
 import { useAction } from "next-safe-action/hooks";
-import { createMeal } from "@/lib/actions/db";
+import { createMeal } from "@/lib/actions/meal";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -49,7 +48,6 @@ export default function CreateMealForm({ userId }: CreateMealFormProps) {
         <MealTitle />
         <MealDescription />
         <MealTags />
-        <MealType />
         <MealRecipeSearch userId={userId}/>
         <button
           disabled={createMealForm.formState.isSubmitting}

@@ -410,7 +410,6 @@ const MealFormSchema = z.object({
   tags: z.array(z.string().nonempty({
     message: "Tag cannot be empty."
   })),
-  type: MealTypeSchema,
   recipes: z.array(z.object({
     id: IdSchema,
     title: z.string().nonempty({
@@ -468,7 +467,7 @@ const PlanFormSchema = z.object({
     if (val < start) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Plan date cannot be set on a day that has already passed.",
+        message: "Plan date cannot be set on a past date.",
         fatal: true
       });
     }
@@ -485,14 +484,13 @@ const PlanFormSchema = z.object({
     message: "Plan tags cannot be empty."
   })),
   description: z.nullable(z.string()),
-  meals: z.array(z.object({
+  meals: z.record(z.enum(mealTypes), z.optional(z.object({
     id: IdSchema,
     title: z.string().nonempty({
       message: "Meal title cannot be empty."
     }).max(MAX_MEAL_TITLE_LENGTH, {
       message: `Meal title cannot have more than ${MAX_MEAL_TITLE_LENGTH.toLocaleString()} characters.`
     }),
-    type: MealTypeSchema,
     calories: z.coerce.number()
       .int({
         message: "Amount must be an integer."
@@ -506,13 +504,8 @@ const PlanFormSchema = z.object({
       }).max(MAX_TITLE_LENGTH, {
         message: `Recipe title cannot have more than ${MAX_TITLE_LENGTH.toLocaleString()} characters.`
       })
-    })),
-    time: z.date()
-  })).min(1, {
-    message: "Meal list should have at least 1 element."
-  }).max(MAX_PLAN_MEALS, {
-    message: `Place cannot have more than ${MAX_PLAN_MEALS.toLocaleString()} meals.`
-  })
+    }))
+  })))
 });
 
 export const PlanCreationSchema = PlanFormSchema;
@@ -522,3 +515,83 @@ export const PlanEditionSchema = PlanFormSchema.extend({
 
 export type PlanCreation = z.infer<typeof PlanCreationSchema>;
 export type PlanEdition = z.infer<typeof PlanEditionSchema>;
+
+export const PreviewPlanSchema = z.array(z.object({
+  id: IdSchema,
+  title: z.string({
+    required_error: "A plan title is required."
+  }).nonempty({
+    message: "Plan title cannot be empty."
+  }),
+  date: z.date({
+    required_error: "A plan date is required."
+  })
+}));
+
+export type PreviewPlan = z.infer<typeof PreviewPlanSchema.element>;
+
+export const DetailedPlanSchema = z.array(z.object({
+  id: z.string({
+    required_error: "A plan ID is required."
+  }).nonempty({
+    message: "Plan ID cannot be empty."
+  }),
+  title: z.string({
+    required_error: "A plan title is required."
+  }).nonempty({
+    message: "Plan title cannot be empty."
+  }),
+  description: z.nullable(z.string().nonempty({
+    message: "Plan description cannot be empty."
+  })),
+  tags: z.array(z.string().nonempty({
+    message: "Plan tag cannot be empty."
+  })),
+  date: z.coerce.date({
+    required_error: "A date is required."
+  }),
+  meals: z.array(z.object({
+    id: z.string({
+      required_error: "A meal ID is required."
+    }).nonempty({
+      message: "Meal ID cannot be empty."
+    }),
+    title: z.string({
+      required_error: "A meal title is required."
+    }).nonempty({
+      message: "A meal title is required."
+    }),
+    type: MealTypeSchema,
+    tags: z.array(z.string().nonempty({
+      message: "Tag cannot be empty."
+    })),
+    description: z.nullable(z.string().nonempty({
+      message: "Meal description cannot be empty."
+    })),
+    recipes: z.array(z.object({
+      id: z.string({
+        required_error: "A recipe ID is required."
+      }).nonempty({
+        message: "Recipe ID cannot be empty."
+      }),
+      title: z.string({
+        required_error: "A title is required."
+      }).nonempty({
+        message: "Recipe title cannot be empty."
+      }),
+      calories: z.coerce.number().nonnegative({
+        message: "Meal calories cannot be negative."
+      }),
+      image: z.string({
+        required_error: "An image URL is required.",
+      }).url({
+        message: "Image URL must be valid."
+      }),
+      description: z.nullable(z.string().nonempty({
+        message: "Recipe description cannot be empty."
+      }))
+    }))
+  }))
+}));
+
+export type DetailedPlan = z.infer<typeof DetailedPlanSchema.element>;

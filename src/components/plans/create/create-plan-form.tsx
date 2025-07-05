@@ -12,15 +12,13 @@ import { Loader2 } from "lucide-react";
 import PlanMealSearch from "./plan-meal-search";
 import { useMediaQuery } from "usehooks-ts";
 import { useAction } from "next-safe-action/hooks";
-import { createPlan } from "@/lib/actions/db";
+import { createPlan } from "@/lib/actions/plan";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useCreatePlanFormContext } from "@/components/plans/create/create-plan-form-provider";
 
-type CreatePlanFormProps = {
-  userId: string;
-};
-
-export default function CreatePlanForm({ userId }: CreatePlanFormProps) {
+export default function CreatePlanForm() {
+  const { userId } = useCreatePlanFormContext();
   const { replace } = useRouter();
   const [mounted, setMounted] = useState<boolean>(false);
   const matches = useMediaQuery("(min-width: 80rem)");
@@ -28,9 +26,8 @@ export default function CreatePlanForm({ userId }: CreatePlanFormProps) {
     resolver: zodResolver(PlanCreationSchema),
     defaultValues: {
       title: "",
-      date: new Date(),
       tags: [],
-      meals: []
+      meals: {}
     }
   });
   

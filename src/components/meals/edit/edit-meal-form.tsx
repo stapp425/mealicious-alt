@@ -9,11 +9,9 @@ import { toast } from "sonner";
 import MealTitle from "@/components/meals/edit/meal-title";
 import MealDescription from "@/components/meals/edit/meal-description";
 import MealTags from "@/components/meals/edit/meal-tags";
-import MealType from "@/components/meals/edit/meal-type";
 import MealRecipeSearch from "@/components/meals/edit/meal-recipe-search";
 import { Loader2 } from "lucide-react";
-import { updateMeal } from "@/lib/actions/db";
-import { MealType as MealFormType } from "@/lib/types";
+import { updateMeal } from "@/lib/actions/meal";
 
 type EditMealFormProps = {
   userId: string;
@@ -21,7 +19,6 @@ type EditMealFormProps = {
     id: string;
     title: string;
     description: string | null;
-    type: MealFormType;
     tags: string[];
     createdBy: string | null;
     includedRecipes: {
@@ -51,7 +48,6 @@ export default function EditMealForm({ userId, meal }: EditMealFormProps) {
       id: meal.id,
       title: meal.title,
       description: meal.description || undefined,
-      type: meal.type,
       tags: meal.tags,
       recipes: meal.includedRecipes.map(({ recipe }) => recipe)
     }
@@ -68,7 +64,6 @@ export default function EditMealForm({ userId, meal }: EditMealFormProps) {
         <MealTitle />
         <MealDescription />
         <MealTags />
-        <MealType />
         <MealRecipeSearch userId={userId}/>
         <button
           disabled={editMealForm.formState.isSubmitting}

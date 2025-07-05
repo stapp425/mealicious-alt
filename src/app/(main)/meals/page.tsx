@@ -44,7 +44,6 @@ export default async function Page({ searchParams }: PageProps) {
     .where(and(
       eq(meal.createdBy, userId),
       loadedSearchParams.query ? ilike(meal.title, `%${loadedSearchParams.query}%`) : undefined,
-      loadedSearchParams.mealType ? eq(meal.type, loadedSearchParams.mealType) : undefined,
       loadedSearchParams.maxCalories > 0 ? lte(
         db.select({
           sum: sql`sum("recipe_sub"."calories")`.as("total_calories")
