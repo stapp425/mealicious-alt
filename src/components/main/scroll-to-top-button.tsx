@@ -6,11 +6,9 @@ import { useEffect, useState } from "react";
 
 export default function ScrollToTopButton() {
   const [y, setY] = useState<number>(0);
-  const handleScroll = () => setY(window.scrollY);
 
   useEffect(() => {
-    setY(window.scrollY);
-
+    const handleScroll = () => setY(window.scrollY);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);

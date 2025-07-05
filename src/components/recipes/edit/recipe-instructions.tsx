@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { MAX_INSTRUCTION_CONTENT_LENGTH, MAX_INSTRUCTION_TIME_AMOUNT, MAX_INSTRUCTION_TITLE_LENGTH, MAX_INSTRUCTIONS_LENGTH, RecipeEdition } from "@/lib/zod";
-import { ArrowDown, ArrowUp, Clock, Info, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, Clock, Info, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import z from "zod";
@@ -56,7 +56,7 @@ export default function RecipeInstructions() {
   
   return (
     <div className="flex flex-col gap-3">
-      <h1 className="text-2xl font-bold after:content-['*'] after:text-red-500">Instructions</h1>
+      <h1 className="text-2xl font-bold required-field">Instructions</h1>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
         <p className="font-semibold text-muted-foreground">
           Add instructions to your recipe here.
@@ -108,11 +108,10 @@ export default function RecipeInstructions() {
         placeholder="Add an instruction here..."
         autoComplete="off"
         onChange={(e) => {
-          const { value } = e.target;
           if (!isTouched) setIsTouched(true);
           setInstruction((i) => ({
             ...i,
-            description: value
+            description: e.target.value
           }));
         }}
         className="resize-y break-all"
@@ -138,65 +137,64 @@ export default function RecipeInstructions() {
         formInstructionValues.length > 0 && (
           <>
           <Separator />
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
-            <div className="flex items-center gap-2 text-sm">
-              <Info size={16}/>
-              You can remove an instruction by clicking on it.
-            </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Info size={16}/>
             <span className={cn(formInstructionValues.length > MAX_INSTRUCTIONS_LENGTH && "text-red-500")}>
-              <b className="text-xl">{formInstructionValues.length}</b> / {MAX_INSTRUCTIONS_LENGTH}
+              Instruction count: <b>{formInstructionValues.length}</b> / {MAX_INSTRUCTIONS_LENGTH}
             </span>
           </div>
-          <div className="flex-1">
-            <div className="flex flex-col gap-3">
-              { 
-                formInstructionValues.map((i, index) => (
-                  <div
-                    key={index}
-                    onClick={() => remove(index)}
-                    className="cursor-pointer hover:bg-muted flex flex-col items-start gap-3 text-left overflow-hidden border border-border rounded-md p-3 transition-colors shadow-sm"
-                  >
-                    <div className="w-full flex justify-between items-start gap-4">
-                      <div className="mealicious-button size-10 flex justify-center items-center p-3 rounded-full">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 flex flex-col gap-0.5 items-start">
-                        <h2 className="font-bold text-lg hyphens-auto line-clamp-2 -mt-1">{i.title}</h2>
-                        <div className="font-semibold text-sm text-nowrap flex items-center gap-1.5 text-muted-foreground">
-                          <Clock size={14}/>
-                          {Math.floor(i.time)} mins
-                        </div>
-                      </div>
+          <div className="flex-1 flex flex-col gap-3">
+            { 
+              formInstructionValues.map((i, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col items-start gap-3 text-left overflow-hidden border border-border rounded-md p-3 shadow-sm"
+                >
+                  <div className="w-full flex justify-between items-start gap-4">
+                    <div className="mealicious-button size-10 flex justify-center items-center p-3 rounded-full">
+                      {index + 1}
                     </div>
-                    <p className="flex-1 text-left break-all">{i.description}</p>
-                    <div className="flex gap-2.5">
-                      <button
-                        type="button"
-                        disabled={index <= 0}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          swap(index, index - 1);
-                        }}
-                        className="font-semibold text-sm shrink-0 mealicious-button flex justify-center items-center gap-2 p-2 size-8 rounded-full"
-                      >
-                        <ArrowUp size={14}/>
-                      </button>
-                      <button
-                        type="button"
-                        disabled={index >= formInstructionValues.length - 1}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          swap(index, index + 1);
-                        }}
-                        className="font-semibold text-sm shrink-0 mealicious-button flex justify-center items-center gap-2 p-2 size-8 rounded-full"
-                      >
-                        <ArrowDown size={14}/>
-                      </button>
+                    <div className="flex-1 flex flex-col gap-0.5 items-start">
+                      <h2 className="font-bold text-lg hyphens-auto line-clamp-2 -mt-1">{i.title}</h2>
+                      <div className="font-semibold text-sm text-nowrap flex items-center gap-1.5 text-muted-foreground">
+                        <Clock size={14}/>
+                        {Math.floor(i.time)} mins
+                      </div>
                     </div>
                   </div>
-                ))
-              }
-            </div>
+                  <p className="flex-1 text-left break-all">{i.description}</p>
+                  <div className="w-full h-8 flex justify-between sm:justify-start items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={index <= 0}
+                      onClick={() => swap(index, index - 1)}
+                      className="flex-1 sm:flex-none shrink-0 mealicious-button font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 h-8 rounded-full"
+                    >
+                      <ArrowUp size={14}/>
+                      Move Up
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index >= formInstructionValues.length - 1}
+                      onClick={() => swap(index, index + 1)}
+                      className="flex-1 sm:flex-none shrink-0 mealicious-button font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 h-8 rounded-full"
+                    >
+                      <ArrowDown size={14}/>
+                      Move Down
+                    </button>
+                    <Separator orientation="vertical" className="grow-0"/>
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      className="group flex-1 sm:flex-none shrink-0 cursor-pointer hover:bg-red-700 hover:text-white hover:border-red-700 border border-muted-foreground font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 h-8 rounded-full transition-colors"
+                    >
+                      <Trash2 size={14} className="stroke-muted-foreground group-hover:stroke-white"/>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            }
           </div>
           </>
         )

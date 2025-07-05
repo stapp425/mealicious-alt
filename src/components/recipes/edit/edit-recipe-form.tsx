@@ -226,7 +226,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
       >
         <h1 className="text-4xl font-bold mb-6">Edit Recipe</h1>
         <div className="flex flex-col xl:flex-row gap-3 sm:gap-6">
-          <div className="w-full xl:w-[500px] flex flex-col gap-3">
+          <div className="flex-1 shrink-0 flex flex-col gap-3">
             <RecipeImageUploader recipeImageUrl={recipe.image}/>
             {mounted && !matches && <RecipeTitle />}
             <RecipeCuisine cuisines={cuisines}/>
@@ -241,7 +241,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
               {editRecipeForm.formState.isSubmitting ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
             </button>
           </div>
-          <div className="flex-1 flex flex-col gap-3">
+          <div className="xl:w-3/5 flex flex-col gap-3">
             {mounted && matches && <RecipeTitle />}
             <RecipeDescription />
             <RecipeDiets diets={diets}/>

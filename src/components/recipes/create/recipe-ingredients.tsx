@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Unit, unitAbbreviations } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MAX_INGREDIENT_AMOUNT, MAX_INGREDIENT_NAME_LENGTH, MAX_INGREDIENTS_LENGTH, RecipeCreation, UnitSchema } from "@/lib/zod";
-import { Info, Plus } from "lucide-react";
+import { Info, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useDebouncedCallback } from "use-debounce";
@@ -200,32 +200,36 @@ export default function RecipeIngredients() {
         formIngredientValues.length > 0 && (
           <>
           <Separator />
-          <div className="flex flex-col justify-between md:flex-row items-start md:items-end">
-            <div className="flex items-center gap-2 text-sm">
-              <Info size={16}/>
-              You can remove an ingredient by clicking on it.
-            </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Info size={16}/>
             <span className={cn(formIngredientValues.length > MAX_INGREDIENTS_LENGTH && "text-red-500")}>
-              <b className="text-xl">{formIngredientValues.length}</b> / {MAX_INGREDIENTS_LENGTH}
+              Ingredient count: <b>{formIngredientValues.length}</b> / {MAX_INGREDIENTS_LENGTH}
             </span>
           </div>
           <div className="flex flex-col gap-3">
             {
               formIngredientValues.map((i, index) => (
-                <button
-                  type="button"
+                <div
                   key={i.name}
-                  onClick={() => remove(index)}
-                  className="hover:bg-muted cursor-pointer text-left overflow-hidden items-center border border-border rounded-md transition-colors shadow-sm"
+                  className="text-left overflow-hidden items-center border border-border rounded-md transition-colors shadow-sm"
                 >
-                  <div className="flex flex-col gap-0.5 p-3">
+                  <div className="flex flex-col gap-3 p-3">
                     <div className="flex justify-between items-center">
                       <h1 className="font-bold text-xl">{i.amount} {i.unit}</h1>
+                      <button
+                        type="button"
+                        onClick={() => remove(index)}
+                        className="size-8 group cursor-pointer hover:bg-red-700 hover:text-white hover:border-red-700 border border-muted-foreground font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 rounded-full transition-colors"
+                      >
+                        <Trash2 size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
+                      </button>
+                    </div>
+                    <div className="flex justify-between items-center gap-3">
+                      <span className="w-full line-clamp-1 text-xl font-semibold text-muted-foreground">
+                        {i.name}
+                      </span>
                       {i.isAllergen && <span className="font-semibold text-muted-foreground">(Allergen)</span>}
                     </div>
-                    <span className="w-full line-clamp-1 text-xl font-semibold text-muted-foreground">
-                      {i.name}
-                    </span>
                   </div>
                   {
                     i.note && (
@@ -237,7 +241,7 @@ export default function RecipeIngredients() {
                       </>
                     )
                   }
-                </button>
+                </div>
               ))
             }
           </div>
