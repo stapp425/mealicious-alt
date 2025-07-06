@@ -1,9 +1,8 @@
 "use client";
 
-import { getSavedRecipesForMealForm, getSavedRecipesForMealFormCount } from "@/lib/actions/db";
 import { cn, MAX_RECIPE_RESULT_DISPLAY_LIMIT } from "@/lib/utils";
-import { MAX_MEAL_RECIPES, MealCreation } from "@/lib/zod";
-import { Info, Loader2, Plus, X } from "lucide-react";
+import { MAX_MEAL_RECIPES, MealEdition } from "@/lib/zod";
+import { Info, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useDebouncedCallback } from "use-debounce";
@@ -13,7 +12,8 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import Pagination from "./pagination";
+import Pagination from "@/components/meals/edit/pagination";
+import { getSavedRecipesForMealForm, getSavedRecipesForMealFormCount } from "@/lib/actions/meal";
 
 type Recipe = {
   id: string;
@@ -26,8 +26,8 @@ type RecipeSearchProps = {
   userId: string;
 };
 
-export default function MealRecipeSearch({ userId }: RecipeSearchProps) {
-  const { control, formState: { errors } } = useFormContext<MealCreation>();
+export default function MealRecipes({ userId }: RecipeSearchProps) {
+  const { control, formState: { errors } } = useFormContext<MealEdition>();
   const { append, remove } = useFieldArray({ control, name: "recipes" });
   const mealRecipeValues = useWatch({ control, name: "recipes" });
   
@@ -105,7 +105,7 @@ export default function MealRecipeSearch({ userId }: RecipeSearchProps) {
                   Recipe Search
                 </DialogTitle>
                 <DialogDescription>
-                  Search for recipes to insert to the created meal.
+                  Search for recipes to insert to the edited meal.
                 </DialogDescription>
               </DialogHeader>
             </VisuallyHidden>
@@ -169,11 +169,11 @@ export default function MealRecipeSearch({ userId }: RecipeSearchProps) {
                                     className="rounded-sm object-cover object-center group-disabled:opacity-25"
                                   />
                                 </div>
-                                <div className="flex flex-col items-start grow-0">
+                                <div className="flex-1 overflow-x-hidden text-left flex flex-col items-start gap-2">
                                   <h2 className="font-semibold line-clamp-1 group-disabled:text-secondary">{r.title}</h2>
                                   <p className={cn(
                                     r.description ? "line-clamp-1" : "italic",
-                                    "text-muted-foreground group-disabled:text-secondary"
+                                    "max-w-[250px] sm:max-w-[375px] text-muted-foreground group-disabled:text-secondary"
                                   )}>
                                     {r.description || "No description is available."}
                                   </p>
@@ -210,11 +210,9 @@ export default function MealRecipeSearch({ userId }: RecipeSearchProps) {
             <div className="empty:hidden flex flex-col gap-3">
               {
                 mealRecipeValues.map((r, index) => (
-                  <button
+                  <div
                     key={r.id}
-                    type="button"
-                    onClick={() => remove(index)}
-                    className="cursor-pointer border border-border w-full hover:border-red-500 hover:bg-red-300 dark:hover:bg-red-500 flex gap-4 p-3 transition-colors rounded-sm"
+                    className="border border-border w-full min-h-[100px] flex gap-4 p-3 transition-colors rounded-sm"
                   >
                     <div className="relative w-[100px] min-h-[50px] shrink-0">
                       <Image 
@@ -224,8 +222,18 @@ export default function MealRecipeSearch({ userId }: RecipeSearchProps) {
                         className="rounded-sm object-cover object-center"
                       />
                     </div>
-                    <div className="text-left flex flex-col items-start gap-2">
-                      <h2 className="font-bold line-clamp-2">{r.title}</h2>
+                    <div className="flex-1 overflow-x-hidden text-left flex flex-col items-start gap-2">
+                      <div className="w-full flex justify-between items-start gap-4">
+                        <h2 className="font-bold line-clamp-2">{r.title}</h2>
+                        <button
+                          type="button"
+                          onClick={() => remove(index)}
+                          className="w-fit h-8 group cursor-pointer hover:bg-red-700 hover:text-white hover:border-red-700 border border-muted-foreground font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 rounded-full transition-colors"
+                        >
+                          Delete
+                          <Trash2 size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
+                        </button>
+                      </div>
                       <p className={cn(
                         r.description ? "line-clamp-1" : "italic",
                         "text-muted-foreground"
@@ -233,7 +241,7 @@ export default function MealRecipeSearch({ userId }: RecipeSearchProps) {
                         {r.description || "No description is available."}
                       </p>
                     </div>
-                  </button>
+                  </div>
                 ))
               }
             </div>

@@ -12,20 +12,21 @@ type MorePlansProps = {
   startDate: Date | null;
   endDate: Date | null;
   searchParams: {
+    query: string;
     view: MorePlansView;
     timeframe: MorePlansTimeFrame | null;
     page: number;
   };
 };
 
-
 const inUtc = { in: tz("UTC") };
 
 export default async function MorePlans({ userId, startDate, endDate, searchParams }: MorePlansProps) {
-  const { view, page } = searchParams;
+  const { query, view, page } = searchParams;
   
   const plans = await getDetailedPlansInTimeFrame({
     userId,
+    query,
     startDate: startDate ? new UTCDate(startDate) : undefined,
     endDate: endDate ? new UTCDate(addMilliseconds(endDate, -1, inUtc)) : undefined,
     limit: MAX_PLAN_DISPLAY_LIMIT,

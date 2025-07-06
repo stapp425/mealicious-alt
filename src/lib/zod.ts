@@ -505,7 +505,9 @@ const PlanFormSchema = z.object({
         message: `Recipe title cannot have more than ${MAX_TITLE_LENGTH.toLocaleString()} characters.`
       })
     }))
-  })))
+  }))).refine((val) => Object.keys(val).length > 0, {
+    message: "Plan must have at least 1 meal included."
+  })
 });
 
 export const PlanCreationSchema = PlanFormSchema;

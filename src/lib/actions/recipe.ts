@@ -1,75 +1,16 @@
 "use server";
 
 import { authActionClient } from "@/safe-action";
-import {
-  ImageDataSchema,
-  RecipeCreationSchema,
-  RecipeEditionSchema,
-  RecipeSearchIndexDeletionSchema,
-  RecipeSearchIndexInsertionSchema,
-  RecipeSearchIndexSchema,
-  ReviewCreationSchema
-} from "@/lib/zod";
 import { db } from "@/db";
-import { and, count, desc, eq, exists, ilike, sql } from "drizzle-orm";
-import z from "zod";
-import { 
-  ingredient, 
-  instruction,
-  recipe, 
-  recipeFavorite, 
-  recipeReview, 
-  recipeStatistics, 
-  recipeToDiet, 
-  recipeToDishType, 
-  recipeToNutrition,
-  reviewLike,
-  savedRecipe
-} from "@/db/schema";
-import { getRatingKey } from "@/lib/utils";
+import { and, eq, sql } from "drizzle-orm";
+import { RecipeCreationSchema, RecipeEditionSchema, ReviewCreationSchema } from "@/lib/zod";
+import { ingredient, instruction, recipe, recipeFavorite, recipeReview, recipeStatistics, recipeToDiet, recipeToDishType, recipeToNutrition, reviewLike, savedRecipe } from "@/db/schema";
+import { deleteRecipeQueryIndex, insertRecipeQueryIndex } from "@/lib/actions/algolia";
 import { revalidatePath } from "next/cache";
-import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { r2 } from "@/r2-client";
+import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
+import { getRatingKey } from "@/lib/utils";
 import axios from "axios";
-import { searchClient, writeClient } from "@/algolia";
-
-export async function generatePresignedUrlForImageUpload(params: { name: string; type: string; size: number; }) {
-  const parsedBody = ImageDataSchema.safeParse(params);
-
-  if (!parsedBody.success)
-    throw new Error(parsedBody.error.errors[0].message);
-  
-  const { name, type, size } = parsedBody.data;
-
-  const putCommand = new PutObjectCommand({
-    Bucket: process.env.NEXT_PUBLIC_IMAGE_BUCKET_NAME!,
-    Key: name,
-    ContentType: type,
-    ContentLength: size
-  });
-
-  const url = await getSignedUrl(r2, putCommand, { expiresIn: 60 });
-
-  return {
-    success: true as const,
-    url
-  };
-}
-
-export async function generatePresignedUrlForImageDelete(imageLink: string) {
-  const putCommand = new DeleteObjectCommand({
-    Bucket: process.env.NEXT_PUBLIC_IMAGE_BUCKET_NAME!,
-    Key: imageLink.replace(`${process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL!}/`, "")
-  });
-
-  const url = await getSignedUrl(r2, putCommand, { expiresIn: 60 });
-
-  return {
-    success: true as const,
-    url
-  };
-}
+import z from "zod";
 
 export const createRecipe = authActionClient
   .schema(z.object({
@@ -642,101 +583,4 @@ export async function getReviewsByRecipe({ recipeId, limit, offset, userId }: { 
     offset,
     orderBy: (review, { desc }) => [desc(review.createdAt)]
   });
-}
-
-export async function searchForRecipesQueryIndices(query: string) {
-  const response = await searchClient.search({
-    requests: [{
-      indexName: process.env.SEARCH_INDEXING_NAME!,
-      query,
-      hitsPerPage: 4
-    }]
-  });
-
-  const { results } = RecipeSearchIndexSchema.parse(response);
-  return results[0].hits;
-}
-
-export async function insertRecipeQueryIndex(props: { id: string; title: string; }) {
-  const { objectID, title } = RecipeSearchIndexInsertionSchema.parse({
-    objectID: props.id,
-    title: props.title
-  });
-  
-  await writeClient.addOrUpdateObject({
-    indexName: process.env.SEARCH_INDEXING_NAME!,
-    objectID,
-    body: { title }
-  });
-
-  return {
-    success: true as const,
-    message: "Recipe query index successfully inserted!"
-  };
-}
-
-export async function deleteRecipeQueryIndex(recipeId: string) {
-  const { objectID } = RecipeSearchIndexDeletionSchema.parse({ objectID: recipeId });
-  
-  await writeClient.deleteObject({
-    indexName: process.env.SEARCH_INDEXING_NAME!,
-    objectID
-  });
-
-  return {
-    success: true as const,
-    message: "Recipe query index successfully deleted!"
-  };
-}
-
-export async function getSavedRecipesForMealForm({ userId, query, limit, offset }: { userId: string; query: string; limit: number; offset: number; }) {
-  return db.select({
-    recipes: sql<{
-      id: string;
-      title: string;
-      image: string;
-      description: string | null;
-    }[]>`
-      coalesce(
-        json_agg("saved_recipe_sub"."data"),
-        '[]'::json
-      )
-    `.as("recipes")
-  }).from(
-      db.select({ 
-        data: sql`
-          json_build_object(
-            'id', ${recipe.id},
-            'title', ${recipe.title},
-            'image', ${recipe.image},
-            'description', ${recipe.description}
-          )
-        `.as("data")
-      }).from(savedRecipe)
-        .where(and(
-          eq(savedRecipe.userId, userId),
-          ilike(recipe.title, `%${query}%`)
-        ))
-        .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
-        .limit(limit)
-        .offset(offset)
-        .orderBy(desc(savedRecipe.saveDate))
-        .as("saved_recipe_sub")
-    );
-}
-
-export async function getSavedRecipesForMealFormCount({ userId, query }: { userId: string, query: string }) {
-  return db.select({ count: count() })
-    .from(savedRecipe)
-    .where(and(
-      eq(savedRecipe.userId, userId),
-      exists(
-        db.select({ title: recipe.title })
-          .from(recipe)
-          .where(and(
-            eq(savedRecipe.recipeId, recipe.id),
-            ilike(recipe.title, `%${query}%`)
-          ))
-      )
-    ));
 }

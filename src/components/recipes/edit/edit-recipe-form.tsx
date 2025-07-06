@@ -15,7 +15,6 @@ import RecipeDishTypes from "@/components/recipes/edit/recipe-dish-types";
 import RecipeIngredients from "@/components/recipes/edit/recipe-ingredients";
 import RecipeInstructions from "@/components/recipes/edit/recipe-instructions";
 import { useRouter } from "next/navigation";
-import { generatePresignedUrlForImageDelete, generatePresignedUrlForImageUpload, updateRecipe, updateRecipeImage } from "@/lib/actions/db";
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
@@ -25,6 +24,8 @@ import RecipeCuisine from "@/components/recipes/edit/recipe-cuisine";
 import RecipeSource from "@/components/recipes/edit/recipe-source";
 import RecipeDescription from "@/components/recipes/edit/recipe-description";
 import RecipeNutrition from "@/components/recipes/edit/recipe-nutrition";
+import { updateRecipe, updateRecipeImage } from "@/lib/actions/recipe";
+import { generatePresignedUrlForImageDelete, generatePresignedUrlForImageUpload } from "@/lib/actions/r2";
 
 type EditRecipeFormProps = {
   readonly cuisines: {

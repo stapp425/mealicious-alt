@@ -32,7 +32,7 @@ const loadSearchParams = createLoader({
 });
 
 export default async function Page({ searchParams }: PageProps) {
-  const loadedSearchParams = await loadSearchParams(searchParams);
+  const { query, maxCalories, mealType, page } = await loadSearchParams(searchParams);
   const session = await auth();
   
   if (!session?.user?.id)
@@ -43,8 +43,8 @@ export default async function Page({ searchParams }: PageProps) {
     .from(meal)
     .where(and(
       eq(meal.createdBy, userId),
-      loadedSearchParams.query ? ilike(meal.title, `%${loadedSearchParams.query}%`) : undefined,
-      loadedSearchParams.maxCalories > 0 ? lte(
+      query ? ilike(meal.title, `%${query}%`) : undefined,
+      maxCalories > 0 ? lte(
         db.select({
           sum: sql`sum("recipe_sub"."calories")`.as("total_calories")
         }).from(mealToRecipe)
@@ -69,7 +69,7 @@ export default async function Page({ searchParams }: PageProps) {
               .as("recipe_sub"),
             sql`true`
           ),
-        loadedSearchParams.maxCalories
+        maxCalories
       ) : undefined
     ));
   
@@ -82,7 +82,7 @@ export default async function Page({ searchParams }: PageProps) {
         <SearchResults 
           userId={userId}
           count={mealCount}
-          searchParams={loadedSearchParams}
+          searchParams={{ query, maxCalories, mealType, page }}
         />
       </Suspense>
       <Pagination totalPages={Math.ceil(mealCount / MAX_MEAL_DISPLAY_LIMIT)}/>

@@ -10,7 +10,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import defaultImage from "@/img/default/default-background.jpg";
 import { useState } from "react";
 import { useAction } from "next-safe-action/hooks";
-import { deleteRecipe, toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/db";
 import { toast } from "sonner";
 import { 
   DropdownMenu, 
@@ -33,6 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
+import { deleteRecipe, toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/recipe";
 
 type RecipeResultProps = {
   recipe: {

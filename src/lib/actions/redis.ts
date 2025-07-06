@@ -1,6 +1,6 @@
 "use server";
 
-import { redis } from "@/redis";
+import { redis } from "@/lib/redis";
 import { ZodType } from "zod";
 
 export async function getDataWithCache<T>({ schema, cacheKey, call, timeToLive }: {

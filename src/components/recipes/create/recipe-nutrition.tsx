@@ -22,7 +22,7 @@ export default function RecipeNutrition() {
   const nutrition = useWatch({ control, name: "nutrition" });
   
   return (
-    <div className="flex flex-col justify-between">
+    <div className="flex flex-col justify-between gap-3">
       <h1 className="font-bold text-2xl required-field">Nutrition</h1>
       {
         errors.servingSize?.amount?.message && (
@@ -41,7 +41,7 @@ export default function RecipeNutrition() {
         )
       }
       <div className="flex justify-end items-center gap-3">
-        <h1 className="font-semibold my-2 mr-auto">Serving Size:</h1>
+        <h1 className="font-semibold mr-auto">Serving Size:</h1>
         <Input
           type="number"
           min={0}

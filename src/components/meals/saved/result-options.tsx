@@ -31,8 +31,8 @@ export default function ResultOptions() {
             <SelectContent>
               {
                 mealTypes.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m.charAt(0).toUpperCase() + m.slice(1).replaceAll(/([A-Z])/g, " $1")}
+                  <SelectItem key={m} value={m} className="capitalize">
+                    {m}
                   </SelectItem>
                 ))
               }

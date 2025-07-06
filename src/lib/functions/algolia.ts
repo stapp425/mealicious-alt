@@ -7,17 +7,6 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
 
 export const recentSearchesPluginData = recentSearchesPlugin.data;
 
-export async function getRecentSearchesData() {
-  const recentSearchesData = await recentSearchesPluginData?.getAll();
-  if (!recentSearchesData) return [];
-
-  return recentSearchesData.map((data) => ({
-    id: data.id,
-    label: data.label,
-    category: data.category
-  }));
-}
-
 export function addRecentSearchData(props: { id: string; label: string, isQuery?: boolean }) {
   if (!recentSearchesPluginData)
     return false;

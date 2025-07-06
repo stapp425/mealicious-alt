@@ -19,54 +19,57 @@ export default function MorePlansOptions() {
   });
   
   return (
-    <div className="flex items-center gap-2">
-      <Select value={view} onValueChange={(val: MorePlansView) => setOptions((o) => ({ ...o, view: val, page: 0 }))}>
-        <SelectTrigger className="capitalize">
-          <SelectValue placeholder="Select a mode..."/>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {
-              morePlansView.map((v) => (
-                <SelectItem key={v} value={v} className="capitalize">
-                  {v}
-                </SelectItem>
-              ))
-            }
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-      <Select value={timeframe || ""} onValueChange={(val: MorePlansTimeFrame) => setOptions((o) => ({ ...o, timeframe: val, page: 0 }))}>
-        <SelectTrigger className="capitalize">
-          <SelectValue placeholder="Select a timeframe..."/>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {
-              morePlansTimeFrame.map((t) => (
-                <SelectItem key={t} value={t} className="capitalize">
-                  {t}
-                </SelectItem>
-              ))
-            }
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-      {
-        timeframe && (
-          <Button 
-            variant="destructive"
-            onClick={() => setOptions((o) => ({ 
-              ...o,
-              timeframe: null,
-              page: 0
-            }))}
-            className="cursor-pointer"
-          >
-            <X />
-          </Button>
-        )
-      }
+    <div className="flex flex-col gap-3">
+      <h2 className="font-bold text-xl">Result Options</h2>
+      <div className="flex items-center gap-2">
+        <Select value={view} onValueChange={(val: MorePlansView) => setOptions((o) => ({ ...o, view: val, page: 0 }))}>
+          <SelectTrigger className="capitalize">
+            <SelectValue placeholder="Select a mode..."/>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {
+                morePlansView.map((v) => (
+                  <SelectItem key={v} value={v} className="capitalize">
+                    {v}
+                  </SelectItem>
+                ))
+              }
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <Select value={timeframe || ""} onValueChange={(val: MorePlansTimeFrame) => setOptions((o) => ({ ...o, timeframe: val, page: 0 }))}>
+          <SelectTrigger className="capitalize">
+            <SelectValue placeholder="Select a timeframe..."/>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {
+                morePlansTimeFrame.map((t) => (
+                  <SelectItem key={t} value={t} className="capitalize">
+                    {t}
+                  </SelectItem>
+                ))
+              }
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        {
+          timeframe && (
+            <Button 
+              variant="destructive"
+              onClick={() => setOptions((o) => ({ 
+                ...o,
+                timeframe: null,
+                page: 0
+              }))}
+              className="cursor-pointer"
+            >
+              <X />
+            </Button>
+          )
+        }
+      </div>
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import MealTitle from "@/components/meals/edit/meal-title";
 import MealDescription from "@/components/meals/edit/meal-description";
 import MealTags from "@/components/meals/edit/meal-tags";
-import MealRecipeSearch from "@/components/meals/edit/meal-recipe-search";
+import MealRecipeSearch from "@/components/meals/edit/meal-recipes";
 import { Loader2 } from "lucide-react";
 import { updateMeal } from "@/lib/actions/meal";
 

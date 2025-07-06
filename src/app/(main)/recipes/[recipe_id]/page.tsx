@@ -22,11 +22,11 @@ import Nutrition from "@/components/recipes/id/nutrition";
 import CreateReviewForm from "@/components/recipes/id/create-review-form";
 import Reviews from "@/components/recipes/id/reviews";
 import { MAX_REVIEW_DISPLAY_LIMIT } from "@/lib/types";
-import { getReviewsByRecipe } from "@/lib/actions/db";
 import { Metadata } from "next";
 import { cache } from "react";
 import { and, count, eq, isNotNull } from "drizzle-orm";
 import { recipeReview } from "@/db/schema";
+import { getReviewsByRecipe } from "@/lib/actions/recipe";
 
 type MetadataProps = {
   params: Promise<{ recipe_id: string }>;
@@ -161,10 +161,10 @@ export default async function Page({ params }: PageProps) {
               <Link 
                 href={foundRecipe.sourceUrl}
                 target="_blank"
-                className="absolute top-3 left-3 max-w-[150px] bg-background text-foreground font-semibold text-sm flex items-center gap-2 py-1.5 px-3 rounded-sm shadow-md"
+                className="absolute top-3 left-3 right-3 max-w-[350px] w-fit bg-background hypens-none text-foreground font-semibold text-sm flex items-center gap-2 py-1.5 px-3 rounded-sm shadow-md"
               >
                 <Earth size={16} className="shrink-0"/>
-                <span className="truncate underline">{foundRecipe.sourceName}</span>
+                <span className="truncate">{foundRecipe.sourceName}</span>
               </Link>
             )
           }
@@ -193,18 +193,11 @@ export default async function Page({ params }: PageProps) {
                 )
               }
               <span className="italic text-muted-foreground text-sm">
-                Created {format(foundRecipe.createdAt, "MMM d, yyyy")}
+                Created {format(foundRecipe.createdAt, "MMM d, yyyy")} {foundRecipe.updatedAt > foundRecipe.createdAt && `• Updated ${format(foundRecipe.updatedAt, "MMM d, yyyy")}`}
               </span>
-              {
-                foundRecipe.updatedAt > foundRecipe.createdAt && (
-                  <span className="italic text-muted-foreground text-sm">
-                    Updated {format(foundRecipe.updatedAt, "MMM d, yyyy")}
-                  </span>
-                )
-              }
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row flex-wrap items-start md:items-stretch gap-2">
+          <div className="empty:hidden flex flex-col sm:flex-row flex-wrap items-start md:items-stretch gap-2">
             {
               isAuthor && (
                 <div className="flex-1 w-full flex justify-center items-center gap-5 text-orange-400 border border-orange-400 text-sm font-semibold py-2 px-4 rounded-sm">

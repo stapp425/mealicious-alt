@@ -18,14 +18,14 @@ export default function Description({ description }: DescriptionProps) {
             <Info size={16} className="cursor-pointer"/>
           </div>
         </PopoverTrigger>
-        <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+        <PopoverContent className="text-xs font-semibold text-muted-foreground p-3 text-wrap hyphens-auto" align="start">
           A brief yet flavorful text that gives an insight on what the recipe is about.
         </PopoverContent>
       </Popover>
       <Separator />
       {
         description ? (
-          <p className="text-muted-foreground text-sm hyphens-auto line-clamp-3">{description}</p>
+          <p className="text-muted-foreground text-sm text-wrap truncate hyphens-auto">{description}</p>
         ) : (
           <p className="italic text-muted-foreground">No description is available.</p>
         )

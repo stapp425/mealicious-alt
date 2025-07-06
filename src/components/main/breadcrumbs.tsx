@@ -35,16 +35,19 @@ export default function Breadcrumbs() {
                 index !== pathSegments.length - 1 ? (
                   <>
                   <BreadcrumbItem>
-                    <BreadcrumbLink href={`/${pathSegments.slice(0, index + 1).join("/")}`}>
-                      {segment.charAt(0).toUpperCase() + segment.slice(1)}
+                    <BreadcrumbLink
+                      href={`/${pathSegments.slice(0, index + 1).join("/")}`}
+                      className="capitalize"
+                    >
+                      {segment}
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator/>
                   </>
                 ) : (
                   <BreadcrumbItem>
-                    <BreadcrumbPage>
-                      {segment.charAt(0).toUpperCase() + segment.slice(1)}
+                    <BreadcrumbPage className="capitalize">
+                      {segment}
                     </BreadcrumbPage>
                   </BreadcrumbItem>
                 )

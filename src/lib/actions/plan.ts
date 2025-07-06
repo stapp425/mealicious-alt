@@ -5,10 +5,12 @@ import { and, count, eq, gte, ilike, desc, lte, sql, asc } from "drizzle-orm";
 import { getDataWithCache, removeCacheKeys } from "@/lib/actions/redis";
 import { meal, mealToRecipe, nutrition, plan, planToMeal, recipe, recipeToNutrition } from "@/db/schema";
 import { MealType } from "@/lib/types";
-import { DetailedPlanSchema, PlanCreationSchema } from "@/lib/zod";
-import z from "zod";
+import { DetailedPlanSchema, PlanCreationSchema, PlanEditionSchema } from "@/lib/zod";
 import { authActionClient } from "@/safe-action";
 import { getTime } from "date-fns";
+import { revalidatePath } from "next/cache";
+import z from "zod";
+import { UTCDate } from "@date-fns/utc";
 
 export const createPlan = authActionClient
   .schema(z.object({
@@ -39,6 +41,91 @@ export const createPlan = authActionClient
     return {
       success: true,
       message: "Plan successfully created!"
+    };
+  });
+
+export const updatePlan = authActionClient
+  .schema(z.object({
+    editedPlan: PlanEditionSchema
+  }))
+  .action(async ({
+    parsedInput: { editedPlan },
+    ctx: { user }
+  }) => {
+    const foundPlan = await db.query.plan.findFirst({
+      where: (plan, { eq }) => eq(plan.id, editedPlan.id),
+      columns: {
+        id: true,
+        createdBy: true
+      }
+    });
+
+    if (!foundPlan)
+      throw new Error("Plan does not exist.");
+
+    if (user.id !== foundPlan.createdBy)
+      throw new Error("You are not authorized to delete this recipe.");
+
+    const updatePlanQuery = db.update(plan)
+      .set({
+        title: editedPlan.title,
+        tags: editedPlan.tags,
+        description: editedPlan.description || null,
+        date: new UTCDate(editedPlan.date),
+        updatedAt: new Date()
+      })
+      .where(eq(plan.id, editedPlan.id));
+    
+    const deleteMealsQuery = db.delete(planToMeal)
+      .where(eq(planToMeal.planId, editedPlan.id));
+
+    await Promise.all([updatePlanQuery, deleteMealsQuery]);
+    await db.insert(planToMeal).values(Object.entries(editedPlan.meals).map(([mt, m]) => ({
+      planId: foundPlan.id,
+      mealId: m.id,
+      type: mt as MealType
+    })));
+
+    await removeCacheKeys(`user_${user.id!}_plan*`);
+
+    return {
+      success: true as const,
+      message: "Successfully updated recipe!"
+    };
+  });
+
+export const deletePlan = authActionClient
+  .schema(z.object({
+    planId: z.string()
+      .nonempty({
+        message: "Plan ID must not be empty."
+      })
+  }))
+  .action(async ({
+    parsedInput: { planId },
+    ctx: { user }
+  }) => {
+    const foundPlan = await db.query.plan.findFirst({
+      where: (plan, { eq }) => eq(plan.id, planId),
+      columns: {
+        id: true,
+        createdBy: true
+      }
+    });
+
+    if (!foundPlan)
+      throw new Error("Plan does not exist.");
+
+    if (user.id !== foundPlan.createdBy)
+      throw new Error("You are not authorized to delete this recipe.");
+    
+    await db.delete(plan).where(eq(plan.id, foundPlan.id));
+    await removeCacheKeys(`user_${user.id}_plan*`);
+    revalidatePath("/plans");
+
+    return {
+      success: true as const,
+      message: "Successfully deleted plan!"
     };
   });
 
@@ -186,8 +273,9 @@ export async function getPlansInTimeFrameCount({ userId, startDate, endDate, que
   });
 }
 
-export async function getDetailedPlansInTimeFrame({ userId, startDate, endDate, query, limit, offset }: { 
+export async function getDetailedPlansInTimeFrame({ userId, planId, startDate, endDate, query, limit, offset }: { 
   userId: string;
+  planId?: string;
   startDate?: Date;
   endDate?: Date;
   query?: string;
@@ -266,22 +354,26 @@ export async function getDetailedPlansInTimeFrame({ userId, startDate, endDate, 
   }).from(plan)
     .where(and(
       eq(plan.createdBy, userId),
+      planId ? eq(plan.id, planId) : undefined,
       startDate ? gte(plan.date, startDate) : undefined,
       endDate ? lte(plan.date, endDate) : undefined,
-      query ? ilike(plan.title, query) : undefined
+      query ? ilike(plan.title, `%${query}%`) : undefined
     ))
     .innerJoinLateral(
       db.select({
         meals: sql`
-          json_agg(
-            json_build_object(
-              'id', "meal_sub"."meal_id",
-              'title', "meal_sub"."meal_title",
-              'type', ${planToMeal.type},
-              'tags', "meal_sub"."meal_tags",
-              'description', "meal_sub"."meal_desc",
-              'recipes', "meal_sub"."recipes"
-            )
+          coalesce(
+            json_agg(
+              json_build_object(
+                'id', "meal_sub"."meal_id",
+                'title', "meal_sub"."meal_title",
+                'type', ${planToMeal.type},
+                'tags', "meal_sub"."meal_tags",
+                'description', "meal_sub"."meal_desc",
+                'recipes', "meal_sub"."recipes"
+              )
+            ),
+            '[]'::json
           )
         `.as("meals"),
       }).from(planToMeal)
@@ -300,7 +392,7 @@ export async function getDetailedPlansInTimeFrame({ userId, startDate, endDate, 
     .orderBy(endDate && endDate < new Date() ? desc(plan.date) : asc(plan.date));
   
   return await getDataWithCache({
-    cacheKey: `user_${userId}_plans_detailed${startDate ? `_${getTime(startDate)}` : ""}${endDate ? `_to_${getTime(endDate)}` : ""}${query ? `_query_${query}` : ""}${limit ? `_limit_${limit}` : ""}${offset ? `_offset_${offset}` : ""}`,
+    cacheKey: `user_${userId}_plans${planId ? planId : ""}_detailed${startDate ? `_${getTime(startDate)}` : ""}${endDate ? `_to_${getTime(endDate)}` : ""}${query ? `_query_${query}` : ""}${limit ? `_limit_${limit}` : ""}${offset ? `_offset_${offset}` : ""}`,
     schema: DetailedPlanSchema,
     call: () => plansQuery,
     timeToLive: 120

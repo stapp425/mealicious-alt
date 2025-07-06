@@ -13,7 +13,7 @@ import RecipeDiets from "@/components/recipes/create/recipe-diets";
 import RecipeDishTypes from "@/components/recipes/create/recipe-dish-types";
 import RecipeIngredients from "@/components/recipes/create/recipe-ingredients";
 import RecipeInstructions from "@/components/recipes/create/recipe-instructions";
-import { createRecipe, generatePresignedUrlForImageUpload, updateRecipeImage } from "@/lib/actions/db";
+import { createRecipe, updateRecipeImage } from "@/lib/actions/recipe";
 import { toast } from "sonner";
 import axios, { AxiosError } from "axios";
 import { useEffect, useState } from "react";
@@ -24,6 +24,7 @@ import RecipeCuisine from "@/components/recipes/create/recipe-cuisine";
 import RecipeSource from "@/components/recipes/create/recipe-source";
 import RecipeDescription from "@/components/recipes/create/recipe-description";
 import RecipeNutrition from "@/components/recipes/create/recipe-nutrition";
+import { generatePresignedUrlForImageUpload } from "@/lib/actions/r2";
 
 type CreateRecipeFormProps = {
   readonly nutrition: Omit<InferSelectModel<typeof nutrition>, "description">[];

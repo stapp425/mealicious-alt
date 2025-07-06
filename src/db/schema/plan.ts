@@ -1,4 +1,4 @@
-import { pgTable, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, unique } from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { relations } from "drizzle-orm";
 import { meal } from "./meal";
@@ -32,7 +32,9 @@ export const plan = pgTable("plan", (t) => ({
     withTimezone: true
   }).defaultNow()
     .notNull()
-}));
+}), (t) => [
+  unique().on(t.createdBy, t.date)
+]);
 
 export const planToMeal = pgTable("plan_to_meal", (t) => ({
   planId: t.text("plan_id")

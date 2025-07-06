@@ -40,12 +40,11 @@ export const metadata: Metadata = {
 };
 
 export default async function Page({ searchParams }: AllRecipesPageProps) {
-  const loadedSearchParams = await loadSearchParams(searchParams);
+  const { filters, query, page, sort } = await loadSearchParams(searchParams);
   const session = await auth();
-
   if (!session?.user?.id) redirect("/login");
-
   const userId = session.user.id;
+  
   const [{ count: savedRecipesCount }] = await db.select({ count: count() })
     .from(savedRecipe)
     .where(and(
@@ -55,11 +54,11 @@ export default async function Page({ searchParams }: AllRecipesPageProps) {
           .from(recipe)
           .where(and(
             eq(savedRecipe.recipeId, recipe.id),
-            ilike(recipe.title, `%${loadedSearchParams.query}%`),
-            loadedSearchParams.filters.includes("created") ? eq(recipe.createdBy, userId) : undefined
+            ilike(recipe.title, `%${query}%`),
+            filters.includes("created") ? eq(recipe.createdBy, userId) : undefined
           ))
       ),
-      loadedSearchParams.filters.includes("favorited") ?
+      filters.includes("favorited") ?
         exists(
           db.select()
             .from(recipeFavorite)
@@ -82,7 +81,7 @@ export default async function Page({ searchParams }: AllRecipesPageProps) {
         <SearchResults
           count={savedRecipesCount}
           userId={userId}
-          searchParams={loadedSearchParams}
+          searchParams={{ filters, query, page, sort }}
         />
       </Suspense>
       <Pagination totalPages={Math.ceil(savedRecipesCount / MAX_LIST_RECIPE_DISPLAY_LIMIT)}/>

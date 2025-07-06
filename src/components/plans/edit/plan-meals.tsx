@@ -2,8 +2,8 @@
 
 import { getSavedMealsForPlanForm, getSavedMealsForPlanFormCount } from "@/lib/actions/plan";
 import { MAX_MEAL_RESULT_DISPLAY_LIMIT } from "@/lib/utils";
-import { PlanCreation } from "@/lib/zod";
-import { Flame, Info, Loader2, Plus, X } from "lucide-react";
+import { PlanEdition } from "@/lib/zod";
+import { Check, Flame, Info, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useDebouncedCallback } from "use-debounce";
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import Pagination from "@/components/plans/create/pagination";
+import Pagination from "@/components/plans/edit/pagination";
 import { MealType, mealTypes } from "@/lib/types";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -30,14 +30,14 @@ type RecipeSearchProps = {
   userId: string;
 };
 
-export default function PlanMealSearch({ userId }: RecipeSearchProps) {
+export default function PlanMeals({ userId }: RecipeSearchProps) {
   const { 
     control,
     setValue,
     formState: {
       errors
     }
-  } = useFormContext<PlanCreation>();
+  } = useFormContext<PlanEdition>();
   const planMealValues = useWatch({ control, name: "meals" });
   
   const [open, setOpen] = useState<boolean>(false);
@@ -161,7 +161,7 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
                       <Separator />
                       <div className="flex items-center gap-2 text-sm">
                         <Info size={16}/>
-                        Select a meal then include a time.
+                        Select a meal then include a type.
                       </div>
                       <ul className="flex flex-col gap-3">
                         {
@@ -172,23 +172,29 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
                                 data-selected={m.id === selectedMeal?.id}
                                 disabled={isEveryMealTypeFilled}
                                 onClick={() => setSelectedMeal(m.id === selectedMeal?.id ? null : m)}
-                                className="group cursor-pointer data-[selected=true]:bg-accent data-[selected=true]:p-2 disabled:cursor-not-allowed text-left w-full flex items-center gap-4 rounded-sm transition-all"
+                                className="w-full flex flex-col group/meal cursor-pointer disabled:cursor-not-allowed text-left gap-2 rounded-sm transition-all"
                               >
-                                <div className="w-full flex flex-col items-start gap-2">
-                                  <h2 className="font-semibold line-clamp-1 group-disabled:text-secondary">{m.title}</h2>
-                                  <div className="group-disabled:text-muted text-muted-foreground font-semibold text-xs flex items-center gap-1">
-                                    <Flame size={16} className="fill-muted-foreground group-disabled:fill-muted"/>
-                                    <span>{Number(m.calories).toLocaleString()} Calories</span>
+                                <div className="flex justify-between items-start gap-3">
+                                  <h2 className="font-semibold line-clamp-1 group-disabled:text-secondary -mb-1">{m.title}</h2>
+                                  <div className="hidden group-data-[selected=true]/meal:flex font-semibold text-xs items-center gap-1.75">
+                                    <div className="bg-mealicious-primary text-white size-5 flex justify-center items-center p-1 rounded-full">
+                                      <Check />
+                                    </div>
+                                    Selected
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    {
-                                      m.recipes.map((r) => (
-                                        <div key={r.id} className="group-disabled:bg-mealicious-primary-muted group-disabled:dark:opacity-25 bg-mealicious-primary text-white font-semibold text-xs rounded-full py-1 px-3">
-                                          {r.title}
-                                        </div>
-                                      ))
-                                    }
-                                  </div>
+                                </div>
+                                <div className="group-disabled:text-muted text-muted-foreground font-semibold text-xs flex items-center gap-1">
+                                  <Flame size={16} className="fill-muted-foreground group-disabled:fill-muted"/>
+                                  <span>{Number(m.calories).toLocaleString()} Calories</span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {
+                                    m.recipes.map((r) => (
+                                      <div key={r.id} className="group-disabled:bg-mealicious-primary-muted group-disabled:dark:opacity-25 bg-mealicious-primary text-white font-semibold text-xs rounded-full py-1 px-3">
+                                        {r.title}
+                                      </div>
+                                    ))
+                                  }
                                 </div>
                               </button>
                             </li>
@@ -210,9 +216,9 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
               }
             </div>
             <Separator />
-            <div className="flex justify-between items-end gap-2 p-3 *:flex-1">
+            <div className="flex justify-between items-end gap-2 p-3">
               <Select value={selectedMealType || ""} onValueChange={(val: MealType) => setSelectedMealType(val)}>
-                <SelectTrigger>
+                <SelectTrigger className="flex-1 capitalize">
                   <SelectValue placeholder="Select Meal Type..."/>
                 </SelectTrigger>
                 <SelectContent>
@@ -220,8 +226,8 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
                     <SelectLabel>Types</SelectLabel>
                     {
                       mealTypesDifference.map((mt) => (
-                        <SelectItem key={mt} value={mt}>
-                          {mt.charAt(0).toUpperCase() + mt.slice(1)}
+                        <SelectItem key={mt} value={mt} className="capitalize">
+                          {mt}
                         </SelectItem>
                       ))
                     }
@@ -246,7 +252,7 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
                   setSelectedMealType(null);
                   toast.success("Meal successfully added!");
                 }}
-                className="max-w-[100px] mealicious-button h-9 mb-0.5 font-semibold text-sm rounded-md"
+                className="flex-1 max-w-[100px] mealicious-button h-9 font-semibold text-sm rounded-md"
               >
                 Add
               </button>
@@ -255,56 +261,56 @@ export default function PlanMealSearch({ userId }: RecipeSearchProps) {
         </DialogContent>
         {
           Object.entries(planMealValues).length > 0 && (
-            <>
-            <div className="flex items-center gap-2 text-sm">
-              <Info size={16}/>
-              You can remove a meal by clicking on it.
-            </div>
-            <div className="empty:hidden flex flex-col">
+            <div className="grid">
               {
                 mealTypes.map((mt) => {
                   const meal = planMealValues[mt];
                   return meal ? (
-                    <button
+                    <div
                       key={mt}
-                      type="button"
-                      onClick={() => setValue(
-                        "meals",
-                        Object.entries(planMealValues).reduce((obj, prop) => {
-                          const mealValue = planMealValues[prop[0] as MealType];
-                          if (mealValue && prop[0] !== mt)
-                            obj[prop[0] as MealType] = mealValue;
-                          return obj;
-                        }, {} as Record<MealType, Meal>)
-                      )}
-                      className="cursor-pointer w-full flex gap-4 rounded-sm"
+                      className="flex items-start gap-2.5 sm:gap-4"
                     >
-                      <div className="text-left flex items-start gap-4">
-                        <span className="min-w-[100px] bg-mealicious-primary text-white text-xs text-center font-semibold py-1.5 rounded-sm">
-                          {mt.charAt(0).toUpperCase() + mt.slice(1)}
-                        </span>
-                        <Separator orientation="vertical"/>
-                        <div className="flex flex-col items-start gap-3 pb-4.5">
+                      <span className="min-w-[100px] bg-mealicious-primary text-white text-xs text-center font-semibold py-1.5 rounded-sm capitalize">
+                        {mt}
+                      </span>
+                      <Separator orientation="vertical"/>
+                      <div className="flex-1 flex flex-col items-start gap-3 pb-4.5">
+                        <div className="w-full flex justify-between items-start gap-4">
                           <h2 className="font-bold line-clamp-2">{meal.title}</h2>
-                          <div className="group-disabled:text-muted text-muted-foreground font-semibold text-xs flex items-center gap-1">
-                            <Flame size={16} className="fill-muted-foreground group-disabled:fill-muted"/>
-                            <span>{Number(meal.calories).toLocaleString()} Calories</span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            {
-                              meal.recipes.map((r) => (
-                                <div key={r.id} className="bg-mealicious-primary text-white font-semibold text-xs rounded-full py-1 px-3">{r.title}</div>
-                              ))
-                            }
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setValue(
+                              "meals",
+                              Object.entries(planMealValues).reduce((obj, prop) => {
+                              const mealValue = planMealValues[prop[0] as MealType];
+                              if (mealValue && prop[0] !== mt)
+                                obj[prop[0] as MealType] = mealValue;
+                              return obj;
+                            }, {} as Record<MealType, Meal>)
+                          )}
+                            className="w-fit h-8 group cursor-pointer hover:bg-red-700 hover:text-white hover:border-red-700 border border-muted-foreground font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 rounded-full transition-colors"
+                          >
+                            Delete
+                            <Trash2 size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
+                          </button>
+                        </div>
+                        <div className="group-disabled:text-muted text-muted-foreground font-semibold text-xs flex items-center gap-1">
+                          <Flame size={16} className="fill-muted-foreground group-disabled:fill-muted"/>
+                          <span>{Number(meal.calories).toLocaleString()} Calories</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {
+                            meal.recipes.map((r) => (
+                              <div key={r.id} className="bg-mealicious-primary text-white font-semibold text-xs rounded-full py-1 px-3">{r.title}</div>
+                            ))
+                          }
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ) : null;
                 })
               }
             </div>
-            </>
           )
         }
         {

@@ -26,14 +26,14 @@ export default function ResultOptions() {
             sort: val as Sort,
             page: 0
           }))}>
-            <SelectTrigger className="w-[125px]">
+            <SelectTrigger className="w-[125px] capitalize">
               <SelectValue placeholder="Sort by..."/>
             </SelectTrigger>
             <SelectContent>
               {
                 sorts.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s.charAt(0).toUpperCase() + s.slice(1).replaceAll(/([A-Z])/g, " $1")}
+                  <SelectItem key={s} value={s} className="capitalize">
+                    {s.replaceAll(/([A-Z])/g, " $1")}
                   </SelectItem>
                 ))
               }
@@ -67,6 +67,7 @@ export default function ResultOptions() {
                   <DropdownMenuCheckboxItem
                     key={f}
                     checked={resultOptions.filters.includes(f)}
+                    onSelect={(e) => e.preventDefault()}
                     onCheckedChange={(val) => {
                       setResultOptions((r) => ({
                         ...r,
@@ -76,8 +77,9 @@ export default function ResultOptions() {
                           : [...r.filters.filter((ff) => ff !== f)]
                       }));
                     }}
+                    className="capitalize"
                   >
-                    {f.charAt(0).toUpperCase() + f.slice(1).replaceAll(/([A-Z])/g, " $1")}
+                    {f}
                   </DropdownMenuCheckboxItem>
                 ))
               }

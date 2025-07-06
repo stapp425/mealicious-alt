@@ -9,7 +9,7 @@ import PlanTags from "@/components/plans/create/plan-tags";
 import PlanTitle from "@/components/plans/create/plan-title";
 import PlanDescription from "@/components/plans/create/plan-description";
 import { Loader2 } from "lucide-react";
-import PlanMealSearch from "./plan-meal-search";
+import PlanMealSearch from "@/components/plans/create/plan-meals";
 import { useMediaQuery } from "usehooks-ts";
 import { useAction } from "next-safe-action/hooks";
 import { createPlan } from "@/lib/actions/plan";
@@ -51,7 +51,7 @@ export default function CreatePlanForm() {
       <form onSubmit={onSubmit} className="h-full w-full max-w-[1000px] mx-auto p-4 sm:p-6">
         <h1 className="font-bold text-4xl mb-4">Create Plan</h1>
         <div className="flex flex-col xl:flex-row gap-6">
-          <div className="w-full xl:max-w-[400px] flex flex-col gap-3">
+          <div className="flex-1 shrink-0 flex flex-col gap-3">
             {mounted && !matches && <PlanTitle />}
             <PlanCalendar />
             <PlanTags />
@@ -63,7 +63,7 @@ export default function CreatePlanForm() {
               {createPlanForm.formState.isSubmitting ? <Loader2 className="animate-spin"/> : "Create Plan"}
             </button>
           </div>
-          <div className="flex-1 flex flex-col gap-3">
+          <div className="xl:w-11/20 flex flex-col gap-3">
             {mounted && matches && <PlanTitle />}
             <PlanDescription />
             <PlanMealSearch userId={userId}/>

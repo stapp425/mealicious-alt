@@ -27,14 +27,10 @@ import {
 import { ChevronsUpDown, Laptop, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
-type SidebarUserProps = {
-  username: string,
-  email: string,
-  image: string | null
-};
-
-export default function SidebarUser({ username, email, image }: SidebarUserProps) {
+export default function SidebarUser() {
+  const { data } = useSession();
   const [mounted, setMounted] = useState<boolean>(false);
   const { setTheme } = useTheme();
   
@@ -42,9 +38,9 @@ export default function SidebarUser({ username, email, image }: SidebarUserProps
     setMounted(true);
   }, []);
 
-  if (!mounted)
-    return null;
-  
+  if (!data?.user || !mounted) return null;
+  const { image, name, email } = data.user;
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -54,14 +50,14 @@ export default function SidebarUser({ username, email, image }: SidebarUserProps
               <Avatar className="size-9">
                 <AvatarImage
                   src={image || undefined}
-                  alt={`${username}'s Profile Picture`}
+                  alt={`${name}'s Profile Picture`}
                 />
-                <AvatarFallback>
-                  {username.charAt(0).toUpperCase()}
+                <AvatarFallback className="uppercase">
+                  {name}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <span className="font-bold">{username}</span>
+                <span className="font-bold">{name}</span>
                 <span>{email}</span>
               </div>
               <ChevronsUpDown className="ml-auto"/>

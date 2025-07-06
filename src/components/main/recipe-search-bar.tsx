@@ -5,14 +5,14 @@ import { Root as VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { ArrowRight, Clock, Loader2, Search, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState, useTransition } from "react"
+import { useCallback, useEffect, useState, useTransition } from "react"
 import { useDebouncedCallback } from "use-debounce";
-import { searchForRecipesQueryIndices } from "@/lib/actions/db";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { addRecentSearchData, getRecentSearchesData, removeRecentSearchData } from "@/algolia-client";
 import Link from "next/link";
 import { nanoid } from "nanoid";
+import { getRecentSearchesData, searchForRecipesQueryIndices } from "@/lib/actions/algolia";
+import { addRecentSearchData, removeRecentSearchData } from "@/lib/functions/algolia";
 
 export default function RecipeSearchBar() {
   const { push } = useRouter();
@@ -33,7 +33,7 @@ export default function RecipeSearchBar() {
     }
   }), 500);
 
-  async function addToRecentSearches({ id, label, isQuery = false }: { id: string; label: string; isQuery?: boolean; }) {
+  const addToRecentSearches = useCallback(async ({ id, label, isQuery = false }: { id: string; label: string; isQuery?: boolean; }) => {
     const foundDuplicateRecentSearch = recentSearches.find((rs) => isQuery ? rs.label === query : rs.id === id);
 
     if (foundDuplicateRecentSearch)
@@ -51,7 +51,7 @@ export default function RecipeSearchBar() {
     } else {
       toast.error("Failed to insert to recent searches.");
     }
-  }
+  }, [recentSearches]);
 
   useEffect(() => {
     fetchNewIndices();

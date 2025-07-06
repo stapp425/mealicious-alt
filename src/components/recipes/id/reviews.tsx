@@ -1,7 +1,7 @@
 "use client";
+
 import React, { memo, useState, useTransition } from "react";
 import { Separator } from "@/components/ui/separator";
-import { deleteReview, getReviewsByRecipe, toggleReviewLike } from "@/lib/actions/db";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import defaultProfilePicture from "@/img/default/default-pfp.svg";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescript
 import { MAX_REVIEW_DISPLAY_LIMIT, Review, Statistics } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { deleteReview, getReviewsByRecipe, toggleReviewLike } from "@/lib/actions/recipe";
 
 type ReviewsProps = {
   recipeId: string;

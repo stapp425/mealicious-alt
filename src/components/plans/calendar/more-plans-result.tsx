@@ -1,7 +1,15 @@
 "use client";
 
-import { Calendar, ChevronDown, Flame } from "lucide-react";
+import { Calendar, ChevronDown, EllipsisVertical, Flame, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { DetailedPlan } from "@/lib/zod";
 import { useState } from "react";
 import { tz } from "@date-fns/tz";
@@ -11,6 +19,12 @@ import { mealTypes, MorePlansView } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
+import { useAction } from "next-safe-action/hooks";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { deletePlan } from "@/lib/actions/plan";
+import Link from "next/link";
 
 type MorePlansResultProps = {
   view: MorePlansView;
@@ -20,12 +34,71 @@ type MorePlansResultProps = {
 const inUtc = { in: tz("UTC") };
 
 export default function MorePlansResult({ view, plan }: MorePlansResultProps) {
+  const { refresh } = useRouter();
   const [open, setOpen] = useState<boolean>(false);
+  const { executeAsync, isExecuting } = useAction(deletePlan, {
+    onSuccess: ({ data }) => {
+      toast.warning(data?.message || "Successfully deleted plan!");
+      refresh();
+    },
+    onError: () => toast.error("Failed to delete plan.")
+  });
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} asChild>
       <div className="flex flex-col gap-2 transition-all">
-        <h2 className="font-bold text-2xl">{plan.title}</h2>
+        <div className="flex justify-between items-start gap-3">
+          <h2 className="font-bold text-2xl">{plan.title}</h2>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="cursor-pointer" asChild>
+              <Button variant="outline" className="aspect-square rounded-sm p-1.5!">
+                <EllipsisVertical />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="bottom" align="end">
+              <DropdownMenuLabel>Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/plans/${plan.id}/edit`}
+                  className="cursor-pointer"
+                >
+                  Edit
+                  <Pencil size={16}/>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <AlertDialog>
+                  <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
+                    Delete
+                    <Trash2 size={16} className="text-muted-foreground"/>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Deleting this plan is an irreversible action! The meals contained in this plan will still remain in the database.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+                      <Button
+                        onClick={async () => await executeAsync({ planId: plan.id })}
+                        disabled={isExecuting}
+                        variant="destructive"
+                        className="min-w-[75px] cursor-pointer"
+                      >
+                        {isExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <Separator />
         <div className="flex items-center gap-2 text-muted-foreground font-semibold">
           <Calendar size={16}/>
           {format(plan.date, "MMMM do, yyyy", inUtc)}

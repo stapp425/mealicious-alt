@@ -91,8 +91,8 @@ export default function SearchBar() {
                       <SelectLabel>Meal Types</SelectLabel>
                       {
                         mealTypes.map((m) => (
-                          <SelectItem key={m} value={m}>
-                            {m.charAt(0).toUpperCase() + m.slice(1)}
+                          <SelectItem key={m} value={m} className="capitalize">
+                            {m}
                           </SelectItem>
                         ))
                       }

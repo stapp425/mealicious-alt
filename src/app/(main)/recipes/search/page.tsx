@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Page({ searchParams }: PageProps) {
-  const loadedSearchParams = await loadSearchParams(searchParams);
+  const { query, diet, dishType, cuisine, page } = await loadSearchParams(searchParams);
 
   const dietsQuery = db.query.diet.findMany({
     columns: {
@@ -66,31 +66,31 @@ export default async function Page({ searchParams }: PageProps) {
     .from(recipe)
     .where(and(
       eq(recipe.isPublic, true),
-      ilike(recipe.title, `%${loadedSearchParams.query}%`),
-      loadedSearchParams.diet ? exists(
+      ilike(recipe.title, `%${query}%`),
+      diet ? exists(
         db.select()
           .from(recipeToDiet)
           .innerJoin(dietTable, eq(recipeToDiet.dietId, dietTable.id))
           .where(and(
             eq(recipeToDiet.recipeId, recipe.id),
-            eq(dietTable.name, loadedSearchParams.diet),
+            eq(dietTable.name, diet),
           ))
       ) : undefined,
-      loadedSearchParams.dishType ? exists(
+      dishType ? exists(
         db.select()
           .from(recipeToDishType)
           .innerJoin(dishTypeTable, eq(recipeToDishType.dishTypeId, dishTypeTable.id))
           .where(and(
             eq(recipeToDishType.recipeId, recipe.id),
-            eq(dishTypeTable.name, loadedSearchParams.dishType),
+            eq(dishTypeTable.name, dishType),
           ))
       ) : undefined,
-      loadedSearchParams.cuisine ? exists(
+      cuisine ? exists(
         db.select()
           .from(cuisineTable)
           .where(and(
             eq(cuisineTable.id, recipe.cuisineId),
-            eq(cuisineTable.adjective, loadedSearchParams.cuisine)
+            eq(cuisineTable.adjective, cuisine)
           ))
       ) : undefined
     ));
@@ -115,7 +115,7 @@ export default async function Page({ searchParams }: PageProps) {
       <Suspense key={nanoid()} fallback={<SearchResultsSkeleton />}>
         <SearchResults 
           count={searchedRecipesCount}
-          searchParams={loadedSearchParams}
+          searchParams={{ query, diet, dishType, cuisine, page }}
         />
       </Suspense>
       <Pagination totalPages={Math.ceil(searchedRecipesCount / MAX_GRID_RECIPE_DISPLAY_LIMIT)}/>

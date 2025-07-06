@@ -2,10 +2,10 @@
 
 import { useFormContext, useWatch } from "react-hook-form";
 import { Calendar } from "@/components/ui/calendar";
-import { PlanCreation, PlanCreationSchema } from "@/lib/zod";
+import { PlanCreationSchema, PlanEdition } from "@/lib/zod";
 import { toast } from "sonner";
 import { Info, Calendar as CalendarIcon } from "lucide-react";
-import { useCreatePlanFormContext } from "@/components/plans/create/create-plan-form-provider";
+import { useEditPlanFormContext } from "@/components/plans/edit/edit-plan-form-provider";
 import { format, isAfter, isBefore, isSameDay } from "date-fns";
 import { CalendarDayButton } from "@/components/ui/calendar";
 import { tz } from "@date-fns/tz";
@@ -16,14 +16,14 @@ const inUtc = { in: tz("UTC") };
 const DateSchema = PlanCreationSchema.shape.date;
 
 export default function PlanCalendar() {
-  const { startDate, endDate, plans } = useCreatePlanFormContext();
+  const { startDate, endDate, plans, planToEdit: { date: planToEditDate } } = useEditPlanFormContext();
   const {
     control,
     setValue,
     formState: {
       errors
     }
-  } = useFormContext<PlanCreation>();
+  } = useFormContext<PlanEdition>();
   const date = useWatch({ control, name: "date" });
 
   return (
@@ -44,7 +44,7 @@ export default function PlanCalendar() {
         <CalendarIcon size={16}/>
         Selected Date
         <Separator orientation="vertical"/>
-        {date ? format(date, "MMMM do, yyyy") : "None"}
+        {format(date, "MMMM do, yyyy")}
       </div>
       <Calendar
         mode="single"
@@ -53,7 +53,7 @@ export default function PlanCalendar() {
         endMonth={endDate}
         onSelect={(calendarDate) => {
           if (!calendarDate) return;
-          if (plans.some((p) => isSameDay(p.date, calendarDate, inUtc))) {
+          if (!isSameDay(calendarDate, planToEditDate, inUtc) && plans.some((p) => isSameDay(p.date, calendarDate, inUtc))) {
             toast.error("A plan is already set on this day.");
             return;
           }
@@ -62,10 +62,11 @@ export default function PlanCalendar() {
         }}
         components={{
           DayButton: ({ day, ...props }) => {
-            const shouldDisable = 
+            const shouldDisable = !isSameDay(day.date, planToEditDate, inUtc) && (
               plans.filter((p) => isSameDay(p.date, day.date, inUtc)).length !== 0 ||
               isBefore(day.date, now) || isAfter(day.date, endDate) ||
               !DateSchema.safeParse(day.date).success
+            );
             
             return (
               <CalendarDayButton

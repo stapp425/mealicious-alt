@@ -2,7 +2,7 @@
 
 import { MealCreation, MealCreationSchema } from "@/lib/zod";
 import { FormProvider, useForm } from "react-hook-form";
-import MealRecipeSearch from "@/components/meals/create/meal-recipe-search";
+import MealRecipeSearch from "@/components/meals/create/meal-recipes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import MealTags from "@/components/meals/create/meal-tags";
 import MealDescription from "@/components/meals/create/meal-description";

@@ -127,8 +127,8 @@ export default function CalendarDayButton(props: CalendarDayButtonProps) {
                               className="w-full flex gap-4 rounded-sm"
                             >
                               <div key={m.id} className="w-full text-left flex flex-col sm:flex-row items-start gap-4">
-                                <span className="min-w-[100px] bg-mealicious-primary text-white text-xs text-center font-semibold py-1.5 rounded-sm">
-                                  {m.type.charAt(0).toUpperCase() + m.type.slice(1)}
+                                <span className="min-w-[100px] bg-mealicious-primary text-white text-xs text-center font-semibold py-1.5 rounded-sm capitalize">
+                                  {m.type}
                                 </span>
                                 <Separator orientation="vertical" className="hidden sm:block"/>
                                 <div className="w-full flex-1 flex flex-col items-start gap-3 sm:pb-4.5">

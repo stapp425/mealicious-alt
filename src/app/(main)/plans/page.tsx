@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import MorePlans from "@/components/plans/calendar/more-plans";
 import { Suspense } from "react";
 import { nanoid } from "nanoid";
-import { createLoader, parseAsIndex, parseAsStringLiteral, SearchParams } from "nuqs/server";
+import { createLoader, parseAsIndex, parseAsString, parseAsStringLiteral, SearchParams } from "nuqs/server";
 import { morePlansTimeFrame, morePlansView } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +17,7 @@ import { addMilliseconds, addMonths, addWeeks, addYears, startOfDay } from "date
 import { tz } from "@date-fns/tz";
 import { UTCDate } from "@date-fns/utc";
 import { MAX_PLAN_DISPLAY_LIMIT } from "@/lib/utils";
+import MorePlansSearchBar from "@/components/plans/calendar/more-plans-search-bar";
 
 type PageProps = {
   searchParams: Promise<SearchParams>;
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
 };
 
 const loadSearchParams = createLoader({
+  query: parseAsString.withDefault(""),
   view: parseAsStringLiteral(morePlansView).withDefault("upcoming"),
   timeframe: parseAsStringLiteral(morePlansTimeFrame),
   page: parseAsIndex.withDefault(0)
@@ -40,7 +42,7 @@ const loadSearchParams = createLoader({
 const inUtc = { in: tz("UTC") };
 
 export default async function Page({ searchParams }: PageProps) {  
-  const { timeframe, view, page } = await loadSearchParams(searchParams);
+  const { query, timeframe, view, page } = await loadSearchParams(searchParams);
   
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -100,13 +102,15 @@ export default async function Page({ searchParams }: PageProps) {
       </div>
       <PlanCalendar />
       <h2 className="font-bold text-4xl capitalize mb-2">{view} Plans</h2>
+      <MorePlansSearchBar />
       <MorePlansOptions />
+      <Separator />
       <Suspense key={nanoid()} fallback={<PlansSkeleton />}>
         <MorePlans
           userId={userId}
           startDate={date1}
           endDate={date2}
-          searchParams={{ timeframe, view, page }}
+          searchParams={{ query, timeframe, view, page }}
         />
       </Suspense>
       <Pagination totalPages={Math.ceil(plansCount / MAX_PLAN_DISPLAY_LIMIT)}/>

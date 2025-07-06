@@ -24,7 +24,7 @@ export default async function Page() {
     userId,
     startDate: new UTCDate(startDate),
     endDate: new UTCDate(endDate)
-  })
+  });
 
   return (
     <CreatePlanFormProvider

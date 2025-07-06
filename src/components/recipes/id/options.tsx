@@ -1,6 +1,6 @@
 "use client";
 
-import { toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/db";
+import { toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/recipe";
 import { cn } from "@/lib/utils";
 import { ArrowDownToLine, Heart, Loader2, X } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";

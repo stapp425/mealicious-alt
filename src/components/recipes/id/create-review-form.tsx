@@ -2,7 +2,7 @@
 
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { createReview } from "@/lib/actions/db";
+import { createReview } from "@/lib/actions/recipe";
 import { cn } from "@/lib/utils";
 import { ReviewCreation, ReviewCreationSchema } from "@/lib/zod";
 import { zodResolver } from "@hookform/resolvers/zod";

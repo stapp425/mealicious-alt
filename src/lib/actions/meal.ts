@@ -4,9 +4,9 @@ import { authActionClient } from "@/safe-action";
 import { MealCreationSchema, MealEditionSchema } from "@/lib/zod";
 import z from "zod";
 import { db } from "@/db";
-import { meal, mealToRecipe } from "@/db/schema";
+import { meal, mealToRecipe, recipe, savedRecipe } from "@/db/schema";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, count, desc, eq, exists, ilike, sql } from "drizzle-orm";
 
 export const createMeal = authActionClient
   .schema(z.object({
@@ -124,3 +124,55 @@ export const deleteMeal = authActionClient
       message: "Meal successfully deleted!"
     };
   });
+
+export async function getSavedRecipesForMealForm({ userId, query, limit, offset }: { userId: string; query: string; limit: number; offset: number; }) {
+  return db.select({
+    recipes: sql<{
+      id: string;
+      title: string;
+      image: string;
+      description: string | null;
+    }[]>`
+      coalesce(
+        json_agg("saved_recipe_sub"."data"),
+        '[]'::json
+      )
+    `.as("recipes")
+  }).from(
+      db.select({ 
+        data: sql`
+          json_build_object(
+            'id', ${recipe.id},
+            'title', ${recipe.title},
+            'image', ${recipe.image},
+            'description', ${recipe.description}
+          )
+        `.as("data")
+      }).from(savedRecipe)
+        .where(and(
+          eq(savedRecipe.userId, userId),
+          ilike(recipe.title, `%${query}%`)
+        ))
+        .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
+        .limit(limit)
+        .offset(offset)
+        .orderBy(desc(savedRecipe.saveDate))
+        .as("saved_recipe_sub")
+    );
+}
+
+export async function getSavedRecipesForMealFormCount({ userId, query }: { userId: string, query: string }) {
+  return db.select({ count: count() })
+    .from(savedRecipe)
+    .where(and(
+      eq(savedRecipe.userId, userId),
+      exists(
+        db.select({ title: recipe.title })
+          .from(recipe)
+          .where(and(
+            eq(savedRecipe.recipeId, recipe.id),
+            ilike(recipe.title, `%${query}%`)
+          ))
+      )
+    ));
+}

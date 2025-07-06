@@ -17,14 +17,8 @@ import Link from "next/link";
 import siteLogo from "@/img/logo/mealicious-logo.svg";
 import SidebarUser from "@/components/main/sidebar-user";
 import { Separator } from "@/components/ui/separator";
-
-type AppSidebarProps = {
-  username: string;
-  email: string;
-  image: string | null;
-};
  
-export function AppSidebar({ username, email, image }: AppSidebarProps) {
+export function AppSidebar() {
   return (
     <Sidebar className="print:hidden">
       <SidebarHeader>
@@ -133,11 +127,7 @@ export function AppSidebar({ username, email, image }: AppSidebarProps) {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarUser
-          username={username}
-          email={email}
-          image={image}
-        />
+        <SidebarUser />
       </SidebarFooter>
     </Sidebar>
   );
