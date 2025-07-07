@@ -64,7 +64,7 @@ export const updatePlan = authActionClient
       throw new Error("Plan does not exist.");
 
     if (user.id !== foundPlan.createdBy)
-      throw new Error("You are not authorized to delete this recipe.");
+      throw new Error("You are not authorized to delete this plan.");
 
     const updatePlanQuery = db.update(plan)
       .set({

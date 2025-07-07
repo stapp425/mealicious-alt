@@ -52,8 +52,8 @@ export default function SidebarUser() {
                   src={image || undefined}
                   alt={`${name}'s Profile Picture`}
                 />
-                <AvatarFallback className="uppercase">
-                  {name}
+                <AvatarFallback>
+                  {name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">

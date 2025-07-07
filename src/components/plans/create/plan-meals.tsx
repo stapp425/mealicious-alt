@@ -146,7 +146,7 @@ export default function PlanMeals({ userId }: RecipeSearchProps) {
               />
             </div>
             <Separator />
-            <div className="flex flex-col gap-1.5 sm:gap-3 p-6">
+            <div className="flex flex-col gap-1.5 sm:gap-3 p-4">
               {
                 isPending ? (
                   <div className="min-h-[50px] flex justify-center items-center">
