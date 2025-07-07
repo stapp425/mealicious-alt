@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { deletePlan } from "@/lib/actions/plan";
 import Link from "next/link";
+import { useSessionStorage } from "usehooks-ts";
 
 type MorePlansResultProps = {
   view: MorePlansView;
@@ -35,10 +36,12 @@ const inUtc = { in: tz("UTC") };
 
 export default function MorePlansResult({ view, plan }: MorePlansResultProps) {
   const { refresh } = useRouter();
+  const [,setLastRefresh] = useSessionStorage("lastPlanCalendarRefresh", Date.now());
   const [open, setOpen] = useState<boolean>(false);
   const { executeAsync, isExecuting } = useAction(deletePlan, {
     onSuccess: ({ data }) => {
       toast.warning(data?.message || "Successfully deleted plan!");
+      setLastRefresh(Date.now());
       refresh();
     },
     onError: () => toast.error("Failed to delete plan.")

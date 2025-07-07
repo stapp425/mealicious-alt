@@ -6,10 +6,12 @@ import { useCallback, useMemo, createContext, useContext } from "react";
 import { planViews } from "@/lib/types";
 import CalendarWeek from "@/components/plans/calendar/calendar-week";
 import CalendarMonth from "@/components/plans/calendar/calendar-month";
+import { useSessionStorage } from "usehooks-ts";
 
 const now = new Date();
 
 export default function PlanCalendar() {
+  const [lastRefresh] = useSessionStorage("lastPlanCalendarRefresh", now.getTime());
   const [view] = useQueryState(
     "view",
     parseAsStringLiteral(planViews)
@@ -41,7 +43,7 @@ export default function PlanCalendar() {
   }), [year, month, day]);
   
   return (
-    <PlanCalendarProvider date={calendarDate} setDate={setDateFn}>
+    <PlanCalendarProvider key={lastRefresh} date={calendarDate} setDate={setDateFn}>
       { view === "monthly" ? <CalendarMonth /> : <CalendarWeek /> }
     </PlanCalendarProvider>
   );

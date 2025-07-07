@@ -90,7 +90,7 @@ export const updatePlan = authActionClient
 
     return {
       success: true as const,
-      message: "Successfully updated recipe!"
+      message: "Successfully updated plan!"
     };
   });
 

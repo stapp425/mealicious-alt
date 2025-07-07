@@ -121,7 +121,7 @@ function CalendarWeekDay({ date, plans }: CalendarWeekDayProps) {
           <Collapsible key={p.id} asChild>
             <div className="flex flex-col gap-2 transition-all">
               <Separator />
-              <div className="flex justify-between items-center gap-2">
+              <div className="flex justify-between items-start gap-2">
                 <h2 className="font-bold text-2xl">{p.title}</h2>
                 <CollapsibleTrigger className="[&[data-state=open]_svg]:rotate-180" asChild>
                   <Button className="ml-auto cursor-pointer flex gap-2 items-center" variant="secondary">
