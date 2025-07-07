@@ -239,7 +239,9 @@ export const updateRecipe = authActionClient
 
     revalidatePath("/recipes");
     revalidatePath(`/recipes/${foundRecipe.id}`);
-    revalidatePath(`/recipes/${foundRecipe.id}/edit`)
+    revalidatePath(`/recipes/${foundRecipe.id}/edit`);
+    revalidatePath("/meals");
+    revalidatePath("/plans");
 
     return {
       success: true as const,
@@ -271,10 +273,11 @@ export const deleteRecipe = authActionClient
       throw new Error("You are not authorized to delete this recipe.");
 
     const { url } = await generatePresignedUrlForImageDelete(foundRecipe.image);
-    await axios.delete(url);
-    await db.delete(recipe).where(eq(recipe.id, foundRecipe.id));
+    const deleteImageOperation = axios.delete(url);
+    const deleteRecipeQuery = db.delete(recipe).where(eq(recipe.id, foundRecipe.id));
+    const deleteRecipeQueryIndexOperation = deleteRecipeQueryIndex(foundRecipe.id);
 
-    await deleteRecipeQueryIndex(foundRecipe.id);
+    await Promise.all([deleteImageOperation, deleteRecipeQuery, deleteRecipeQueryIndexOperation]);
     revalidatePath("/recipes");
 
     return {
@@ -322,26 +325,28 @@ export const toggleRecipeFavorite = authActionClient
     });
 
     if (foundFavoritedRecipe) {
-      await db.delete(recipeFavorite).where(and(
+      const deleteRecipeFavoriteQuery = db.delete(recipeFavorite).where(and(
         eq(recipeFavorite.userId, foundFavoritedRecipe.userId),
         eq(recipeFavorite.recipeId, foundFavoritedRecipe.recipeId)
       ));
 
-      await db.update(recipeStatistics).set({
+      const updateRecipeStatisticsQuery = db.update(recipeStatistics).set({
         favoriteCount: sql`${recipeStatistics.favoriteCount} - 1`
       }).where(eq(recipeStatistics.recipeId, recipeId));
 
+      await Promise.all([deleteRecipeFavoriteQuery, updateRecipeStatisticsQuery]);
       isFavorite = false;
     } else {
-      await db.insert(recipeFavorite).values({
+      const insertRecipeFavoriteQuery = db.insert(recipeFavorite).values({
         userId: user.id!,
         recipeId
       });
 
-      await db.update(recipeStatistics).set({
+      const updateRecipeStatisticsQuery = db.update(recipeStatistics).set({
         favoriteCount: sql`${recipeStatistics.favoriteCount} + 1`
       }).where(eq(recipeStatistics.recipeId, recipeId));
 
+      await Promise.all([insertRecipeFavoriteQuery, updateRecipeStatisticsQuery]);
       isFavorite = true;
     }
 
@@ -374,26 +379,28 @@ export const toggleSavedListRecipe = authActionClient
     });
 
     if (foundSavedRecipe) {
-      await db.delete(savedRecipe).where(and(
+      const deleteSavedRecipeQuery = db.delete(savedRecipe).where(and(
         eq(savedRecipe.userId, foundSavedRecipe.userId),
         eq(savedRecipe.recipeId, foundSavedRecipe.recipeId)
       ));
 
-      await db.update(recipeStatistics)
+      const updateRecipeStatisticsQuery = db.update(recipeStatistics)
         .set({ savedCount: sql`${recipeStatistics.savedCount} - 1` })
         .where(eq(recipeStatistics.recipeId, foundSavedRecipe.recipeId));
-      
+
+      await Promise.all([deleteSavedRecipeQuery, updateRecipeStatisticsQuery]);
       isSaved = false;
     } else {
-      await db.insert(savedRecipe).values({
+      const insertSavedRecipeQuery = db.insert(savedRecipe).values({
         userId: user.id!,
         recipeId
       });
       
-      await db.update(recipeStatistics)
+      const updateRecipeStatisticsQuery = db.update(recipeStatistics)
         .set({ savedCount: sql`${recipeStatistics.savedCount} + 1` })
         .where(eq(recipeStatistics.recipeId, recipeId));
 
+      await Promise.all([insertSavedRecipeQuery, updateRecipeStatisticsQuery]);
       isSaved = true;
     }
 
@@ -434,7 +441,7 @@ export const createReview = authActionClient
     if (foundReview)
       throw new Error("You have already created a review for this recipe!");
 
-    const [{ insertedReviewId }] = await db.insert(recipeReview).values({
+    const insertRecipeReviewQuery = db.insert(recipeReview).values({
       recipeId,
       userId: user.id!,
       rating: review.rating,
@@ -444,10 +451,11 @@ export const createReview = authActionClient
     });
 
     const insertedRating = getRatingKey(review.rating);
-
-    await db.update(recipeStatistics).set({
+    const updateRecipeStatisticsQuery = db.update(recipeStatistics).set({
       [insertedRating]: sql`${recipeStatistics[insertedRating]} + 1`
     }).where(eq(recipeStatistics.recipeId, recipeId));
+
+    const [[{ insertedReviewId }]] = await Promise.all([insertRecipeReviewQuery, updateRecipeStatisticsQuery]);
 
     return {
       success: true as const,
@@ -539,13 +547,14 @@ export const toggleReviewLike = authActionClient
       };
     }
 
-    await db.delete(reviewLike).where(eq(reviewLike.reviewId, reviewId));
-
-    await db.update(recipeReview)
+    const deleteReviewLikeQuery = db.delete(reviewLike).where(eq(reviewLike.reviewId, reviewId));
+    const updateRecipeReview = db.update(recipeReview)
       .set({
         likeCount: sql`${recipeReview.likeCount} - 1`
       })
       .where(eq(recipeReview.id, reviewId));
+
+    await Promise.all([deleteReviewLikeQuery, updateRecipeReview]);
 
     return {
       success: true as const,

@@ -34,6 +34,7 @@ export const createMeal = authActionClient
       })));
 
     revalidatePath("/meals");
+    revalidatePath("/plans");
 
     return {
       success: true as const,
@@ -84,6 +85,7 @@ export const updateMeal = authActionClient
       })));
 
     revalidatePath("/meals");
+    revalidatePath("/plans");
 
     return {
       success: true as const,
@@ -118,6 +120,7 @@ export const deleteMeal = authActionClient
     await db.delete(meal).where(eq(meal.id, foundMeal.id));
 
     revalidatePath("/meals");
+    revalidatePath("/plans");
 
     return {
       success: true as const,

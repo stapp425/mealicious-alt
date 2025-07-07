@@ -64,7 +64,7 @@ export const updatePlan = authActionClient
       throw new Error("Plan does not exist.");
 
     if (user.id !== foundPlan.createdBy)
-      throw new Error("You are not authorized to delete this plan.");
+      throw new Error("You are not authorized to edit this plan.");
 
     const updatePlanQuery = db.update(plan)
       .set({
@@ -117,7 +117,7 @@ export const deletePlan = authActionClient
       throw new Error("Plan does not exist.");
 
     if (user.id !== foundPlan.createdBy)
-      throw new Error("You are not authorized to delete this recipe.");
+      throw new Error("You are not authorized to delete this plan.");
     
     await db.delete(plan).where(eq(plan.id, foundPlan.id));
     await removeCacheKeys(`user_${user.id}_plan*`);
@@ -252,7 +252,7 @@ export async function getPlansInTimeFrameCount({ userId, startDate, endDate, que
       startDate ? gte(plan.date, startDate) : undefined,
       endDate ? lte(plan.date, endDate) : undefined,
       query ? ilike(plan.title, query) : undefined
-    ))
+    ));
 
   return await getDataWithCache({
     cacheKey: `user_${userId}_plans_count${startDate ? `_${getTime(startDate)}` : ""}${endDate ? `_to_${getTime(endDate)}` : ""}${query ? `_query_${query}` : ""}`,

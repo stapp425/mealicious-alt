@@ -6,7 +6,7 @@ import { parseAsIndex, parseAsString, useQueryState } from "nuqs";
 
 export default function SearchBar() {
   const [query, setQuery] = useQueryState("query", parseAsString.withDefault(""));
-  const [_, setPage] = useQueryState(
+  const [,setPage] = useQueryState(
     "page",
     parseAsIndex
       .withDefault(0)

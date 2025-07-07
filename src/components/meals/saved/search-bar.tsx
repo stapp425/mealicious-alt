@@ -18,7 +18,7 @@ import { useMediaQuery } from "usehooks-ts";
 export default function SearchBar() {
   const [mounted, setMounted] = useState<boolean>(false);
   const matches = useMediaQuery("(min-width: 48rem)");
-  const [_, setParams] = useQueryStates({
+  const [,setParams] = useQueryStates({
     page: parseAsIndex.withDefault(0),
     query: parseAsString.withDefault(""),
     mealType: parseAsStringLiteral(mealTypes),
