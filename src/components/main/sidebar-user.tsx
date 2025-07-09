@@ -24,13 +24,15 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { ChevronsUpDown, Laptop, LogOut, Moon, Settings, Sun } from "lucide-react";
+import { ChevronsUpDown, Laptop, LogOut, Moon, Settings, Sun, User } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 export default function SidebarUser() {
-  const { data } = useSession();
+  const { data, status } = useSession();
   const [mounted, setMounted] = useState<boolean>(false);
   const { setTheme } = useTheme();
   
@@ -38,8 +40,24 @@ export default function SidebarUser() {
     setMounted(true);
   }, []);
 
+  if (status === "loading") {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" className="cursor-pointer flex justify-between gap-2.5 px-2 py-8">
+            <Skeleton className="size-9 rounded-full"/>
+            <div className="flex-1 grid gap-2">
+              <Skeleton className="w-36 h-4 rounded-sm"/>
+              <Skeleton className="w-full h-5 rounded-sm"/>
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
+    
   if (!data?.user || !mounted) return null;
-  const { image, name, email } = data.user;
+  const { id, image, name, email } = data.user;
 
   return (
     <SidebarMenu>
@@ -74,8 +92,10 @@ export default function SidebarUser() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem className="cursor-pointer">
-                <span>Settings</span>
-                <Settings />
+                <Link href={`/user/${id}`} className="w-full flex justify-between items-center">
+                  <span>Your Profile</span>
+                  <User />
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
@@ -109,6 +129,12 @@ export default function SidebarUser() {
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
+              <DropdownMenuItem className="cursor-pointer">
+                <Link href="/settings" className="w-full flex justify-between items-center">
+                  <span>Settings</span>
+                  <Settings />
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>

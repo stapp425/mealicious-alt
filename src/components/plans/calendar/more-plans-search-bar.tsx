@@ -31,7 +31,7 @@ export default function MorePlansSearchBar() {
         className="h-9 mealicious-button font-semibold text-sm flex items-center gap-2 px-4 rounded-md"
       >
         Search
-        <Search size={16}/>
+        <Search size={16} aria-hidden={undefined}/>
       </button>
     </div>
   );

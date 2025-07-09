@@ -178,7 +178,9 @@ export default async function Page({ params }: PageProps) {
                 src={foundRecipe.creator?.image || defaultProfilePicture}
                 alt={`Profile picture of ${foundRecipe.creator?.name || "[deleted]"}`}
               />
-              <AvatarFallback>{foundRecipe.creator?.name.charAt(0).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="bg-mealicious-primary text-lg font-semibold">
+                {foundRecipe.creator?.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="flex flex-col justify-between items-start">
               {

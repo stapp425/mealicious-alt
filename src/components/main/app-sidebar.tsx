@@ -17,6 +17,59 @@ import Link from "next/link";
 import siteLogo from "@/img/logo/mealicious-logo.svg";
 import SidebarUser from "@/components/main/sidebar-user";
 import { Separator } from "@/components/ui/separator";
+
+const sidebarSections = [
+  {
+    title: "Recipe",
+    sections: [
+      {
+        name: "Saved Recipes",
+        icon: ArrowDownToLine,
+        href: "/recipes"
+      },
+      {
+        name: "Create Recipe",
+        icon: Pencil,
+        href: "/recipes/create"
+      },
+      {
+        name: "Search New Recipes",
+        icon: Search,
+        href: "/recipes/search"
+      }
+    ]
+  },
+  {
+    title: "Meal",
+    sections: [
+      {
+        name: "All Meals",
+        icon: List,
+        href: "/meals"
+      },
+      {
+        name: "Create Meal",
+        icon: Pencil,
+        href: "/meals/create"
+      }
+    ]
+  },
+  {
+    title: "Plan",
+    sections: [
+      {
+        name: "Plan Calendar",
+        icon: Calendar,
+        href: "/plans"
+      },
+      {
+        name: "Create Plan",
+        icon: Pencil,
+        href: "/plans/create"
+      }
+    ]
+  }
+];
  
 export function AppSidebar() {
   return (
@@ -42,89 +95,31 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <span className="font-semibold text-md">Recipe</span>
-            </SidebarMenuButton>
-            <SidebarMenuSub>
-              <SidebarMenuSubItem>
+        {
+          sidebarSections.map((s) => (
+            <SidebarMenu key={s.title}>
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Link href="/recipes">
-                    Saved Recipes
-                    <ArrowDownToLine />
-                  </Link>
+                  <span className="font-semibold text-md">{s.title}</span>
                 </SidebarMenuButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/recipes/create">
-                    Create Recipe
-                    <Pencil />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/recipes/search">
-                    Search New Recipes
-                    <Search />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuSubItem>
-            </SidebarMenuSub>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <span className="font-semibold text-md">Meal</span>
-            </SidebarMenuButton>
-            <SidebarMenuSub>
-              <SidebarMenuSubItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/meals">
-                    All Meals
-                    <List />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/meals/create">
-                    Create Meal
-                    <Pencil />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuSubItem>
-            </SidebarMenuSub>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <span className="font-semibold text-md">Plan</span>
-            </SidebarMenuButton>
-            <SidebarMenuSub>
-              <SidebarMenuSubItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/plans">
-                    Plan Calendar
-                    <Calendar />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/plans/create">
-                    Create Plan
-                    <Pencil />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuSubItem>
-            </SidebarMenuSub>
-          </SidebarMenuItem>
-        </SidebarMenu>
+                <SidebarMenuSub>
+                  {
+                    s.sections.map((s) => (
+                      <SidebarMenuSubItem key={s.name}>
+                        <SidebarMenuButton asChild>
+                          <Link href={s.href}>
+                            {s.name}
+                            <s.icon />
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuSubItem>
+                    ))
+                  }
+                </SidebarMenuSub>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          ))
+        }
       </SidebarContent>
       <SidebarFooter>
         <SidebarUser />

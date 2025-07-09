@@ -12,11 +12,15 @@ export const user = pgTable("user", (t) => ({
     .primaryKey()
     .$default(() => nanoid()),
   name: t.text("user_name").notNull(),
+  about: t.text("user_about"),
   email: t.text("user_email").unique().notNull(),
   emailVerified: t.timestamp("emailVerified", { mode: "date" }),
   password: t.text("user_password"),
   image: t.text("image"),
-  createdAt: t.date("user_created_at").defaultNow()
+  createdAt: t.date("user_created_at", {
+    mode: "date"
+  }).notNull()
+    .defaultNow()
 }));
 
 export const userToCuisine = pgTable("user_to_cuisine", (t) => ({

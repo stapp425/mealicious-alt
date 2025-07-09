@@ -148,3 +148,6 @@ export type MorePlansView = typeof morePlansView[number];
 
 export const morePlansTimeFrame = ["week", "month", "year"] as const;
 export type MorePlansTimeFrame = typeof morePlansTimeFrame[number];
+
+export const userRecipesView = ["created", "saved", "favorited"] as const;
+export type UserRecipesView = typeof userRecipesView[number];

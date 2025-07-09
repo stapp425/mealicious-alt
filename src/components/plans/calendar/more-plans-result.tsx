@@ -49,9 +49,9 @@ export default function MorePlansResult({ view, plan }: MorePlansResultProps) {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} asChild>
-      <div className="flex flex-col gap-2 transition-all">
-        <div className="flex justify-between items-start gap-3">
-          <h2 className="font-bold text-2xl">{plan.title}</h2>
+      <div className="grid gap-2 transition-all">
+        <div className="line-clamp-2 flex justify-between items-start gap-3">
+          <h2 className="font-bold text-2xl truncate">{plan.title}</h2>
           <DropdownMenu>
             <DropdownMenuTrigger className="cursor-pointer" asChild>
               <Button variant="outline" className="aspect-square rounded-sm p-1.5!">
@@ -126,8 +126,8 @@ export default function MorePlansResult({ view, plan }: MorePlansResultProps) {
           )
         }
         <p className={cn(
-          plan.description ? "line-clamp-1" : "italic",
-          "text-muted-foreground group-disabled:text-secondary"
+          !plan.description && "italic",
+          "max-w-full text-muted-foreground group-disabled:text-secondary hyphens-auto line-clamp-5"
         )}>
           {plan.description || "No description is available."}
         </p>
