@@ -104,7 +104,14 @@ export default async function Page({ params }: { params: Promise<{ recipe_id: st
     }
   });
 
-  const [cuisines, diets, dishTypes] = await Promise.all([cuisinesQuery, dietsQuery, dishTypesQuery]);
+  const nutritionQuery = db.query.nutrition.findMany({
+    orderBy: (nutrition, { asc }) => [asc(nutrition.sortIndex)],
+    columns: {
+      description: false
+    }
+  });
+
+  const [cuisines, diets, dishTypes, nutrition] = await Promise.all([cuisinesQuery, dietsQuery, dishTypesQuery, nutritionQuery]);
   
   return (
     <EditRecipeForm
@@ -112,6 +119,7 @@ export default async function Page({ params }: { params: Promise<{ recipe_id: st
       diets={diets}
       dishTypes={dishTypes}
       recipe={foundRecipe}
+      nutrition={nutrition}
     />
   );
 }

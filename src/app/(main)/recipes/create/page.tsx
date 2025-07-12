@@ -18,6 +18,7 @@ export default async function Page() {
   });
 
   const nutritionFetch = db.query.nutrition.findMany({
+    orderBy: (nutrition, { asc }) => [asc(nutrition.sortIndex)],
     columns: {
       description: false
     }

@@ -178,22 +178,22 @@ const RecipeFormSchema = z.object({
   })),
   cookTime: z.coerce.number({
     required_error: "An amount is required."
-  }).positive({
-    message: "Cook time must be positive."
+  }).nonnegative({
+    message: "Cook time cannot be negative."
   }).max(MAX_COOK_TIME_AMOUNT, {
     message: `Cook time cannot exceed ${MAX_COOK_TIME_AMOUNT.toLocaleString()}.`
   }),
   prepTime: z.coerce.number({
     required_error: "An amount is required."
-  }).positive({
-    message: "Prep time must be positive."
+  }).nonnegative({
+    message: "Prep time cannot be negative."
   }).max(MAX_PREP_TIME_AMOUNT, {
     message: `Prep time cannot exceed ${MAX_PREP_TIME_AMOUNT.toLocaleString()}.`
   }),
   readyTime: z.coerce.number({
     required_error: "An amount is required."
-  }).positive({
-    message: "Ready time must be positive."
+  }).nonnegative({
+    message: "Ready time cannot be negative."
   }).max(MAX_READY_TIME_AMOUNT, {
     message: `Ready time cannot exceed ${MAX_READY_TIME_AMOUNT.toLocaleString()}.`
   }),

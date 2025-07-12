@@ -17,7 +17,6 @@ type NutritionProps = {
       name: string;
       id: string;
       description: string;
-      isMacro: boolean;
     } | null;
   }[];
 };

@@ -1,17 +1,11 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { RecipeCreation } from "@/lib/zod";
 import { Info } from "lucide-react";
-import { useFormContext } from "react-hook-form";
+import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
 export default function RecipeSource() {
-  const {
-    register,
-    formState: {
-      errors
-    }
-  } = useFormContext<RecipeCreation>();
+  const { register, errors } = useCreateRecipeFormContext();
   
   return (
     <div className="flex flex-col gap-3">

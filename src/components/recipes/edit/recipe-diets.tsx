@@ -2,10 +2,10 @@
 
 import { diet } from "@/db/schema";
 import { cn } from "@/lib/utils";
-import { MAX_DIETS_LENGTH, RecipeEdition } from "@/lib/zod";
+import { MAX_DIETS_LENGTH } from "@/lib/zod";
 import { InferSelectModel } from "drizzle-orm";
 import { useMemo, useState } from "react";
-import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import { useFieldArray, useWatch } from "react-hook-form";
 import {
   Command,
   CommandEmpty,
@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Check, ChevronDown, Info } from "lucide-react";
+import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
 
 type Diet = Omit<InferSelectModel<typeof diet>, "description">;
 
@@ -30,12 +31,7 @@ type RecipeDietsProps = {
 };
 
 export default function RecipeDiets({ diets }: RecipeDietsProps) {
-  const {
-    control,
-    formState: {
-      errors
-    }
-  } = useFormContext<RecipeEdition>();
+  const { control, errors } = useEditRecipeFormContext();
   const { append, remove } = useFieldArray({ control, name: "diets" });
   const formDietValues = useWatch({ control, name: "diets" });
   const [diet, setDiet] = useState<Diet>({
@@ -135,7 +131,7 @@ export default function RecipeDiets({ diets }: RecipeDietsProps) {
           )
         }
       </div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
+      <div className="flex flex-col items-start">
         <p className="font-semibold text-muted-foreground">
           Add some diets to your recipe here. (optional)
         </p>

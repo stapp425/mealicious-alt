@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { ImageDataSchema, RecipeCreation } from "@/lib/zod";
+import { ImageDataSchema } from "@/lib/zod";
 import { Info, Plus } from "lucide-react";
 import { 
   useEffect, 
@@ -10,17 +10,12 @@ import {
 } from "react";
 import Image from "next/image";
 import defaultRecipeImage from "@/img/default/default-background.jpg";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 import { toast } from "sonner";
+import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
 export default function RecipeImageUploader() {
-  const {
-    setValue,
-    control,
-    formState: {
-      errors
-    }
-  } = useFormContext<RecipeCreation>();
+  const { control, setValue, errors } = useCreateRecipeFormContext();
   const image = useWatch({ control, name: "image" });
   const [imageURL, setImageURL] = useState<string | null>(null);
   const addImageButton = useRef<HTMLInputElement>(null);

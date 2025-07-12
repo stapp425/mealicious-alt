@@ -129,15 +129,18 @@ export const nutrition = pgTable("nutrition", (t) => ({
   id: t.text("nutr_id")
     .primaryKey()
     .$default(() => nanoid()),
-  name: t.varchar("nutr_name", { length: 100 }).notNull().unique(),
+  name: t.varchar("nutr_name", { length: 100 })
+  .notNull().unique(),
   description: t.text("nutr_desc").notNull(),
-  isMacro: t.boolean("nutr_is_macro")
-    .notNull()
-    .default(false),
   allowedUnits: t.json("nutr_allowed_units")
     .$type<Unit["abbreviation"][]>()
+    .notNull(),
+  sortIndex: t.integer("nutr_sort_index")
     .notNull()
-}));
+    .default(0)
+}), (t) => [
+  unique().on(t.sortIndex)
+]);
 
 export const recipeToNutrition = pgTable("recipe_to_nutrition", (t) => ({
   recipeId: t.text("recipe_id")
@@ -184,8 +187,7 @@ export const ingredient = pgTable("ingredient", (t) => ({
   }).notNull(),
   note: t.text("ing_note")
 }), (t) => [
-  check("unit_amount_check", sql`${t.amount} > 0`),
-  unique().on(t.recipeId, t.name)
+  check("unit_amount_check", sql`${t.amount} > 0`)
 ]);
 
 export const dishType = pgTable("dish_type", (t) => ({

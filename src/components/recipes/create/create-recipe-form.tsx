@@ -4,7 +4,7 @@ import { diet, dishType, nutrition } from "@/db/schema/recipe";
 import { RecipeCreation, RecipeCreationSchema } from "@/lib/zod";
 import { InferSelectModel } from "drizzle-orm";
 import { LoaderCircle } from "lucide-react";
-import { FormProvider, useForm } from "react-hook-form";
+import { Control, FieldErrors, useForm, UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import RecipeImageUploader from "@/components/recipes/create/recipe-image-uploader";
 import RecipeTags from "@/components/recipes/create/recipe-tags";
@@ -16,7 +16,7 @@ import RecipeInstructions from "@/components/recipes/create/recipe-instructions"
 import { createRecipe, updateRecipeImage } from "@/lib/actions/recipe";
 import { toast } from "sonner";
 import axios, { AxiosError } from "axios";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { useRouter } from "next/navigation";
 import RecipeTitle from "@/components/recipes/create/recipe-title";
@@ -37,16 +37,36 @@ type CreateRecipeFormProps = {
   readonly dishTypes: Omit<InferSelectModel<typeof dishType>, "description">[];
 };
 
+type RecipeFormContextProps = {
+  control: Control<RecipeCreation>;
+  register: UseFormRegister<RecipeCreation>;
+  setValue: UseFormSetValue<RecipeCreation>;
+  errors: FieldErrors<RecipeCreation>;
+};
+
+const CreateRecipeFormContext = createContext<RecipeFormContextProps | null>(null);
+
+export function useCreateRecipeFormContext() {
+  const context = useContext(CreateRecipeFormContext);
+  if (!context) throw new Error("useCreateRecipeFormContext can only be used within a CreateRecipeFormContext.");
+  return context;
+}
+
 export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes }: CreateRecipeFormProps) {  
   const { replace } = useRouter();
   const [mounted, setMounted] = useState<boolean>(false);
   const matches = useMediaQuery("(min-width: 80rem)");
-  // put macronutrients first
-  const [macro, micro] = nutrition.reduce(([a, b]: [typeof nutrition, typeof nutrition], n) => {
-    (n.isMacro ? a : b).push(n);
-    return [a, b];
-  }, [[], []]);
-  const createRecipeForm = useForm<RecipeCreation>({
+  const { 
+    control,
+    register,
+    reset,
+    setValue,
+    handleSubmit,
+    formState: {
+      errors,
+      isSubmitting
+    }
+  } = useForm<RecipeCreation>({
     resolver: zodResolver(RecipeCreationSchema),
     mode: "onSubmit",
     delayError: 250,
@@ -70,31 +90,23 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
       dishTypes: [],
       ingredients: [],
       instructions: [],
-      nutrition: [
-        macro.map((n) => ({
-          ...n,
-          unit: n.allowedUnits.length > 0 ? n.allowedUnits[0] : "g",
-          amount: 0
-        })),
-        micro.map((n) => ({
-          ...n,
-          unit: n.allowedUnits.length > 0 ? n.allowedUnits[0] : "g",
-          amount: 0
-        })),
-      ].flat(),
+      nutrition: nutrition.map((n) => ({
+        ...n,
+        amount: 0,
+        unit: n.allowedUnits[0] || "g"
+      })),
       tags: []
     }
   });
-
-  const handleUnload = (e: BeforeUnloadEvent) => e.preventDefault();
   
   useEffect(() => {
     setMounted(true);
-    addEventListener("beforeunload", handleUnload);
-    return () => removeEventListener("beforeunload", handleUnload);
+    const handleUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
   }, []);
 
-  const onSubmit = createRecipeForm.handleSubmit(async (formData) => {
+  const onSubmit = handleSubmit(async (formData) => {
     try {
       const { image, ...formDataRest } = formData;
       const recipeCreationResult = await createRecipe({ createdRecipe: formDataRest });
@@ -103,10 +115,10 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
         throw new Error("Failed to create recipe.");
 
       const { data: { recipeId } } = recipeCreationResult;
-      const imageName = `${recipeId}/${image.name}`
+      const bucketImageName = `${recipeId}/${image.name}`;
 
       const { url } = await generatePresignedUrlForImageUpload({
-        name: imageName,
+        name: bucketImageName,
         type: image.type,
         size: image.size
       });
@@ -117,12 +129,15 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
         }
       });
 
-      const updateRecipeImageResult = await updateRecipeImage({ recipeId, imageName });
+      const updateRecipeImageResult = await updateRecipeImage({
+        recipeId,
+        imageName: bucketImageName
+      });
 
       if (!updateRecipeImageResult?.data?.success)
         throw new Error("Failed to add image to the recipe.");
 
-      createRecipeForm.reset();
+      reset();
       toast.success("Recipe successfully created!");
       replace(`/recipes/${recipeCreationResult.data.recipeId}`);
     } catch (err) {
@@ -130,13 +145,12 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
         toast.error("Failed to upload the recipe image.");
       } else if (err instanceof Error) {
         toast.error(err.message);
-        return;
       }
     }
   });
   
   return (
-    <FormProvider {...createRecipeForm}>
+    <CreateRecipeFormContext.Provider value={{ control, register, setValue, errors }}>
       <form 
         onSubmit={onSubmit} 
         className="max-w-[750px] xl:max-w-[1250px] w-full bg-background mx-auto p-4"
@@ -146,36 +160,38 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
           <div className="flex-1 shrink-0 flex flex-col gap-3">
             <RecipeImageUploader />
             {mounted && !matches && <RecipeTitle />}
+            {mounted && !matches && <RecipeDescription />}
             <RecipeCuisine cuisines={cuisines}/>
+            <RecipeDiets diets={diets}/>
+            <RecipeDishTypes dishTypes={dishTypes}/>
             <RecipeTags />
             <RecipeSource />
-            <RecipeTimes />
+            {mounted && !matches && <RecipeTimes />}
             <button
-              disabled={createRecipeForm.formState.isSubmitting}
+              disabled={isSubmitting}
               type="submit" 
               className="hidden xl:flex mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
             >
-              {createRecipeForm.formState.isSubmitting ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
+              {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
             </button>
           </div>
           <div className="xl:w-3/5 flex flex-col gap-3">
             {mounted && matches && <RecipeTitle />}
-            <RecipeDescription />
-            <RecipeDiets diets={diets}/>
-            <RecipeDishTypes dishTypes={dishTypes}/>
-            <RecipeNutrition />
+            {mounted && matches && <RecipeTimes />}
+            {mounted && matches && <RecipeDescription />}
             <RecipeIngredients />
             <RecipeInstructions />
+            <RecipeNutrition />
             <button
-              disabled={createRecipeForm.formState.isSubmitting}
+              disabled={isSubmitting}
               type="submit" 
               className="flex xl:hidden mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
             >
-              {createRecipeForm.formState.isSubmitting ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
+              {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
             </button>
           </div>
         </div>
       </form>
-    </FormProvider>
+    </CreateRecipeFormContext.Provider>
   );
 }

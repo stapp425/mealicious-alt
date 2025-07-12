@@ -2,18 +2,13 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { MAX_DESCRIPTION_LENGTH, RecipeEdition } from "@/lib/zod";
+import { MAX_DESCRIPTION_LENGTH } from "@/lib/zod";
 import { Info } from "lucide-react";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useWatch } from "react-hook-form";
+import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
 
 export default function RecipeDescription() {
-  const {
-    register,
-    control,
-    formState: {
-      errors
-    }
-  } = useFormContext<RecipeEdition>();
+  const { register, control, errors } = useEditRecipeFormContext();
   const currentDescription = useWatch({ control, name: "description" });
   
   return (
@@ -30,7 +25,7 @@ export default function RecipeDescription() {
       <Textarea
         {...register("description")}
         spellCheck={false}
-        placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Aliquam nulla facilisi cras fermentum odio eu feugiat pretium nibh."
+        placeholder="Enter a recipe description here..."
         autoComplete="off"
         className="min-h-[100px] hyphens-auto flex-1 flex rounded-md"
       />

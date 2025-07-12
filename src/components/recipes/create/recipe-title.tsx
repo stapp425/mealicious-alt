@@ -3,19 +3,13 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { MAX_TITLE_LENGTH, RecipeCreation } from "@/lib/zod";
+import { MAX_TITLE_LENGTH } from "@/lib/zod";
 import { Info } from "lucide-react";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useWatch } from "react-hook-form";
+import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
 export default function RecipeTitle() {
-  const {
-    control,
-    register,
-    setValue,
-    formState: {
-      errors
-    }
-  } = useFormContext<RecipeCreation>();
+  const { control, register, setValue, errors } = useCreateRecipeFormContext();
   const [currentTitle, isPublic] = useWatch({ control, name: ["title", "isPublic"] });
   
   return (

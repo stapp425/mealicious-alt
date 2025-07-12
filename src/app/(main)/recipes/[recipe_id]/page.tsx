@@ -146,14 +146,14 @@ export default async function Page({ params }: PageProps) {
         )
       }
       <div className="relative bg-background flex flex-col gap-3 w-full min-h-full max-w-[750px] mx-auto p-4 shadow-2xl">
-        <div className="relative w-full h-[300px] sm:h-[400px]">
+        <div className="wrap-break-word relative w-full h-[300px] sm:h-[400px]">
           <Image 
             src={foundRecipe.image || defaultImage}
             alt={`Image of ${foundRecipe.title}`}
             fill
             className="relative border border-border object-cover rounded-sm"
           />
-          <h1 className="absolute bottom-3 left-3 right-3 w-fit max-w-full bg-background text-wrap hyphens-none line-clamp-2 font-bold text-xl text-foreground rounded-sm py-2 px-4 shadow-md">
+          <h1 className="absolute bottom-3 left-3 right-3 w-fit max-w-full bg-background text-wrap word-wrap hyphens-auto line-clamp-2 font-bold text-xl text-foreground rounded-sm py-2 px-4 shadow-md">
             {foundRecipe.title}
           </h1>
           {
@@ -178,7 +178,7 @@ export default async function Page({ params }: PageProps) {
                 src={foundRecipe.creator?.image || defaultProfilePicture}
                 alt={`Profile picture of ${foundRecipe.creator?.name || "[deleted]"}`}
               />
-              <AvatarFallback className="bg-mealicious-primary text-lg font-semibold">
+              <AvatarFallback className="bg-mealicious-primary text-lg text-white font-semibold select-none">
                 {foundRecipe.creator?.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>

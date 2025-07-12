@@ -3,11 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RecipeEdition } from "@/lib/zod";
 import { Check, ChevronDown } from "lucide-react";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
 
 type RecipeCuisineProps = {
   readonly cuisines: {
@@ -18,7 +18,7 @@ type RecipeCuisineProps = {
 };
 
 export default function RecipeCuisine({ cuisines }: RecipeCuisineProps) {
-  const { control, setValue } = useFormContext<RecipeEdition>();
+  const { control, setValue } = useEditRecipeFormContext();
   const currentCuisine = useWatch({ control, name: "cuisine" });
   
   return (

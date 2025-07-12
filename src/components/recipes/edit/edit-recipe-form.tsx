@@ -1,12 +1,12 @@
 "use client";
 
 import { Unit } from "@/lib/types";
-import { diet, dishType } from "@/db/schema";
+import { diet, dishType, nutrition } from "@/db/schema";
 import { RecipeEdition, RecipeEditionSchema } from "@/lib/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { InferSelectModel } from "drizzle-orm";
 import { LoaderCircle } from "lucide-react";
-import { FormProvider, useForm } from "react-hook-form";
+import { Control, FieldErrors, useForm, UseFormRegister, UseFormSetValue } from "react-hook-form";
 import RecipeImageUploader from "@/components/recipes/edit/recipe-image-uploader";
 import RecipeTags from "@/components/recipes/edit/recipe-tags";
 import RecipeTimes from "@/components/recipes/edit/recipe-times";
@@ -17,7 +17,7 @@ import RecipeInstructions from "@/components/recipes/edit/recipe-instructions";
 import { useRouter } from "next/navigation";
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import RecipeTitle from "@/components/recipes/edit/recipe-title";
 import RecipeCuisine from "@/components/recipes/edit/recipe-cuisine";
@@ -35,6 +35,7 @@ type EditRecipeFormProps = {
   }[];
   readonly diets: Omit<InferSelectModel<typeof diet>, "description">[];
   readonly dishTypes: Omit<InferSelectModel<typeof dishType>, "description">[];
+  readonly nutrition: Omit<InferSelectModel<typeof nutrition>, "description">[];
   recipe: {
     id: string;
     description: string | null;
@@ -73,7 +74,6 @@ type EditRecipeFormProps = {
       nutrition: {
         name: string;
         id: string;
-        isMacro: boolean;
         allowedUnits: Unit["abbreviation"][];
       };
     }[];
@@ -95,28 +95,54 @@ type EditRecipeFormProps = {
   };
 };
 
-type Nutrition = {
-  unit: Unit["abbreviation"];
-  amount: string;
-  nutrition: {
-    name: string;
-    id: string;
-    isMacro: boolean;
-    allowedUnits: Unit["abbreviation"][];
-  };
+type RecipeFormContextProps = {
+  control: Control<RecipeEdition>;
+  register: UseFormRegister<RecipeEdition>;
+  setValue: UseFormSetValue<RecipeEdition>;
+  errors: FieldErrors<RecipeEdition>;
 };
 
-export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: EditRecipeFormProps) {  
+const EditRecipeFormContext = createContext<RecipeFormContextProps | null>(null);
+
+export function useEditRecipeFormContext() {
+  const context = useContext(EditRecipeFormContext);
+  if (!context) throw new Error("useEditRecipeFormContext can only be used within a EditRecipeFormContext.");
+  return context;
+}
+
+export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nutrition }: EditRecipeFormProps) {  
   const { replace } = useRouter();
   const [mounted, setMounted] = useState<boolean>(false);
   const matches = useMediaQuery("(min-width: 80rem)");
-  // put macronutrients first
-  const [macro, micro] = recipe.nutritionalFacts.reduce(([a, b]: [Nutrition[], Nutrition[]], n) => {
-    (n.nutrition?.isMacro ? a : b).push(n);
-    return [a, b];
-  }, [[], []]);
+  // combine both recipe's nutrients and database nutrients together
+  const updatedNutrition = nutrition.map((n) => {
+    const matchingRecipeNutrition = recipe.nutritionalFacts.find(({ nutrition }) => nutrition.id === n.id);
+    return matchingRecipeNutrition ? {
+      id: matchingRecipeNutrition.nutrition.id,
+      name: matchingRecipeNutrition.nutrition.name,
+      amount: Number(matchingRecipeNutrition.amount),
+      unit: matchingRecipeNutrition.unit,
+      allowedUnits: matchingRecipeNutrition.nutrition.allowedUnits
+    } : { 
+      id: n.id,
+      name: n.name,
+      amount: 0,
+      unit: n.allowedUnits[0] || "g",
+      allowedUnits: n.allowedUnits
+    };
+  });
   
-  const editRecipeForm = useForm<RecipeEdition>({
+  const {
+    control,
+    register,
+    setValue,
+    handleSubmit,
+    reset,
+    formState: {
+      errors,
+      isSubmitting
+    }
+  } = useForm<RecipeEdition>({
     resolver: zodResolver(RecipeEditionSchema),
     defaultValues: {
       id: recipe.id,
@@ -144,22 +170,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
         amount: Number(recipe.servingSizeAmount),
         unit: recipe.servingSizeUnit
       },
-      nutrition: [
-        macro.map((n) => ({
-          id: n.nutrition.id,
-          name: n.nutrition.name,
-          amount: Number(n.amount),
-          unit: n.unit,
-          allowedUnits: n.nutrition.allowedUnits
-        })),
-        micro.map((n) => ({
-          id: n.nutrition.id,
-          name: n.nutrition.name,
-          amount: Number(n.amount),
-          unit: n.unit,
-          allowedUnits: n.nutrition.allowedUnits
-        })),
-      ].flat(),
+      nutrition: updatedNutrition,
       instructions: recipe.instructions.map((i) => ({
         ...i,
         time: Number(i.time)
@@ -167,7 +178,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
     }
   });
 
-  const onSubmit = editRecipeForm.handleSubmit(async (data) => {
+  const onSubmit = handleSubmit(async (data) => {
     try {
       const { image, ...dataRest } = data;
       const recipeEditionResult = await updateRecipe({ editedRecipe: dataRest });
@@ -180,9 +191,9 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
         const { url: deleteImageUrl } = await generatePresignedUrlForImageDelete(recipe.image);
         await axios.delete(deleteImageUrl);
 
-        const imageName = `${data.id}/${image.name}`;
+        const bucketImageName = `${data.id}/${image.name}`
         const { url: insertImageUrl } = await generatePresignedUrlForImageUpload({
-          name: imageName,
+          name: bucketImageName,
           size: image.size,
           type: image.type
         });
@@ -195,7 +206,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
 
         const updateRecipeImageResult = await updateRecipeImage({ 
           recipeId: data.id,
-          imageName
+          imageName: bucketImageName
         });
 
         if (!updateRecipeImageResult?.data)
@@ -204,14 +215,15 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
     } catch (err) {
       if (err instanceof AxiosError) {
         toast.error("Failed to upload the recipe image.");
+        return;
       } else if (err instanceof Error) {
         toast.error(err.message);
         return;
       }
     }
-    
+
     toast.success("Recipe successfully edited!");
-    editRecipeForm.reset(data);
+    reset(data);
     replace(`/recipes/${data.id}`);
   });
 
@@ -220,7 +232,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
   }, []);
 
   return (
-    <FormProvider {...editRecipeForm}>
+    <EditRecipeFormContext.Provider value={{ control, register, setValue, errors }}>
       <form 
         onSubmit={onSubmit} 
         className="max-w-[750px] xl:max-w-[1250px] w-full bg-background mx-auto p-4"
@@ -230,36 +242,39 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe }: E
           <div className="flex-1 shrink-0 flex flex-col gap-3">
             <RecipeImageUploader recipeImageUrl={recipe.image}/>
             {mounted && !matches && <RecipeTitle />}
+            {mounted && !matches && <RecipeDescription />}
             <RecipeCuisine cuisines={cuisines}/>
+            <RecipeDiets diets={diets}/>
+            <RecipeDishTypes dishTypes={dishTypes}/>
             <RecipeTags />
             <RecipeSource />
-            <RecipeTimes />
+            {mounted && !matches && <RecipeTimes />}
             <button
-              disabled={editRecipeForm.formState.isSubmitting}
+              disabled={isSubmitting}
               type="submit" 
               className="hidden xl:flex mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
             >
-              {editRecipeForm.formState.isSubmitting ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
+              {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
             </button>
           </div>
           <div className="xl:w-3/5 flex flex-col gap-3">
             {mounted && matches && <RecipeTitle />}
-            <RecipeDescription />
-            <RecipeDiets diets={diets}/>
-            <RecipeDishTypes dishTypes={dishTypes}/>
-            <RecipeNutrition />
+            {mounted && matches && <RecipeTimes />}
+            {mounted && matches && <RecipeDescription />}
             <RecipeIngredients />
             <RecipeInstructions />
+            <RecipeNutrition />
             <button
-              disabled={editRecipeForm.formState.isSubmitting}
+              disabled={isSubmitting}
               type="submit" 
               className="flex xl:hidden mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
             >
-              {editRecipeForm.formState.isSubmitting ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
+              {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
             </button>
           </div>
         </div>
       </form>
-    </FormProvider>
+    </EditRecipeFormContext.Provider>
   );
 }
+

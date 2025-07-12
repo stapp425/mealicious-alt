@@ -19,10 +19,11 @@ import {
 } from "@/components/ui/popover";
 import { InferSelectModel } from "drizzle-orm";
 import { dishType } from "@/db/schema/recipe";
-import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
-import { MAX_DISH_TYPES_LENGTH, RecipeCreation } from "@/lib/zod";
+import { useFieldArray, useWatch } from "react-hook-form";
+import { MAX_DISH_TYPES_LENGTH } from "@/lib/zod";
 import { useMemo, useState } from "react";
 import { Separator } from "@/components/ui/separator";
+import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
 type DishType = Omit<InferSelectModel<typeof dishType>, "description">;
 
@@ -31,12 +32,7 @@ type RecipeDishTypes = {
 };
 
 export default function RecipeDishTypes({ dishTypes }: RecipeDishTypes) {
-  const {
-    control,
-    formState: {
-      errors
-    }
-  } = useFormContext<RecipeCreation>();
+  const { control, errors } = useCreateRecipeFormContext();
   const { append, remove } = useFieldArray({ control, name: "dishTypes" });
   const formDishTypeValues = useWatch({ control, name: "dishTypes" });
   const [dishType, setDishType] = useState<DishType>({
@@ -143,7 +139,7 @@ export default function RecipeDishTypes({ dishTypes }: RecipeDishTypes) {
           )
         }
       </div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
+      <div className="flex flex-col items-start">
         <p className="font-semibold text-muted-foreground">
           Add some dish types to your recipe here. (optional)
         </p>

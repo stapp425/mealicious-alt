@@ -12,20 +12,14 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Unit, unitAbbreviations } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { MAX_INGREDIENT_AMOUNT, MAX_INGREDIENT_NAME_LENGTH, MAX_INGREDIENTS_LENGTH, RecipeCreation, UnitSchema } from "@/lib/zod";
-import { Info, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
-import { useDebouncedCallback } from "use-debounce";
+import { MAX_INGREDIENT_AMOUNT, MAX_INGREDIENT_NAME_LENGTH, MAX_INGREDIENTS_LENGTH, UnitSchema } from "@/lib/zod";
+import { Info, Pencil, Plus, Trash2 } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFieldArray } from "react-hook-form";
 import z from "zod";
+import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
-type Ingredient = {
-  name: string;
-  amount: number;
-  unit: Unit["abbreviation"];
-  isAllergen: boolean;
-  note?: string;
-};
+type Ingredient = z.infer<typeof IngredientInputSchema>;
 
 const IngredientInputSchema = z.object({
   name: z.string().nonempty({
@@ -44,16 +38,9 @@ const IngredientInputSchema = z.object({
 });
 
 export default function RecipeIngredients() {
-  const {
-    control,
-    formState: {
-      errors
-    }
-  } = useFormContext<RecipeCreation>();
-  const { append, remove } = useFieldArray({ control, name: "ingredients" });
-  const formIngredientValues = useWatch({ control, name: "ingredients" });
+  const { control, errors } = useCreateRecipeFormContext();
+  const { append, remove, update, fields: formIngredientValues } = useFieldArray({ control, name: "ingredients" });
   const [touched, setTouched] = useState<boolean>(false);
-  const [error, setError] = useState<string>();
   const [ingredient, setIngredient] = useState<Ingredient>({
     name: "",
     amount: 0,
@@ -62,25 +49,11 @@ export default function RecipeIngredients() {
     note: ""
   });
 
-  const formIngredientValuesSet = useMemo(
-    () => new Set(formIngredientValues.map((fi) => fi.name)),
-    [formIngredientValues]
-  );
-  
-  const validateInput = useDebouncedCallback(() => {
-    const parsedIngredientInput = IngredientInputSchema.refine(({ name }) => !formIngredientValuesSet.has(name), {
-      message: "Ingredient name must be unique."
-    }).safeParse(ingredient);
-    
-    if (parsedIngredientInput.success)
-      setError(undefined);
-    else
-      setError(parsedIngredientInput.error.errors[0]?.message);
-  }, 250);
+  const deleteIngredient = useCallback((index: number) => remove(index), []);
+  const setIngredientContent = useCallback((index: number, ingredient: Ingredient) => update(index, ingredient), []);
 
-  useEffect(() => {
-    validateInput();
-  }, [ingredient]);
+  const parsedIngredient = IngredientInputSchema.safeParse(ingredient);
+  const error = parsedIngredient.error?.errors[0]?.message;
   
   return (
     <div className="flex flex-col gap-3">
@@ -106,11 +79,10 @@ export default function RecipeIngredients() {
             value={ingredient.amount}
             placeholder="Amount"
             onChange={(e) => {
-              const { value } = e.target;
               if (!touched) setTouched(true);
               setIngredient((i) => ({ 
                 ...i,
-                amount: Number(value)
+                amount: Number(e.target.value)
               }));
             }}
             className="w-[100px]"
@@ -139,11 +111,10 @@ export default function RecipeIngredients() {
           placeholder="Name"
           autoCorrect="off"
           onChange={(e) => {
-            const { value } = e.target;
             if (!touched) setTouched(true);
             setIngredient((i) => ({
               ...i,
-              name: value
+              name: e.target.value
             }));
           }}
         />
@@ -152,12 +123,11 @@ export default function RecipeIngredients() {
         value={ingredient.note}
         placeholder="Note (optional)"
         onChange={(e) => {
-          const { value } = e.target;
           if (!touched) setTouched(true);
           
           setIngredient((i) => ({
             ...i,
-            note: value
+            note: e.target.value
           }));
         }}
       />
@@ -209,39 +179,13 @@ export default function RecipeIngredients() {
           <div className="flex flex-col gap-3">
             {
               formIngredientValues.map((i, index) => (
-                <div
-                  key={i.name}
-                  className="text-left overflow-hidden items-center border border-border rounded-md transition-colors shadow-sm"
-                >
-                  <div className="flex flex-col gap-3 p-3">
-                    <div className="flex justify-between items-center">
-                      <h1 className="font-bold text-xl">{i.amount} {i.unit}</h1>
-                      <button
-                        type="button"
-                        onClick={() => remove(index)}
-                        className="size-8 group cursor-pointer hover:bg-red-700 hover:text-white hover:border-red-700 border border-muted-foreground font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 rounded-full transition-colors"
-                      >
-                        <Trash2 size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
-                      </button>
-                    </div>
-                    <div className="flex justify-between items-center gap-3">
-                      <span className="w-full line-clamp-1 text-xl font-semibold text-muted-foreground">
-                        {i.name}
-                      </span>
-                      {i.isAllergen && <span className="font-semibold text-muted-foreground">(Allergen)</span>}
-                    </div>
-                  </div>
-                  {
-                    i.note && (
-                      <>
-                      <Separator />
-                      <div className="p-3 break-all">
-                        {i.note}
-                      </div>
-                      </>
-                    )
-                  }
-                </div>
+                <RecipeIngredient 
+                  key={i.id}
+                  currentIngredientContent={i}
+                  currentIngredientIndex={index}
+                  deleteIngredient={deleteIngredient}
+                  setIngredientContent={setIngredientContent}
+                />
               ))
             }
           </div>
@@ -259,3 +203,198 @@ export default function RecipeIngredients() {
     </div>
   );
 }
+
+type RecipeIngredientProps = {
+  currentIngredientIndex: number;
+  currentIngredientContent: Ingredient;
+  setIngredientContent: (index: number, ingredient: Ingredient) => void;
+  deleteIngredient: (index: number) => void;
+};
+
+const RecipeIngredient = memo(({ 
+  currentIngredientIndex,
+  currentIngredientContent,
+  setIngredientContent,
+  deleteIngredient
+}: RecipeIngredientProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [ingredientInput, setIngredientInput] = useState<Ingredient>(currentIngredientContent);
+
+  const error = useMemo(
+    () => IngredientInputSchema.safeParse(ingredientInput).error?.errors[0]?.message || (
+      ingredientInput.name === currentIngredientContent.name &&
+      ingredientInput.amount === currentIngredientContent.amount &&
+      ingredientInput.unit === currentIngredientContent.unit &&
+      ingredientInput.isAllergen === currentIngredientContent.isAllergen && 
+      ingredientInput.note === currentIngredientContent.note 
+    ) && "Content cannot be similar." as string || undefined,
+    [ingredientInput, currentIngredientContent]
+  );
+
+  useEffect(() => {
+    if (!editMode) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const element = containerRef.current;
+      const targetElement = e.target instanceof Element ? e.target.closest(".ingredient-content") : null;
+      if (element && targetElement && targetElement !== element) {
+        setEditMode(false);
+        setIngredientInput(currentIngredientContent);
+      }
+    };
+
+    document.addEventListener("pointerup", handleOutsideClick);
+    return () => document.removeEventListener("pointerup", handleOutsideClick);
+  }, [editMode, currentIngredientContent]);
+  
+  return (
+    <div ref={containerRef} className="ingredient-content text-left overflow-hidden items-center border border-border rounded-md transition-colors shadow-sm">
+      {
+        editMode ? (
+          <>
+          <div className="flex flex-col gap-3 p-3">
+            <div className="flex items-center gap-2">
+              <Input 
+                type="number"
+                value={ingredientInput.amount}
+                onChange={(e) => setIngredientInput((i) => ({
+                  ...i,
+                  amount: Number(e.target.value)
+                }))}
+                placeholder="0"
+                className="w-24"
+              />
+              <Select 
+                value={ingredientInput.unit}
+                onValueChange={(val) => setIngredientInput((i) => ({
+                  ...i,
+                  unit: val as Unit["abbreviation"]
+                }))}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue placeholder="Unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {
+                    unitAbbreviations.map((u) => (
+                      <SelectItem key={u} value={u}>
+                        {u}
+                      </SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+            </div>
+            <Input 
+              value={ingredientInput.name}
+              onChange={(e) => setIngredientInput((i) => ({
+                ...i,
+                name: e.target.value
+              }))}
+              placeholder="Ingredient Name"
+            />
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id={`ingredient-${currentIngredientIndex}-isAllergen`}
+                checked={ingredientInput.isAllergen}
+                onCheckedChange={(val) => setIngredientInput((i) => ({
+                  ...i,
+                  isAllergen: val === true
+                }))}
+              />
+              <label
+                htmlFor={`ingredient-${currentIngredientIndex}-isAllergen`}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Is Allergen
+              </label>
+            </div>
+            <div className="w-full flex justify-end items-center gap-6">
+              {
+                error && (
+                  <div className="error-text text-sm mr-auto">
+                    <Info size={16}/>
+                    {error}
+                  </div> 
+                )
+              }
+              <button
+                type="button"
+                onClick={() => {
+                  setEditMode(false);
+                  setIngredientInput(currentIngredientContent);
+                }}
+                className="cursor-pointer underline text-xs font-semibold rounded-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!!error}
+                onClick={() => {
+                  setIngredientContent(currentIngredientIndex, ingredientInput);
+                  setEditMode(false);
+                }}
+                className="mealicious-button text-xs font-semibold py-2 px-6 rounded-sm"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+          <Separator />
+          <div className="p-3">
+            <Input 
+              value={ingredientInput.note}
+              onChange={(e) => setIngredientInput((i) => ({
+                ...i,
+                note: e.target.value
+              }))}
+              placeholder="Ingredient Note"
+            />
+          </div>
+          </>
+        ) : (
+          <>
+          <div className="flex flex-col gap-3 p-3">
+            <div className="flex justify-end items-center gap-2">
+              <h1 className="font-bold text-xl mr-auto">{currentIngredientContent.amount} {currentIngredientContent.unit}</h1>
+              <button
+                type="button"
+                onClick={() => setEditMode(true)}
+                className="size-8 group cursor-pointer border border-muted-foreground hover:bg-mealicious-primary hover:border-mealicious-primary hover:text-white font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 rounded-full transition-colors"
+              >
+                <Pencil size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteIngredient(currentIngredientIndex)}
+                className="size-8 group cursor-pointer hover:bg-red-700 hover:text-white hover:border-red-700 border border-muted-foreground font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 rounded-full transition-colors"
+              >
+                <Trash2 size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
+              </button>
+            </div>
+            <div className="flex justify-between items-center gap-3">
+              <span className="w-full line-clamp-1 text-xl font-semibold text-muted-foreground">
+                {currentIngredientContent.name}
+              </span>
+              {currentIngredientContent.isAllergen && <span className="font-semibold text-muted-foreground">(Allergen)</span>}
+            </div>
+          </div>
+          {
+            currentIngredientContent.note && (
+              <>
+              <Separator />
+              <div className="p-3 break-all">
+                {currentIngredientContent.note}
+              </div>
+              </>
+            )
+          }
+          </>
+        )
+      }
+    </div>
+  );
+});
+
+RecipeIngredient.displayName = "RecipeIngredient";

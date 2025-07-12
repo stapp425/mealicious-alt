@@ -1,19 +1,14 @@
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { MAX_TAGS_LENGTH, RecipeCreation } from "@/lib/zod";
+import { MAX_TAGS_LENGTH } from "@/lib/zod";
 import { Info } from "lucide-react";
 import { useState } from "react";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useWatch } from "react-hook-form";
+import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
 export default function RecipeTags() {
-  const { 
-    control,
-    setValue,
-    formState: {
-      errors
-    }
-  } = useFormContext<RecipeCreation>();
+  const { control, setValue, errors } = useCreateRecipeFormContext();
   const tags = useWatch({ control, name: "tags" });
   const [tag, setTag] = useState<string>("");
   
