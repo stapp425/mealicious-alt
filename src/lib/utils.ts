@@ -98,3 +98,7 @@ export function getRatingKey(amount: number): Rating {
 
   return ratingKey;
 }
+
+export function getNickname(user: { nickname: string | null; email: string; }) {
+  return user.nickname || user.email.split("@")[0];
+}

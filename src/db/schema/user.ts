@@ -12,8 +12,11 @@ export const user = pgTable("user", (t) => ({
     .primaryKey()
     .$default(() => nanoid()),
   name: t.text("user_name").notNull(),
+  nickname: t.text("user_nickname"),
   about: t.text("user_about"),
-  email: t.text("user_email").unique().notNull(),
+  email: t.text("user_email")
+    .unique()
+    .notNull(),
   emailVerified: t.timestamp("emailVerified", { mode: "date" }),
   password: t.text("user_password"),
   image: t.text("image"),

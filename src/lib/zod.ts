@@ -22,7 +22,7 @@ export const EmailSchema = z.string({
   message: "Input does not match a valid e-mail format."
 });
 
-export const CreatePasswordSchema = z.string({
+export const PasswordSchema = z.string({
   required_error: "A password is required."
 }).min(12, {
   message: "Password must have at least 12 characters."
@@ -104,7 +104,7 @@ export const SignInFormSchema = z.object({
 export const SignUpFormSchema = z.object({
   name: CreateUsernameSchema,
   email: EmailSchema,
-  password: CreatePasswordSchema,
+  password: PasswordSchema,
   confirmPassword: z.string()
 }).refine(({ password, confirmPassword }) => 
   password === confirmPassword, {

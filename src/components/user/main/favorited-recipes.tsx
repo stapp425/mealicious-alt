@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import defaultProfilePicture from "@/img/default/default-pfp.svg";
 import Link from "next/link";
+import { getNickname } from "@/lib/utils";
 
 type SavedRecipesProps = {
   userId: string;
@@ -51,12 +52,13 @@ export default async function FavoritedRecipes({ userId, limit }: SavedRecipesPr
     .as("recipe_to_diet_sub");
 
   const userSubQuery = db.select({
-      id: user.id,
-      name: user.name,
-      image: user.image
-    }).from(user)
-      .where(eq(user.id, recipe.createdBy))
-      .as("user_sub");
+    id: user.id,
+    nickname: user.nickname,
+    email: user.email,
+    image: user.image
+  }).from(user)
+    .where(eq(user.id, recipe.createdBy))
+    .as("user_sub");
 
   const favoritedRecipes = await db.select({
     id: recipe.id,
@@ -70,7 +72,8 @@ export default async function FavoritedRecipes({ userId, limit }: SavedRecipesPr
     }[]>`coalesce(${recipeToDietSubQuery.diets}, '[]'::json)`,
     creator: {
       id: userSubQuery.id,
-      name: userSubQuery.name,
+      nickname: userSubQuery.nickname,
+      email: userSubQuery.email,
       image: userSubQuery.image
     }
   }).from(recipe)
@@ -94,63 +97,66 @@ export default async function FavoritedRecipes({ userId, limit }: SavedRecipesPr
     <UserInfoCarousel 
       header="Favorited Recipes"
       href={`/user/${userId}/recipes?option=favorited`}
-      items={favoritedRecipes.map((r) => (
-        <Link 
-          key={r.id}
-          href={`/recipes/${r.id}`}
-          className="cursor-pointer h-full flex flex-col gap-3 bg-sidebar hover:bg-muted border border-border overflow-hidden p-4 rounded-md transition-colors"
-        >
-          <div className="relative h-[150px]">
-            <Image 
-              src={r.image}
-              alt={`Image of ${r.title}`}
-              fill
-              className="object-cover object-center rounded-sm"
-            />
-          </div>
-          <h2 className="font-bold text-lg">{r.title}</h2>
-          {
-            r.diets.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                {
-                  r.diets.slice(0, 4).map((d) => (
-                    <div key={d.id} className="bg-mealicious-primary font-semibold text-white text-xs py-1 px-4 rounded-full">
-                      {d.name}
-                    </div>
-                  ))
-                }
-              </div>
-            )
-          }
-          <div className="flex items-center gap-3 min-h-[25px] mt-auto">
-            <div className="flex items-center gap-1.5 font-semibold text-sm">
-              <Flame size={14} fill="var(--primary)"/>
-              <span>{Number(r.calories).toLocaleString()} Calories</span>
+      items={favoritedRecipes.map((r) => {
+        const resolvedNickname = r.creator ? getNickname({ nickname: r.creator.nickname, email: r.creator.email }) : "[deleted]";
+        return (
+          <Link 
+            key={r.id}
+            href={`/recipes/${r.id}`}
+            className="cursor-pointer h-full flex flex-col gap-3 bg-sidebar hover:bg-muted border border-border overflow-hidden p-4 rounded-md transition-colors"
+          >
+            <div className="relative h-[150px]">
+              <Image 
+                src={r.image}
+                alt={`Image of ${r.title}`}
+                fill
+                className="object-cover object-center rounded-sm"
+              />
             </div>
-            <Separator orientation="vertical"/>
-            <div className="flex items-center gap-1.5 font-semibold text-sm">
-              <Clock size={14}/>
-              <span>{Math.floor(r.prepTime)} min</span>
-            </div>
-          </div>
-          {
-            r.creator && (
-              <div className="flex items-center gap-2">
-                <Avatar>
-                  <AvatarImage 
-                    src={r.creator.image || defaultProfilePicture}
-                    alt={`Profile picture of ${r.creator.name}`}
-                  />
-                  <AvatarFallback className="bg-mealicious-primary text-white">
-                    {r.creator.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="font-semibold text-sm">{r.creator.name}</span>
+            <h2 className="font-bold text-lg">{r.title}</h2>
+            {
+              r.diets.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {
+                    r.diets.slice(0, 4).map((d) => (
+                      <div key={d.id} className="bg-mealicious-primary font-semibold text-white text-xs py-1 px-4 rounded-full">
+                        {d.name}
+                      </div>
+                    ))
+                  }
+                </div>
+              )
+            }
+            <div className="flex items-center gap-3 min-h-[25px] mt-auto">
+              <div className="flex items-center gap-1.5 font-semibold text-sm">
+                <Flame size={14} fill="var(--primary)"/>
+                <span>{Number(r.calories).toLocaleString()} Calories</span>
               </div>
-            )
-          }
-        </Link>
-      ))}
+              <Separator orientation="vertical"/>
+              <div className="flex items-center gap-1.5 font-semibold text-sm">
+                <Clock size={14}/>
+                <span>{Math.floor(r.prepTime)} min</span>
+              </div>
+            </div>
+            {
+              r.creator && (
+                <div className="flex items-center gap-2">
+                  <Avatar>
+                    <AvatarImage 
+                      src={r.creator.image || defaultProfilePicture}
+                      alt={`Profile picture of ${resolvedNickname}`}
+                    />
+                    <AvatarFallback className="bg-mealicious-primary text-white">
+                      {resolvedNickname.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-semibold text-sm">{resolvedNickname}</span>
+                </div>
+              )
+            }
+          </Link>
+        );
+      })}
     />
   );
 }

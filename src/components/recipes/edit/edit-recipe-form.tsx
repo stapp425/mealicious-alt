@@ -144,6 +144,8 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
     }
   } = useForm<RecipeEdition>({
     resolver: zodResolver(RecipeEditionSchema),
+    mode: "onSubmit",
+    reValidateMode: "onSubmit",
     defaultValues: {
       id: recipe.id,
       image: null,

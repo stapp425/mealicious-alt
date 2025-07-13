@@ -28,31 +28,71 @@ type SearchResultsProps = {
 export default async function SearchResults({ count, searchParams }: SearchResultsProps) {  
   const { query, cuisine, diet, dishType, page } = searchParams;
   
+  const creatorSubQuery = db.select({
+    id: user.id,
+    nickname: user.nickname,
+    email: user.email,
+    image: user.image
+  }).from(user)
+    .where(eq(recipe.createdBy, user.id))
+    .as("creator_sub");
+
+  const recipeStatisticsSubQuery = db.select({
+    savedCount: recipeStatistics.savedCount,
+    favoriteCount: recipeStatistics.favoriteCount,
+    fiveStarCount: recipeStatistics.fiveStarCount,
+    fourStarCount: recipeStatistics.fourStarCount,
+    threeStarCount: recipeStatistics.threeStarCount,
+    twoStarCount: recipeStatistics.twoStarCount,
+    oneStarCount: recipeStatistics.oneStarCount
+  }).from(recipeStatistics)
+    .where(eq(recipeStatistics.recipeId, recipe.id))
+    .as("recipe_stats_sub");
+
+  const cuisineSubQuery = db.select({
+    id: cuisineTable.id,
+    adjective: cuisineTable.adjective,
+    icon: cuisineTable.icon
+  }).from(cuisineTable)
+    .where(eq(cuisineTable.id, recipe.cuisineId))
+    .as("cuisine_sub");
+
+  const caloriesSubQuery = db.select({
+    calories: recipeToNutrition.amount
+  }).from(recipeToNutrition)
+    .where(and(
+      eq(recipeToNutrition.recipeId, recipe.id),
+      eq(nutrition.name, "Calories")
+    ))
+    .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
+    .as("recipe_to_nutrition_sub");
+
   const searchedRecipes = await db.select({
     id: recipe.id,
     title: recipe.title,
     image: recipe.image,
-    prepTime: recipe.prepTime,
-    calories: sql<number>`"recipe_to_nutrition_sub"."calories"`.as("calories"),
-    creator: sql<{
-      id: string;
-      name: string;
-      image: string | null;
-    } | null>`"creator_sub"."data"`.as("creator"),
-    statistics: sql<{
-      saveCount: number;
-      favoriteCount: number;
-      fiveStarCount: number;
-      fourStarCount: number;
-      threeStarCount: number;
-      twoStarCount: number;
-      oneStarCount: number;
-    }>`"recipe_stats_sub"."data"`.as("stats"),
-    cuisine: sql<{
-      id: string;
-      adjective: string;
-      icon: string;
-    } | null>`"cuisine_sub"."data"`.as("cuisine"),
+    prepTime: sql`${recipe.prepTime}`.mapWith((val) => Number(val)),
+    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith((val) => Number(val)),
+    creator: {
+      id: creatorSubQuery.id,
+      nickname: creatorSubQuery.nickname,
+      email: creatorSubQuery.email,
+      image: creatorSubQuery.image
+    },
+    statistics: {
+      saveCount: recipeStatisticsSubQuery.savedCount,
+      favoriteCount: recipeStatisticsSubQuery.favoriteCount,
+      fiveStarCount: recipeStatisticsSubQuery.fiveStarCount,
+      fourStarCount: recipeStatisticsSubQuery.fourStarCount,
+      threeStarCount: recipeStatisticsSubQuery.threeStarCount,
+      twoStarCount: recipeStatisticsSubQuery.twoStarCount,
+      oneStarCount: recipeStatisticsSubQuery.oneStarCount
+    },
+    cuisine: {
+      id: cuisineSubQuery.id,
+      adjective: cuisineSubQuery.adjective,
+      icon: cuisineSubQuery.icon
+    },
     sourceName: recipe.sourceName,
     sourceUrl: recipe.sourceUrl,
     createdAt: recipe.createdAt
@@ -87,64 +127,10 @@ export default async function SearchResults({ count, searchParams }: SearchResul
           ))
       ) : undefined
     ))
-    .leftJoinLateral(
-      db.select({
-        data: sql`
-          json_build_object(
-            'id', ${user.id},
-            'name', ${user.name},
-            'image', ${user.image}
-          )
-        `.as("data")
-      }).from(user)
-        .where(eq(recipe.createdBy, user.id))
-        .as("creator_sub"),
-      sql`true`
-    )
-    .innerJoinLateral(
-      db.select({
-        data: sql`
-          json_build_object(
-            'saveCount', ${recipeStatistics.savedCount},
-            'favoriteCount', ${recipeStatistics.favoriteCount},
-            'fiveStarCount', ${recipeStatistics.fiveStarCount},
-            'fourStarCount', ${recipeStatistics.fourStarCount},
-            'threeStarCount', ${recipeStatistics.threeStarCount},
-            'twoStarCount', ${recipeStatistics.twoStarCount},
-            'oneStarCount', ${recipeStatistics.oneStarCount}
-          )
-        `.as("data")
-      }).from(recipeStatistics)
-        .where(eq(recipeStatistics.recipeId, recipe.id))
-        .as("recipe_stats_sub"),
-      sql`true`
-    )
-    .leftJoinLateral(
-      db.select({
-        data: sql`
-          json_build_object(
-            'id', ${cuisineTable.id},
-            'adjective', ${cuisineTable.adjective},
-            'icon', ${cuisineTable.icon}
-          )
-        `.as("data")
-      }).from(cuisineTable)
-        .where(eq(cuisineTable.id, recipe.cuisineId))
-        .as("cuisine_sub"),
-      sql`true`
-    )
-    .leftJoinLateral(
-      db.select({
-        calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
-      }).from(recipeToNutrition)
-        .where(and(
-          eq(recipeToNutrition.recipeId, recipe.id),
-          eq(nutrition.name, "Calories")
-        ))
-        .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
-        .as("recipe_to_nutrition_sub"),
-      sql`true`
-    )
+    .leftJoinLateral(creatorSubQuery, sql`true`)
+    .innerJoinLateral(recipeStatisticsSubQuery, sql`true`)
+    .leftJoinLateral(cuisineSubQuery, sql`true`)
+    .leftJoinLateral(caloriesSubQuery, sql`true`)
     .limit(MAX_GRID_RECIPE_DISPLAY_LIMIT)
     .offset(page * MAX_GRID_RECIPE_DISPLAY_LIMIT);
 
@@ -158,7 +144,7 @@ export default async function SearchResults({ count, searchParams }: SearchResul
           </h2>
           <div className="flex w-full items-center gap-2 text-sm">
             <Info size={16}/>
-            You can click on a recipe to show more details.
+            You can click on a recipe&apos;s image to show more details.
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {searchedRecipes.map((r) => <RecipeResult key={r.id} recipe={r}/>)}

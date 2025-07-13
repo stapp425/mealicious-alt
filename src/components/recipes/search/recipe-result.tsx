@@ -8,18 +8,19 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import defaultProfilePicture from "@/img/default/default-pfp.svg";
-import { getDateDifference } from "@/lib/utils";
+import { getDateDifference, getNickname } from "@/lib/utils";
 
 type RecipeResultProps = {
   recipe: {
     id: string;
     title: string;
     image: string;
-    prepTime: string;
+    prepTime: number;
     calories: number;
     creator: {
       id: string;
-      name: string;
+      nickname: string | null;
+      email: string;
       image: string | null;
     } | null;
     statistics: {
@@ -59,13 +60,15 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
     recipe.statistics.twoStarCount * 2 + 
     recipe.statistics.oneStarCount * 1
   ) / totalReviewCount || 0;
+
+  const resolvedNickname = recipe.creator ? getNickname({ nickname: recipe.creator.nickname, email: recipe.creator.email }) : "[deleted]";
   
   return (
-    <div 
-      onClick={() => push(`/recipes/${recipe.id}`)}
-      className="group cursor-pointer relative bg-sidebar hover:bg-muted border border-border flex flex-col items-start gap-2.5 rounded-md p-4 transition-colors"
-    >
-      <div className="relative w-full h-[300px] sm:h-[225px] rounded-sm overflow-hidden">
+    <div className="relative bg-sidebar border border-border flex flex-col items-start gap-2.5 rounded-md p-4 transition-colors">
+      <div 
+        onClick={() => push(`/recipes/${recipe.id}`)}
+        className="group cursor-pointer relative w-full h-[300px] sm:h-[225px] rounded-sm overflow-hidden"
+      >
         <Image 
           src={recipe.image}
           alt={`Image of ${recipe.title}`}
@@ -77,6 +80,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
           recipe.sourceUrl && (
             <Link
               href={recipe.sourceUrl}
+              onClick={(e) => e.stopPropagation()}
               target="_blank"
               className="absolute bottom-3 left-3 bg-white text-black p-1.5 rounded-sm"
             >
@@ -96,7 +100,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                   className="absolute bottom-3 right-3 object-cover rounded-full"
                 />
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent align="start">
                 <p>{recipe.cuisine.adjective}</p>
               </TooltipContent>
             </Tooltip>
@@ -107,28 +111,40 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
       <div className="flex items-center gap-3 min-h-[25px]">
         <div className="flex items-center gap-1.5 font-semibold text-sm">
           <Flame size={14} fill="var(--primary)"/>
-          <span>{Number(recipe.calories).toLocaleString()} Calories</span>
+          <span>{recipe.calories.toLocaleString()} Calories</span>
         </div>
         <Separator orientation="vertical"/>
         <div className="flex items-center gap-1.5 font-semibold text-sm">
           <Clock size={14}/>
-          <span>{Math.floor(Number(recipe.prepTime))} min</span>
+          <span>{Math.floor(recipe.prepTime)} min</span>
         </div>
       </div>
       {
         recipe.creator && (
-          <div className="flex items-center gap-2">
-            <Avatar>
-              <AvatarImage 
-                src={recipe.creator.image || defaultProfilePicture}
-                alt={`Profile picture of ${recipe.creator.name}`}
-              />
-              <AvatarFallback className="bg-mealicious-primary text-white">
-                {recipe.creator.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="font-semibold text-sm">{recipe.creator.name}</span>
-          </div>
+          <Tooltip>
+            <div className="flex items-center gap-2">
+              <TooltipTrigger asChild>
+                <Link 
+                  href={`/user/${recipe.creator.id}`}
+                  prefetch={false}
+                >
+                  <Avatar>
+                    <AvatarImage 
+                      src={recipe.creator.image || defaultProfilePicture}
+                      alt={`Profile picture of ${resolvedNickname}`}
+                    />
+                    <AvatarFallback className="bg-mealicious-primary text-white">
+                      {resolvedNickname.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{resolvedNickname}</p>
+              </TooltipContent>
+              <span className="font-semibold text-sm">{resolvedNickname}</span>
+            </div>
+          </Tooltip>
         )
       }
       <div className="min-h-[25px] flex items-center gap-3 mt-auto">

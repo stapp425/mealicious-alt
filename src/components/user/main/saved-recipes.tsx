@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import defaultProfilePicture from "@/img/default/default-pfp.svg";
 import Link from "next/link";
+import { getNickname } from "@/lib/utils";
 
 type SavedRecipesProps = {
   userId: string;
@@ -52,7 +53,8 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
 
   const userSubQuery = db.select({
     id: user.id,
-    name: user.name,
+    nickname: user.nickname,
+    email: user.email,
     image: user.image
   }).from(user)
     .where(eq(user.id, recipe.createdBy))
@@ -70,7 +72,8 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
     }[]>`coalesce(${recipeToDietSubQuery.diets}, '[]'::json)`,
     creator: {
       id: userSubQuery.id,
-      name: userSubQuery.name,
+      nickname: userSubQuery.nickname,
+      email: userSubQuery.email,
       image: userSubQuery.image
     }
   }).from(recipe)
@@ -140,13 +143,13 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
                 <Avatar>
                   <AvatarImage 
                     src={r.creator.image || defaultProfilePicture}
-                    alt={`Profile picture of ${r.creator.name}`}
+                    alt={`Profile picture of ${r.creator.nickname}`}
                   />
                   <AvatarFallback className="bg-mealicious-primary text-white">
-                    {r.creator.name.charAt(0).toUpperCase()}
+                    {getNickname(r.creator).charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="font-semibold text-sm">{r.creator.name}</span>
+                <span className="font-semibold text-sm">{getNickname(r.creator)}</span>
               </div>
             )
           }

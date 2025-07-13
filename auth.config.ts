@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { v4 as uuid } from "uuid";
 import { encode } from "next-auth/jwt";
 import { getUserAgent } from "universal-user-agent";
+import { eq } from "drizzle-orm";
 
 const CredentialsProvider = Credentials({
   credentials: {
@@ -87,15 +88,32 @@ export const config = {
       return session;
     }
   },
+  events: {
+    createUser: async ({ user: createdUser }) => {
+      if (!createdUser.id || !createdUser.email) throw new Error("User does not exist!");
+      const username = createdUser.email.split("@")[0];
+
+      const foundUser = await db.query.user.findFirst({
+        where: (user, { eq }) => eq(user.id, createdUser.id!),
+        columns: {
+          id: true,
+          nickname: true
+        }
+      });
+
+      if (!foundUser?.nickname) {
+        await db.update(user)
+          .set({ nickname: username })
+          .where(eq(user.id, createdUser.id));
+      }
+    }
+  },
   jwt: {
     encode: async (params) => {
       const sessionToken = uuid();
       
-      if (!params.token?.isUsingCredentials)
-        return encode(params);
-      
-      if (!params.token?.sub)
-        throw new Error("Could not generate a user token since a user ID was not found!");
+      if (!params.token?.isUsingCredentials) return encode(params);
+      if (!params.token?.sub) throw new Error("Could not generate a user token since a user ID was not found!");
 
       const [createdSession] = await db
         .insert(session)
@@ -106,8 +124,7 @@ export const config = {
           userAgent: getUserAgent()
         }).returning();
 
-      if (!createdSession)
-        throw new Error("A session was not able to be created!");
+      if (!createdSession) throw new Error("A session was not able to be created!");
 
       return sessionToken;
     }

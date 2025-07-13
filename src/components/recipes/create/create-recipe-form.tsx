@@ -69,6 +69,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
   } = useForm<RecipeCreation>({
     resolver: zodResolver(RecipeCreationSchema),
     mode: "onSubmit",
+    reValidateMode: "onSubmit",
     delayError: 250,
     defaultValues: {
       title: "",
