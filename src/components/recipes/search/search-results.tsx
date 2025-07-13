@@ -144,7 +144,7 @@ export default async function SearchResults({ count, searchParams }: SearchResul
           </h2>
           <div className="flex w-full items-center gap-2 text-sm">
             <Info size={16}/>
-            You can click on a recipe&apos;s image to show more details.
+            You can click on a recipe to show more details.
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {searchedRecipes.map((r) => <RecipeResult key={r.id} recipe={r}/>)}

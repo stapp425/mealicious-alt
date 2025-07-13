@@ -64,49 +64,50 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
   const resolvedNickname = recipe.creator ? getNickname({ nickname: recipe.creator.nickname, email: recipe.creator.email }) : "[deleted]";
   
   return (
-    <div className="relative bg-sidebar border border-border flex flex-col items-start gap-2.5 rounded-md p-4 transition-colors">
-      <div 
-        onClick={() => push(`/recipes/${recipe.id}`)}
-        className="group cursor-pointer relative w-full h-[300px] sm:h-[225px] rounded-sm overflow-hidden"
-      >
+    <div
+      onClick={() => push(`/recipes/${recipe.id}`)}
+      className="group cursor-pointer relative bg-sidebar border border-border flex flex-col items-start gap-2.5 rounded-md p-4 transition-colors"
+    >
+      <div className="relative w-full h-[300px] sm:h-[225px] rounded-sm overflow-hidden">
         <Image 
           src={recipe.image}
           alt={`Image of ${recipe.title}`}
           fill
           className="object-cover"
         />
-        <div className="size-full bg-black opacity-0 group-hover:opacity-25 transition-opacity"/>
-        {
-          recipe.sourceUrl && (
-            <Link
-              href={recipe.sourceUrl}
-              onClick={(e) => e.stopPropagation()}
-              target="_blank"
-              className="absolute bottom-3 left-3 bg-white text-black p-1.5 rounded-sm"
-            >
-              <Earth size={20}/>
-            </Link>
-          )
-        }
-        {
-          recipe.cuisine && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Image 
-                  src={recipe.cuisine.icon}
-                  alt={`Flag of ${recipe.cuisine.adjective} cuisine`}
-                  width={35}
-                  height={35}
-                  className="absolute bottom-3 right-3 object-cover rounded-full"
-                />
-              </TooltipTrigger>
-              <TooltipContent align="start">
-                <p>{recipe.cuisine.adjective}</p>
-              </TooltipContent>
-            </Tooltip>
-          )
-        }
-      </div>
+        <div className="size-full"/>
+          {
+            recipe.sourceUrl && (
+              <Link
+                href={recipe.sourceUrl}
+                onClick={(e) => e.stopPropagation()}
+                prefetch={false}
+                target="_blank"
+                className="absolute bottom-3 left-3 bg-white text-black p-1.5 rounded-sm"
+              >
+                <Earth size={20}/>
+              </Link>
+            )
+          }
+          {
+            recipe.cuisine && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Image 
+                    src={recipe.cuisine.icon}
+                    alt={`Flag of ${recipe.cuisine.adjective} cuisine`}
+                    width={35}
+                    height={35}
+                    className="absolute bottom-3 right-3 object-cover rounded-full"
+                  />
+                </TooltipTrigger>
+                <TooltipContent align="start">
+                  <p>{recipe.cuisine.adjective}</p>
+                </TooltipContent>
+              </Tooltip>
+            )
+          }
+        </div>
       <h2 className="font-bold line-clamp-2 text-left text-wrap hyphens-auto truncate">{recipe.title}</h2>
       <div className="flex items-center gap-3 min-h-[25px]">
         <div className="flex items-center gap-1.5 font-semibold text-sm">
@@ -126,6 +127,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
               <TooltipTrigger asChild>
                 <Link 
                   href={`/user/${recipe.creator.id}`}
+                  onClick={(e) => e.stopPropagation()}
                   prefetch={false}
                 >
                   <Avatar>
