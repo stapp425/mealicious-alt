@@ -5,11 +5,16 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { MAX_TITLE_LENGTH } from "@/lib/zod";
 import { Info } from "lucide-react";
-import { useWatch } from "react-hook-form";
+import { useFormState, useWatch } from "react-hook-form";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
 export default function RecipeTitle() {
-  const { control, register, setValue, errors } = useCreateRecipeFormContext();
+  const { control, register, setValue } = useCreateRecipeFormContext();
+  const { 
+    errors: {
+      title: titleError
+    }
+  } = useFormState({ control, name: "title" });
   const [currentTitle, isPublic] = useWatch({ control, name: ["title", "isPublic"] });
   
   return (
@@ -44,10 +49,10 @@ export default function RecipeTitle() {
         </label>
       </div>
       {
-        errors.title?.message && (
+        titleError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.title?.message}
+            {titleError.message}
           </div>
         )
       }

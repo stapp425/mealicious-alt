@@ -4,11 +4,16 @@ import { cn } from "@/lib/utils";
 import { MAX_TAGS_LENGTH } from "@/lib/zod";
 import { Info } from "lucide-react";
 import { useState } from "react";
-import { useWatch } from "react-hook-form";
+import { useFormState, useWatch } from "react-hook-form";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
 
 export default function RecipeTags() {
-  const { control, setValue, errors } = useEditRecipeFormContext();
+  const { control, setValue } = useEditRecipeFormContext();
+  const { 
+    errors: {
+      tags: tagsError
+    }
+  } = useFormState({ control, name: "tags" });
   const tags = useWatch({ control, name: "tags" });
   const [tag, setTag] = useState<string>("");
   
@@ -24,10 +29,10 @@ export default function RecipeTags() {
         </span>
       </div>
       {
-        errors?.tags?.message && (
+        tagsError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.tags.message}
+            {tagsError.message}
           </div>
         )
       }

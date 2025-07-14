@@ -4,12 +4,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { MAX_DESCRIPTION_LENGTH } from "@/lib/zod";
 import { Info } from "lucide-react";
-import { useWatch } from "react-hook-form";
+import { useFormState, useWatch } from "react-hook-form";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
 export default function RecipeDescription() {
-  const { register, control, errors } = useCreateRecipeFormContext();
+  const { register, control } = useCreateRecipeFormContext();
   const currentDescription = useWatch({ control, name: "description" });
+  const { 
+    errors: { 
+      description: descriptionError
+    }
+  } = useFormState({ control, name: "description" });
   
   return (
     <div className="flex flex-col gap-3">
@@ -30,10 +35,10 @@ export default function RecipeDescription() {
         className="min-h-[100px] hyphens-auto flex-1 flex rounded-md"
       />
       {
-        errors.description?.message &&
+        descriptionError?.message &&
         <div className="error-text text-sm">
           <Info size={16}/>
-          {errors.description?.message}
+          {descriptionError?.message}
         </div> 
       }
     </div>

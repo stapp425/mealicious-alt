@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { MAX_DIETS_LENGTH } from "@/lib/zod";
 import { InferSelectModel } from "drizzle-orm";
 import { useMemo, useState } from "react";
-import { useFieldArray, useWatch } from "react-hook-form";
+import { useFieldArray, useFormState, useWatch } from "react-hook-form";
 import {
   Command,
   CommandEmpty,
@@ -31,9 +31,14 @@ type RecipeDietsProps = {
 };
 
 export default function RecipeDiets({ diets }: RecipeDietsProps) {
-  const { control, errors } = useCreateRecipeFormContext();
+  const { control } = useCreateRecipeFormContext();
   const { append, remove } = useFieldArray({ control, name: "diets" });
   const formDietValues = useWatch({ control, name: "diets" });
+  const { 
+    errors: {
+      diets: dietsError
+    }
+  } = useFormState({ control, name: "diets" });
   const [diet, setDiet] = useState<Diet>({
     id: "",
     name: ""
@@ -140,10 +145,10 @@ export default function RecipeDiets({ diets }: RecipeDietsProps) {
         </span>
       </div>
       {
-        errors.diets?.message && (
+        dietsError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.diets.message}
+            {dietsError.message}
           </div>
         )
       }

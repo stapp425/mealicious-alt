@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { MAX_INGREDIENT_AMOUNT, MAX_INGREDIENT_NAME_LENGTH, MAX_INGREDIENTS_LENGTH, UnitSchema } from "@/lib/zod";
 import { Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFieldArray } from "react-hook-form";
+import { useFieldArray, useFormState } from "react-hook-form";
 import z from "zod";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
@@ -38,8 +38,13 @@ const IngredientInputSchema = z.object({
 });
 
 export default function RecipeIngredients() {
-  const { control, errors } = useCreateRecipeFormContext();
+  const { control } = useCreateRecipeFormContext();
   const { append, remove, update, fields: formIngredientValues } = useFieldArray({ control, name: "ingredients" });
+  const { 
+    errors: {
+      ingredients: ingredientsError
+    }
+  } = useFormState({ control, name: "ingredients" });
   const [touched, setTouched] = useState<boolean>(false);
   const [ingredient, setIngredient] = useState<Ingredient>({
     name: "",
@@ -58,7 +63,7 @@ export default function RecipeIngredients() {
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold required-field">Ingredients</h1>
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start md:items-end gap-2">
         <p className="font-semibold text-muted-foreground">Add ingredients to your recipe here.</p>
         {
           (touched && error) && (
@@ -193,10 +198,10 @@ export default function RecipeIngredients() {
         )
       }
       { 
-        errors.ingredients?.message && (
+        ingredientsError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.ingredients.message}
+            {ingredientsError.message}
           </div>
         )
       }
@@ -248,7 +253,7 @@ const RecipeIngredient = memo(({
   }, [editMode, currentIngredientContent]);
   
   return (
-    <div ref={containerRef} className="ingredient-content text-left overflow-hidden items-center border border-border rounded-md transition-colors shadow-sm">
+    <div ref={containerRef} className="ingredient-content text-left overflow-hidden items-center border border-border rounded-md transition-colors">
       {
         editMode ? (
           <>
@@ -309,36 +314,38 @@ const RecipeIngredient = memo(({
                 Is Allergen
               </label>
             </div>
-            <div className="w-full flex justify-end items-center gap-6">
+            <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-6">
               {
                 error && (
-                  <div className="error-text text-sm mr-auto">
-                    <Info size={16}/>
+                  <div className="error-text text-xs mr-auto">
+                    <Info size={14}/>
                     {error}
                   </div> 
                 )
               }
-              <button
-                type="button"
-                onClick={() => {
-                  setEditMode(false);
-                  setIngredientInput(currentIngredientContent);
-                }}
-                className="cursor-pointer underline text-xs font-semibold rounded-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!!error}
-                onClick={() => {
-                  setIngredientContent(currentIngredientIndex, ingredientInput);
-                  setEditMode(false);
-                }}
-                className="mealicious-button text-xs font-semibold py-2 px-6 rounded-sm"
-              >
-                Edit
-              </button>
+              <div className="w-full sm:w-auto flex items-center gap-4 sm:gap-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditMode(false);
+                    setIngredientInput(currentIngredientContent);
+                  }}
+                  className="cursor-pointer underline text-xs font-semibold rounded-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!!error}
+                  onClick={() => {
+                    setIngredientContent(currentIngredientIndex, ingredientInput);
+                    setEditMode(false);
+                  }}
+                  className="mealicious-button text-xs font-semibold py-2 px-6 rounded-sm"
+                >
+                  Edit
+                </button>
+              </div>
             </div>
           </div>
           <Separator />

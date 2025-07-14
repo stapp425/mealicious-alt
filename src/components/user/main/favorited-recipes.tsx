@@ -1,14 +1,8 @@
 import { db } from "@/db";
 import { diet, nutrition, recipe, recipeFavorite, recipeToDiet, recipeToNutrition, user } from "@/db/schema";
 import { sql, eq, and, exists } from "drizzle-orm";
-import { Clock, Flame } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import UserInfoCarousel from "./user-info-carousel";
-import Image from "next/image";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import defaultProfilePicture from "@/img/default/default-pfp.svg";
-import Link from "next/link";
-import { getNickname } from "@/lib/utils";
+import UserInfoCarousel from "@/components/user/main/user-info-carousel";
+import FavoritedRecipesResult from "@/components/user/main/favorited-recipes-result";
 
 type SavedRecipesProps = {
   userId: string;
@@ -65,7 +59,7 @@ export default async function FavoritedRecipes({ userId, limit }: SavedRecipesPr
     title: recipe.title,
     image: recipe.image,
     prepTime: sql`${recipe.prepTime}`.mapWith((val) => Number(val)),
-    calories: caloriesSubQuery.calories,
+    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith((val) => Number(val)),
     diets: sql<{
       id: string;
       name: string;
@@ -97,66 +91,12 @@ export default async function FavoritedRecipes({ userId, limit }: SavedRecipesPr
     <UserInfoCarousel 
       header="Favorited Recipes"
       href={`/user/${userId}/recipes?option=favorited`}
-      items={favoritedRecipes.map((r) => {
-        const resolvedNickname = r.creator ? getNickname({ nickname: r.creator.nickname, email: r.creator.email }) : "[deleted]";
-        return (
-          <Link 
-            key={r.id}
-            href={`/recipes/${r.id}`}
-            className="cursor-pointer h-full flex flex-col gap-3 bg-sidebar hover:bg-muted border border-border overflow-hidden p-4 rounded-md transition-colors"
-          >
-            <div className="relative h-[150px]">
-              <Image 
-                src={r.image}
-                alt={`Image of ${r.title}`}
-                fill
-                className="object-cover object-center rounded-sm"
-              />
-            </div>
-            <h2 className="font-bold text-lg">{r.title}</h2>
-            {
-              r.diets.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {
-                    r.diets.slice(0, 4).map((d) => (
-                      <div key={d.id} className="bg-mealicious-primary font-semibold text-white text-xs py-1 px-4 rounded-full">
-                        {d.name}
-                      </div>
-                    ))
-                  }
-                </div>
-              )
-            }
-            <div className="flex items-center gap-3 min-h-[25px] mt-auto">
-              <div className="flex items-center gap-1.5 font-semibold text-sm">
-                <Flame size={14} fill="var(--primary)"/>
-                <span>{Number(r.calories).toLocaleString()} Calories</span>
-              </div>
-              <Separator orientation="vertical"/>
-              <div className="flex items-center gap-1.5 font-semibold text-sm">
-                <Clock size={14}/>
-                <span>{Math.floor(r.prepTime)} min</span>
-              </div>
-            </div>
-            {
-              r.creator && (
-                <div className="flex items-center gap-2">
-                  <Avatar>
-                    <AvatarImage 
-                      src={r.creator.image || defaultProfilePicture}
-                      alt={`Profile picture of ${resolvedNickname}`}
-                    />
-                    <AvatarFallback className="bg-mealicious-primary text-white">
-                      {resolvedNickname.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-semibold text-sm">{resolvedNickname}</span>
-                </div>
-              )
-            }
-          </Link>
-        );
-      })}
+      items={favoritedRecipes.map((r) => (
+        <FavoritedRecipesResult 
+          key={r.id}
+          recipe={r}
+        />
+      ))}
     />
   );
 }

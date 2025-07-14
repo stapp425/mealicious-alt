@@ -3,9 +3,15 @@
 import { Input } from "@/components/ui/input";
 import { Info } from "lucide-react";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
+import { useFormState } from "react-hook-form";
 
 export default function RecipeSource() {
-  const { register, errors } = useCreateRecipeFormContext();
+  const { control, register } = useCreateRecipeFormContext();
+  const { 
+    errors: {
+      source: sourceError
+    }
+  } = useFormState({ control, name: ["source.name", "source.url"] });
   
   return (
     <div className="flex flex-col gap-3">
@@ -14,10 +20,10 @@ export default function RecipeSource() {
         Add a source name and URL if this recipe comes from an external source. (optional)
       </p>
       {
-        errors.source?.name?.message && (
+        sourceError?.name?.message && (
           <div className="error-text">
             <Info size={14}/>
-            {errors.source?.name?.message}
+            {sourceError.name.message}
           </div>
         )
       }
@@ -26,10 +32,10 @@ export default function RecipeSource() {
         placeholder="Source Name (optional)"
       />
       {
-        errors.source?.url?.message && (
+        sourceError?.url?.message && (
           <div className="error-text">
             <Info size={14}/>
-            {errors.source?.url?.message}
+            {sourceError.url.message}
           </div>
         )
       }
@@ -38,10 +44,10 @@ export default function RecipeSource() {
         placeholder="Source URL (optional)"
       />
       {
-        errors.source?.message && (
+        sourceError?.message && (
           <div className="error-text">
             <Info size={14}/>
-            {errors.source?.message}
+            {sourceError.message}
           </div>
         )
       }

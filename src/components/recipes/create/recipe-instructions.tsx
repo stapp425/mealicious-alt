@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { MAX_INSTRUCTION_CONTENT_LENGTH, MAX_INSTRUCTION_TIME_AMOUNT, MAX_INSTRUCTION_TITLE_LENGTH, MAX_INSTRUCTIONS_LENGTH } from "@/lib/zod";
 import { ArrowDown, ArrowUp, Clock, Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFieldArray } from "react-hook-form";
+import { useFieldArray, useFormState } from "react-hook-form";
 import z from "zod";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 
@@ -38,9 +38,14 @@ const InstructionInputSchema = z.object({
 });
 
 export default function RecipeInstructions() {
-  const { control, errors } = useCreateRecipeFormContext();
+  const { control } = useCreateRecipeFormContext();
   const { append, remove, update, swap, fields: formInstructionValues } = useFieldArray({ control, name: "instructions" });
   const [touched, setTouched] = useState<boolean>(false);
+  const { 
+    errors: {
+      instructions: instructionsError
+    }
+  } = useFormState({ control, name: "instructions" });
 
   const [instruction, setInstruction] = useState<Instruction>({
     title: "",
@@ -52,15 +57,11 @@ export default function RecipeInstructions() {
   const error = parsedInstruction.error?.errors[0]?.message;
 
   const deleteInstruction = useCallback((index: number) => remove(index), []);
-  const setInstructionContent = useCallback(
-    (index: number, instruction: Instruction) => update(index, instruction),
-    []
-  );
   
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold required-field">Instructions</h1>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start md:items-end">
         <p className="font-semibold text-muted-foreground">
           Add instructions to your recipe here.
         </p>
@@ -156,7 +157,7 @@ export default function RecipeInstructions() {
                   isFirst={index === 0}
                   isLast={index === formInstructionValues.length - 1}
                   swapInstructionIndex={swap}
-                  setInstructionContent={setInstructionContent}
+                  setInstructionContent={update}
                 />
               ))
             }
@@ -165,10 +166,10 @@ export default function RecipeInstructions() {
         )
       }
       { 
-        errors.instructions?.message && (
+        instructionsError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.instructions.message}
+            {instructionsError.message}
           </div> 
         )
       }
@@ -224,12 +225,12 @@ const RecipeInstruction = memo(({
   }, [editMode, currentInstructionContent]);
 
   return (
-    <div ref={containerRef} className="instruction-content flex flex-col items-start gap-3 text-left overflow-hidden border border-border rounded-md p-4 shadow-sm">
+    <div ref={containerRef} className="instruction-content flex flex-col items-start gap-3 text-left overflow-hidden border border-border rounded-md p-2.5 sm:p-4">
       {
         editMode ? (
           <>
           <div className="w-full flex justify-between items-center gap-3">
-            <div className="bg-mealicious-primary size-10 shrink-0 flex justify-center items-center p-3 rounded-full">
+            <div className="bg-mealicious-primary text-white font-semibold size-10 shrink-0 flex justify-center items-center p-3 rounded-full">
               {currentInstructionIndex + 1}
             </div>
             <Input 
@@ -267,59 +268,65 @@ const RecipeInstruction = memo(({
             }))}
             placeholder="Instruction Description"
           />
-          <div className="w-full flex justify-end items-center gap-6">
+          <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-6">
             {
               error && (
-                <div className="error-text text-sm mr-auto">
+                <div className="error-text text-xs mr-auto">
                   <Info size={16}/>
                   {error}
                 </div> 
               )
             }
-            <button
-              type="button"
-              onClick={() => {
-                setEditMode(false);
-                setInstructionInput(currentInstructionContent);
-              }}
-              className="cursor-pointer underline text-xs font-semibold rounded-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={!!error}
-              onClick={() => {
-                setInstructionContent(currentInstructionIndex, instructionInput);
-                setEditMode(false);
-              }}
-              className="mealicious-button text-xs font-semibold py-2 px-6 rounded-sm"
-            >
-              Edit
-            </button>
+            <div className="w-full sm:w-auto flex items-center gap-4 sm:gap-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditMode(false);
+                  setInstructionInput(currentInstructionContent);
+                }}
+                className="cursor-pointer underline text-xs font-semibold rounded-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!!error}
+                onClick={() => {
+                  setInstructionContent(currentInstructionIndex, instructionInput);
+                  setEditMode(false);
+                }}
+                className="mealicious-button text-xs font-semibold py-2 px-6 rounded-sm"
+              >
+                Edit
+              </button>
+            </div>
           </div>
           </>
         ) : (
           <>
           <div className="w-full flex justify-between items-start gap-4">
-            <div className="shrink-0 bg-mealicious-primary size-10 flex justify-center items-center p-3 rounded-full">
+            <div className="shrink-0 bg-mealicious-primary text-white font-semibold size-10 flex justify-center items-center p-3 rounded-full">
               {currentInstructionIndex + 1}
             </div>
             <div className="flex-1 flex flex-col gap-0.5 items-start">
               <div className="w-full flex justify-between items-start gap-2">
-                <h2 className="font-bold text-lg hyphens-auto line-clamp-2 -mt-1">{currentInstructionContent.title}</h2>
+                <div className="grid gap-0.5">
+                  <h2 className="font-bold text-lg hyphens-auto line-clamp-2 -mt-1">{currentInstructionContent.title}</h2>
+                  <div className="font-semibold text-sm text-nowrap flex items-center gap-1.5 text-muted-foreground">
+                    <Clock size={14}/>
+                    {Math.floor(currentInstructionContent.time)} mins
+                  </div>
+                </div>
+                
                 <button
                   type="button"
                   onClick={() => setEditMode(true)}
-                  className="group cursor-pointer size-8 shrink-0 border border-foreground hover:bg-mealicious-primary hover:border-mealicious-primary flex justify-center items-center rounded-full transition-colors"
+                  className="group cursor-pointer size-8 shrink-0 border border-foreground text-foreground hover:text-white hover:bg-mealicious-primary hover:border-mealicious-primary flex justify-center items-center rounded-full transition-colors"
                 >
                   <Pencil size={16} className="shrink-0"/>
                 </button>
               </div>
-              <div className="font-semibold text-sm text-nowrap flex items-center gap-1.5 text-muted-foreground">
-                <Clock size={14}/>
-                {Math.floor(currentInstructionContent.time)} mins
-              </div>
+              
             </div>
           </div>
           <p className="flex-1 text-left break-all">{currentInstructionContent.description}</p>

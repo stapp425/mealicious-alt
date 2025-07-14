@@ -94,8 +94,8 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <div className="cursor-pointer bg-sidebar flex flex-col md:flex-row justify-between gap-4 border border-border p-4 rounded-md hover:bg-muted transition-colors">
-          <div className="group relative w-full md:w-[250px] h-[300px] min-h-[150px] md:h-auto rounded-sm overflow-hidden">
+        <div className="overflow-x-hidden cursor-pointer bg-sidebar flex flex-col md:flex-row justify-between gap-4 border border-border p-4 rounded-md hover:bg-muted transition-colors">
+          <div className="shrink-0 group relative w-full md:w-[250px] h-[300px] min-h-[150px] md:h-auto rounded-sm overflow-hidden">
             <Image 
               src={recipe.image}
               alt={`Image of ${recipe.title}`}
@@ -113,7 +113,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
           </div>
           <div className="flex-1 flex flex-col gap-3">
             <div className="flex justify-between items-start gap-3">
-              <h2 className="font-bold text-2xl text-wrap hyphens-auto line-clamp-2 grow-0 text-left">{recipe.title}</h2>
+              <h2 className="font-bold text-2xl hyphens-auto line-clamp-2 grow-0 text-left">{recipe.title}</h2>
               {
                 recipe.cuisine && (
                   <Tooltip>

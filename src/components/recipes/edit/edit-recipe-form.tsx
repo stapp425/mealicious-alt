@@ -6,7 +6,7 @@ import { RecipeEdition, RecipeEditionSchema } from "@/lib/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { InferSelectModel } from "drizzle-orm";
 import { LoaderCircle } from "lucide-react";
-import { Control, FieldErrors, useForm, UseFormRegister, UseFormSetValue } from "react-hook-form";
+import { Control, useForm, UseFormRegister, UseFormSetValue } from "react-hook-form";
 import RecipeImageUploader from "@/components/recipes/edit/recipe-image-uploader";
 import RecipeTags from "@/components/recipes/edit/recipe-tags";
 import RecipeTimes from "@/components/recipes/edit/recipe-times";
@@ -99,7 +99,6 @@ type RecipeFormContextProps = {
   control: Control<RecipeEdition>;
   register: UseFormRegister<RecipeEdition>;
   setValue: UseFormSetValue<RecipeEdition>;
-  errors: FieldErrors<RecipeEdition>;
 };
 
 const EditRecipeFormContext = createContext<RecipeFormContextProps | null>(null);
@@ -139,7 +138,6 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
     handleSubmit,
     reset,
     formState: {
-      errors,
       isSubmitting
     }
   } = useForm<RecipeEdition>({
@@ -234,7 +232,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
   }, []);
 
   return (
-    <EditRecipeFormContext.Provider value={{ control, register, setValue, errors }}>
+    <EditRecipeFormContext.Provider value={{ control, register, setValue }}>
       <form 
         onSubmit={onSubmit} 
         className="max-w-[750px] xl:max-w-[1250px] w-full bg-background mx-auto p-4"

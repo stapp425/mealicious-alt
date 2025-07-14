@@ -66,8 +66,8 @@ export default async function Page({ params, searchParams }: PageProps) {
   const { nickname, email } = foundUser;
   
   return (
-    <div className="max-w-[1000px] w-full flex-1 flex flex-col gap-2.5 mx-auto p-6">
-      <h1 className="font-bold text-4xl">{nickname || email.split("@")[0]}&apos;s Recipes</h1>
+    <div className="max-w-[1000px] w-full wrap-break-word flex-1 flex flex-col gap-2.5 mx-auto p-4">
+      <h1 className="font-bold text-4xl hyphens-auto">{nickname || email.split("@")[0]}&apos;s Recipes</h1>
       <RecipesOptions />
       <Suspense key={`${recipesView}-${page}`} fallback={<RecipesSkeleton />}>
         {

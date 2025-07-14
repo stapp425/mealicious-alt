@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { InferSelectModel } from "drizzle-orm";
 import { dishType } from "@/db/schema/recipe";
-import { useFieldArray, useWatch } from "react-hook-form";
+import { useFieldArray, useFormState, useWatch } from "react-hook-form";
 import { MAX_DISH_TYPES_LENGTH } from "@/lib/zod";
 import { useMemo, useState } from "react";
 import { Separator } from "@/components/ui/separator";
@@ -32,8 +32,13 @@ type RecipeDishTypes = {
 };
 
 export default function RecipeDishTypes({ dishTypes }: RecipeDishTypes) {
-  const { control, errors } = useEditRecipeFormContext();
+  const { control } = useEditRecipeFormContext();
   const { append, remove } = useFieldArray({ control, name: "dishTypes" });
+  const { 
+    errors: {
+      dishTypes: dishTypesError
+    }
+  } = useFormState({ control, name: "dishTypes" });
   const formDishTypeValues = useWatch({ control, name: "dishTypes" });
   const [dishType, setDishType] = useState<DishType>({
     id: "",
@@ -148,10 +153,10 @@ export default function RecipeDishTypes({ dishTypes }: RecipeDishTypes) {
         </span>
       </div>
       {
-        errors.dishTypes?.message && (
+        dishTypesError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.dishTypes.message}
+            {dishTypesError.message}
           </div>
         )
       }

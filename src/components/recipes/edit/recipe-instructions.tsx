@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { MAX_INSTRUCTION_CONTENT_LENGTH, MAX_INSTRUCTION_TIME_AMOUNT, MAX_INSTRUCTION_TITLE_LENGTH, MAX_INSTRUCTIONS_LENGTH } from "@/lib/zod";
 import { ArrowDown, ArrowUp, Clock, Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFieldArray } from "react-hook-form";
+import { useFieldArray, useFormState } from "react-hook-form";
 import z from "zod";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
 
@@ -38,9 +38,14 @@ const InstructionInputSchema = z.object({
 });
 
 export default function RecipeInstructions() {
-  const { control, errors } = useEditRecipeFormContext();
+  const { control } = useEditRecipeFormContext();
   const { append, remove, update, swap, fields: formInstructionValues } = useFieldArray({ control, name: "instructions" });
   const [touched, setTouched] = useState<boolean>(false);
+  const { 
+    errors: {
+      instructions: instructionsError
+    }
+  } = useFormState({ control, name: "instructions" });
 
   const [instruction, setInstruction] = useState<Instruction>({
     title: "",
@@ -52,15 +57,11 @@ export default function RecipeInstructions() {
   const error = parsedInstruction.error?.errors[0]?.message;
 
   const deleteInstruction = useCallback((index: number) => remove(index), []);
-  const setInstructionContent = useCallback(
-    (index: number, instruction: Instruction) => update(index, instruction),
-    []
-  );
   
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold required-field">Instructions</h1>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start md:items-end">
         <p className="font-semibold text-muted-foreground">
           Add instructions to your recipe here.
         </p>
@@ -156,7 +157,7 @@ export default function RecipeInstructions() {
                   isFirst={index === 0}
                   isLast={index === formInstructionValues.length - 1}
                   swapInstructionIndex={swap}
-                  setInstructionContent={setInstructionContent}
+                  setInstructionContent={update}
                 />
               ))
             }
@@ -165,10 +166,10 @@ export default function RecipeInstructions() {
         )
       }
       { 
-        errors.instructions?.message && (
+        instructionsError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.instructions.message}
+            {instructionsError.message}
           </div> 
         )
       }

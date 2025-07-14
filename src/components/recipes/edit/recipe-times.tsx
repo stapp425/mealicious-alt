@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Clock, Info, Microwave, Clipboard } from "lucide-react";
 import { useEditRecipeFormContext } from "./edit-recipe-form";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useFormState } from "react-hook-form";
 
 const recipeTimesDetails = [
   {
@@ -27,7 +28,14 @@ const recipeTimesDetails = [
 ];
 
 export default function RecipeTimes() {
-  const { register, errors } = useEditRecipeFormContext();
+  const { control, register } = useEditRecipeFormContext();
+  const {
+    errors: {
+      prepTime: prepTimeError,
+      cookTime: cookTimeError,
+      readyTime: readyTimeError
+    }
+  } = useFormState({ control, name: ["prepTime", "cookTime", "readyTime"] });
   
   return (
     <div className="flex flex-col justify-between gap-3">
@@ -40,7 +48,7 @@ export default function RecipeTimes() {
           recipeTimesDetails.map((rt, i) => (
             <div
               key={i}
-              className="relative flex-1 bg-mealicious-primary flex flex-col items-center gap-3 p-3 rounded-md"
+              className="relative flex-1 bg-mealicious-primary flex text-white flex-col items-center gap-3 p-3 rounded-md"
             >
               <Popover>
                 <PopoverTrigger asChild>
@@ -71,26 +79,26 @@ export default function RecipeTimes() {
         }
       </div>
       {
-        errors.prepTime?.message && (
+        prepTimeError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.prepTime.message}
+            {prepTimeError.message}
           </div>
         )
       }
       {
-        errors.cookTime?.message && (
+        cookTimeError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.cookTime.message}
+            {cookTimeError.message}
           </div>
         )
       }
       {
-        errors.readyTime?.message && (
+        readyTimeError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.readyTime.message}
+            {readyTimeError.message}
           </div>
         )
       }

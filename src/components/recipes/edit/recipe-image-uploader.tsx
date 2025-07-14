@@ -10,7 +10,7 @@ import {
 } from "react";
 import Image from "next/image";
 import defaultRecipeImage from "@/img/default/default-background.jpg";
-import { useWatch } from "react-hook-form";
+import { useFormState, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
 
@@ -19,7 +19,12 @@ type ImageUploaderProps = {
 };
 
 export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderProps) {
-  const { control, setValue, errors } = useEditRecipeFormContext();
+  const { control, setValue } = useEditRecipeFormContext();
+  const { 
+    errors: {
+      image: imageError
+    }
+  } = useFormState({ control, name: "image" });
   const image = useWatch({ control, name: "image" });
   const [imageURL, setImageURL] = useState<string>(recipeImageUrl);
   const addImageButton = useRef<HTMLInputElement>(null);
@@ -110,10 +115,10 @@ export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderPro
               </button>
             </div>
             {
-              errors?.image?.message && (
+              imageError?.message && (
                 <div className="error-label">
                   <Info />
-                  {errors.image.message}
+                  {imageError.message}
                 </div>
               )
             }

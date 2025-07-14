@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { MAX_INGREDIENT_AMOUNT, MAX_INGREDIENT_NAME_LENGTH, MAX_INGREDIENTS_LENGTH, UnitSchema } from "@/lib/zod";
 import { Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFieldArray } from "react-hook-form";
+import { useFieldArray, useFormState } from "react-hook-form";
 import z from "zod";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
 
@@ -44,8 +44,13 @@ const IngredientInputSchema = z.object({
 });
 
 export default function RecipeIngredients() {
-  const { control, errors } = useEditRecipeFormContext();
+  const { control } = useEditRecipeFormContext();
   const { append, remove, update, fields: formIngredientValues } = useFieldArray({ control, name: "ingredients" });
+  const { 
+    errors: {
+      ingredients: ingredientsError
+    }
+  } = useFormState({ control, name: "ingredients" });
   const [touched, setTouched] = useState<boolean>(false);
   const [ingredient, setIngredient] = useState<Ingredient>({
     name: "",
@@ -64,7 +69,7 @@ export default function RecipeIngredients() {
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-2xl font-bold required-field">Ingredients</h1>
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start md:items-end gap-2">
         <p className="font-semibold text-muted-foreground">Add ingredients to your recipe here.</p>
         {
           (touched && error) && (
@@ -199,10 +204,10 @@ export default function RecipeIngredients() {
         )
       }
       { 
-        errors.ingredients?.message && (
+        ingredientsError?.message && (
           <div className="error-text text-sm">
             <Info size={16}/>
-            {errors.ingredients.message}
+            {ingredientsError.message}
           </div>
         )
       }
