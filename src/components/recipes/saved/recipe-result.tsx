@@ -167,7 +167,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
             </div>
             <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-end gap-2 mt-auto">
               <i className="text-muted-foreground text-sm">
-                Saved {getDateDifference(recipe.saveDate)} ago
+                Saved {getDateDifference({ earlierDate: recipe.saveDate })} ago
               </i>
               {
                 (recipe.sourceName && recipe.sourceUrl) && (
@@ -364,7 +364,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
             )
           }
           <i className="text-muted-foreground text-sm">
-            Saved {getDateDifference(recipe.saveDate)} ago
+            Saved {getDateDifference({ earlierDate: recipe.saveDate })} ago
           </i>
         </div>
       </DialogContent>

@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { diet, nutrition, recipe, recipeToDiet, recipeToNutrition, savedRecipe, user } from "@/db/schema";
-import { getDataWithCache } from "@/lib/actions/redis";
+import { getCachedData } from "@/lib/actions/redis";
 import { sql, and, eq, exists, not, count } from "drizzle-orm";
 import z from "zod";
 import { SearchX } from "lucide-react";
@@ -50,7 +50,7 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
 
   const userSubQuery = db.select({
     id: user.id,
-    nickname: user.nickname,
+    name: user.name,
     email: user.email,
     image: user.image
   }).from(user)
@@ -84,7 +84,7 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
     }[]>`coalesce(${recipeToDietSubQuery.diets}, '[]'::json)`,
     creator: {
       id: userSubQuery.id,
-      nickname: userSubQuery.nickname,
+      name: userSubQuery.name,
       email: userSubQuery.email,
       image: userSubQuery.image
     }
@@ -107,7 +107,7 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
     .limit(limit);
 
   const [[{ count: savedRecipesCount }], savedRecipes] = await Promise.all([
-    getDataWithCache({
+    getCachedData({
       cacheKey: `saved_recipes_user_${userId}`,
       timeToLive: 120,
       call: () => savedRecipesCountQuery,

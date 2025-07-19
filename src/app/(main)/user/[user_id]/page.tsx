@@ -15,7 +15,6 @@ import FavoritedRecipes from "@/components/user/main/favorited-recipes";
 import { CarouselSkeleton } from "@/components/user/main/user-info-carousel";
 import { auth } from "@/auth";
 import AboutSection from "@/components/user/main/about-section";
-import { getNickname } from "@/lib/utils";
 
 type PageProps = {
   params: Promise<{ user_id: string; }>;
@@ -34,16 +33,18 @@ export async function generateMetadata({ params }: { params: Promise<{ user_id: 
     };
   }
 
-  const { user: { nickname, email, image }, counts } = foundUser;
-  const resolvedNickname = getNickname({ nickname, email });
+  const { 
+    user: { name, image },
+    counts
+  } = foundUser;
   
   return {
-    title: `${resolvedNickname} | Mealicious`,
-    description: `${resolvedNickname}. Created Recipes: ${counts.created} • Favorited Recipes: ${counts.favorited} • Saved Recipes: ${counts.saved}`,
+    title: `${name} | Mealicious`,
+    description: `${name}. Created Recipes: ${counts.created} • Favorited Recipes: ${counts.favorited} • Saved Recipes: ${counts.saved}`,
     openGraph: {
       type: "website",
-      title: `${resolvedNickname} | Mealicious`,
-      description: `${resolvedNickname}. Created Recipes: ${counts.created} • Favorited Recipes: ${counts.favorited} • Saved Recipes: ${counts.saved}`,
+      title: `${name} | Mealicious`,
+      description: `${name}. Created Recipes: ${counts.created} • Favorited Recipes: ${counts.favorited} • Saved Recipes: ${counts.saved}`,
       images: image || defaultProfilePicture,
     }
   };
@@ -57,10 +58,8 @@ export default async function Page({ params }: PageProps) {
   const sessionUserId = session?.user?.id;
 
   if (!foundUser.user) notFound();
-  const { id, image, nickname, email, about, createdAt } = foundUser.user;
+  const { id, image, name, about, createdAt } = foundUser.user;
   const { created, favorited, saved } = foundUser.counts;
-
-  const resolvedNickname = getNickname({ nickname, email });
 
   return (
     <div className="flex-1 relative max-w-screen lg:max-w-[750px] overflow-x-hidden flex flex-col gap-3 mx-auto p-4">
@@ -68,14 +67,14 @@ export default async function Page({ params }: PageProps) {
         <Avatar className="size-35">
           <AvatarImage 
             src={image || defaultProfilePicture}
-            alt={`Profile picture of ${resolvedNickname}`}
+            alt={`Profile picture of ${name}`}
           />
           <AvatarFallback className="bg-mealicious-primary text-white font-semibold text-5xl">
-            {resolvedNickname.charAt(0).toUpperCase()}
+            {name.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 grid gap-2">
-          <h1 className="font-bold text-3xl">{resolvedNickname}</h1>
+          <h1 className="font-bold text-3xl">{name}</h1>
           <div className="flex text-muted-foreground items-center gap-2">
             <Calendar size={16}/>
             <h2 className="font-semibold text-muted-foreground">
@@ -140,8 +139,7 @@ const getUserDetails = cache(async (userId: string) => {
     where: (user, { eq }) => eq(user.id, userId),
     columns: {
       id: true,
-      nickname: true,
-      email: true,
+      name: true,
       image: true,
       about: true,
       createdAt: true

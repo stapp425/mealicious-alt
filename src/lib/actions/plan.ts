@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { and, count, eq, gte, ilike, desc, lte, sql, asc } from "drizzle-orm";
-import { getDataWithCache, removeCacheKeys } from "@/lib/actions/redis";
+import { getCachedData, removeCacheKeys } from "@/lib/actions/redis";
 import { meal, mealToRecipe, nutrition, plan, planToMeal, recipe, recipeToNutrition } from "@/db/schema";
 import { MealType } from "@/lib/types";
 import { DetailedPlanSchema, PlanCreationSchema, PlanEditionSchema } from "@/lib/zod";
@@ -214,7 +214,7 @@ export async function getPreviewPlansInTimeFrame({ userId, startDate, endDate }:
     }
   });
 
-  const plans = await getDataWithCache({
+  const plans = await getCachedData({
     cacheKey: `user_${userId}_plans_preview_${getTime(startDate)}_to_${getTime(endDate)}`,
     call: () => plansQuery,
     timeToLive: 120,
@@ -254,7 +254,7 @@ export async function getPlansInTimeFrameCount({ userId, startDate, endDate, que
       query ? ilike(plan.title, query) : undefined
     ));
 
-  return await getDataWithCache({
+  return await getCachedData({
     cacheKey: `user_${userId}_plans_count${startDate ? `_${getTime(startDate)}` : ""}${endDate ? `_to_${getTime(endDate)}` : ""}${query ? `_query_${query}` : ""}`,
     call: () => plansQuery,
     schema: z.array(z.object({
@@ -391,7 +391,7 @@ export async function getDetailedPlansInTimeFrame({ userId, planId, startDate, e
     .offset(offset ? offset : 0)
     .orderBy(endDate && endDate < new Date() ? desc(plan.date) : asc(plan.date));
   
-  return await getDataWithCache({
+  return await getCachedData({
     cacheKey: `user_${userId}_plans${planId ? planId : ""}_detailed${startDate ? `_${getTime(startDate)}` : ""}${endDate ? `_to_${getTime(endDate)}` : ""}${query ? `_query_${query}` : ""}${limit ? `_limit_${limit}` : ""}${offset ? `_offset_${offset}` : ""}`,
     schema: DetailedPlanSchema,
     call: () => plansQuery,

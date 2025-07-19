@@ -1,5 +1,5 @@
 import { pgTable, unique } from "drizzle-orm/pg-core";
-import { user } from "./user";
+import { user } from "@/db/schema/user";
 import { AdapterAccountType } from "next-auth/adapters";
 import { relations } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -29,6 +29,22 @@ export const account = pgTable("account", (t) => ({
   ]
 );
 
+export const emailVerification = pgTable("email_verification", (t) => ({
+  id: t.text("verify_id")
+    .primaryKey()
+    .$default(() => nanoid()),
+  email: t.text("verify_email")
+    .notNull()
+    .unique()
+    .references(() => user.email, {
+      onDelete: "cascade"
+    }),
+  code: t.text("verify_code").notNull(),
+  expiration: t.timestamp("verify_expiration",
+    { mode: "date" }
+  ).notNull()
+}));
+
 export const session = pgTable("session", (t) => ({
   sessionToken: t.text("session_token").primaryKey(),
   userId: t.text("user_id")
@@ -51,5 +67,12 @@ export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, {
     fields: [session.userId],
     references: [user.id]
+  })
+}));
+
+export const emailVerificationRelations = relations(emailVerification, ({ one }) => ({
+  user: one(user, {
+    fields: [emailVerification.email],
+    references: [user.email]
   })
 }));

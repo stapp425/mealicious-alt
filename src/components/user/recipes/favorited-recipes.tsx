@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { diet, nutrition, recipe, recipeFavorite, recipeToDiet, recipeToNutrition, user } from "@/db/schema";
-import { getDataWithCache } from "@/lib/actions/redis";
+import { getCachedData } from "@/lib/actions/redis";
 import { sql, and, eq, exists, count } from "drizzle-orm";
 import z from "zod";
 import { SearchX } from "lucide-react";
@@ -50,7 +50,7 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
 
   const userSubQuery = db.select({
     id: user.id,
-    nickname: user.nickname,
+    name: user.name,
     email: user.email,
     image: user.image
   }).from(user)
@@ -69,7 +69,7 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
     }[]>`coalesce(${recipeToDietSubQuery.diets}, '[]'::json)`,
     creator: {
       id: userSubQuery.id,
-      nickname: userSubQuery.nickname,
+      name: userSubQuery.name,
       email: userSubQuery.email,
       image: userSubQuery.image
     }
@@ -105,7 +105,7 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
     ));
   
   const [[{ count: favoritedRecipesCount }], favoritedRecipes] = await Promise.all([
-    getDataWithCache({
+    getCachedData({
       cacheKey: `favorited_recipes_user_${userId}`,
       timeToLive: 120,
       call: () => favoritedRecipesCountQuery,

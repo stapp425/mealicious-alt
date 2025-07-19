@@ -4,7 +4,6 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { SessionProvider } from "next-auth/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,13 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Toaster richColors/>
         <NuqsAdapter>
-          <SessionProvider refetchOnWindowFocus={false}>
-            <ThemeProvider attribute="class" defaultTheme="system">
-              {children}
-            </ThemeProvider>
-          </SessionProvider>
-          <Toaster richColors/>
+          <ThemeProvider attribute="class" defaultTheme="system">
+            {children}
+          </ThemeProvider>
         </NuqsAdapter>
       </body>
     </html>

@@ -1,13 +1,19 @@
 "use server";
 
 import { redis } from "@/lib/redis";
+import { differenceInSeconds } from "date-fns";
 import { ZodType } from "zod";
 
-export async function getDataWithCache<T>({ schema, cacheKey, call, timeToLive }: {
+export async function getDataFromKey<T>({ key, schema }: { key: string; schema: ZodType<T>; }) {
+  const result = await redis.get(key);
+  return result ? schema.parse(JSON.parse(result)) : result;
+}
+
+export async function getCachedData<T>({ schema, cacheKey, call, timeToLive }: {
   schema: ZodType<T>;
   cacheKey: string;
   call: () => Promise<T>;
-  timeToLive?: number;
+  timeToLive?: number | Date;
 }): Promise<T> {
   const cachedResult = await redis.get(cacheKey);
 
@@ -18,18 +24,20 @@ export async function getDataWithCache<T>({ schema, cacheKey, call, timeToLive }
 
   const databaseResult = await call();
 
-  if (timeToLive) {
-    await redis.set(
-      cacheKey,
-      JSON.stringify(databaseResult),
-      "EX", timeToLive
-    );
-  } else {
+  if (!timeToLive) {
     await redis.set(
       cacheKey,
       JSON.stringify(databaseResult),
     );
+
+    return databaseResult;
   }
+  
+  await redis.set(
+    cacheKey,
+    JSON.stringify(databaseResult),
+    "EX", typeof timeToLive === "number" ? timeToLive : differenceInSeconds(timeToLive, Date.now())
+  );
 
   return databaseResult;
 }

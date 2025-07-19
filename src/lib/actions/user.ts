@@ -5,7 +5,7 @@ import { user as userTable } from "@/db/schema";
 import { authActionClient } from "@/safe-action";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { PasswordSchema } from "@/lib/zod";
+import { PasswordSchema } from "@/lib/zod/auth";
 import z from "zod";
 import bcrypt from "bcryptjs";
 

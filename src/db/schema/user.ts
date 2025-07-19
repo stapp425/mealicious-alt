@@ -1,7 +1,7 @@
 import { check, pgTable, primaryKey } from "drizzle-orm/pg-core";
 import { cuisine, diet, dishType, nutrition, recipe, recipeFavorite, recipeReview, reviewLike, savedRecipe } from "./recipe";
 import { relations, sql } from "drizzle-orm";
-import { account, session } from "./auth";
+import { account, emailVerification, session } from "./auth";
 import { meal } from "@/db/schema/meal";
 import { plan } from "@/db/schema/plan";
 import { Unit } from "@/lib/types";
@@ -11,8 +11,9 @@ export const user = pgTable("user", (t) => ({
   id: t.text("user_id")
     .primaryKey()
     .$default(() => nanoid()),
-  name: t.text("user_name").notNull(),
-  nickname: t.text("user_nickname"),
+  name: t.text("user_name")
+    .unique()
+    .notNull(),
   about: t.text("user_about"),
   email: t.text("user_email")
     .unique()
@@ -111,6 +112,10 @@ export const userRelations = relations(user, ({ one, many }) => ({
   account: one(account, {
     fields: [user.id],
     references: [account.userId]
+  }),
+  emailVerification: one(emailVerification, {
+    fields: [user.email],
+    references: [emailVerification.email]
   }),
   recipesCreated: many(recipe),
   mealsCreated: many(meal),

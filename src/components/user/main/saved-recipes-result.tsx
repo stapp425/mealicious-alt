@@ -7,7 +7,6 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getNickname } from "@/lib/utils";
 import defaultProfilePicture from "@/img/default/default-pfp.svg";
 
 type SavedRecipesResultProps = {
@@ -23,7 +22,7 @@ type SavedRecipesResultProps = {
     }[];
     creator: {
       id: string;
-      nickname: string | null;
+      name: string;
       email: string;
       image: string | null;
     } | null;
@@ -32,7 +31,6 @@ type SavedRecipesResultProps = {
 
 export default function SavedRecipesResult({ recipe }: SavedRecipesResultProps) {
   const { push } = useRouter();
-  const resolvedNickname = recipe.creator ? getNickname({ nickname: recipe.creator.nickname, email: recipe.creator.email }) : "[deleted]";
     
   return (
     <div
@@ -81,18 +79,18 @@ export default function SavedRecipesResult({ recipe }: SavedRecipesResultProps) 
                   <Avatar>
                     <AvatarImage 
                       src={recipe.creator.image || defaultProfilePicture}
-                      alt={`Profile picture of ${resolvedNickname}`}
+                      alt={`Profile picture of ${recipe.creator.name}`}
                     />
                     <AvatarFallback className="bg-mealicious-primary text-white">
-                      {resolvedNickname.charAt(0).toUpperCase()}
+                      {recipe.creator.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Link>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{resolvedNickname}</p>
+                <p>{recipe.creator.name}</p>
               </TooltipContent>
-              <span className="font-semibold text-sm">{resolvedNickname}</span>
+              <span className="font-semibold text-sm">{recipe.creator.name}</span>
             </div>
           </Tooltip>
         )

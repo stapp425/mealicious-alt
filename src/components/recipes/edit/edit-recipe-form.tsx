@@ -277,4 +277,3 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
     </EditRecipeFormContext.Provider>
   );
 }
-

@@ -4,38 +4,6 @@ import { add, endOfDay, startOfDay } from "date-fns";
 
 export const MAX_FILE_SIZE = 1024 * 1024 * 5; // 5MB
 
-export const CreateUsernameSchema = z.string({
-  required_error: "A username is required."
-}).min(6, {
-  message: "Username must have at least 6 characters long."
-}).max(20, {
-  message: "Username cannot have more than 20 characters."
-}).regex(/^[^_].*[^_]$/, {
-  message: "Username cannot start or end with a _."
-}).regex(/^[^\W]+$/, {
-  message: "Username cannot contain symbols."
-});
-
-export const EmailSchema = z.string({
-  required_error: "An e-mail is required.",
-}).email({
-  message: "Input does not match a valid e-mail format."
-});
-
-export const PasswordSchema = z.string({
-  required_error: "A password is required."
-}).min(12, {
-  message: "Password must have at least 12 characters."
-}).max(20, {
-  message: "Password cannot have more than 20 characters."
-}).regex(/^.*[A-Z].*$/, {
-  message: "Password must contain at least one uppercase letter."
-}).regex(/^.*[_\W].*$/, {
-  message: "Password must contain at least one symbol."
-}).regex(/^.*[0-9]+.*$/, {
-  message: "Password must contain at least one digit."
-});
-
 export const IdSchema = z.string({
   required_error: "An id is required."
 });
@@ -94,26 +62,7 @@ export const MealTypeSchema = z.custom<MealType>((val) => val && typeof val === 
   message: "Value must be a valid meal type."
 }).refine((val) => mealTypes.includes(val));
 
-export const SignInFormSchema = z.object({
-  email: EmailSchema,
-  password: z.string({
-    message: "A password is required."
-  })
-});
 
-export const SignUpFormSchema = z.object({
-  name: CreateUsernameSchema,
-  email: EmailSchema,
-  password: PasswordSchema,
-  confirmPassword: z.string()
-}).refine(({ password, confirmPassword }) => 
-  password === confirmPassword, {
-    message: "Passwords do not match.",
-    path: ["confirmPassword"]
-  }
-);
-
-export type SignUpForm = z.infer<typeof SignUpFormSchema>;
 
 export const MAX_TITLE_LENGTH = 100;
 export const MAX_DESCRIPTION_LENGTH = 1000;

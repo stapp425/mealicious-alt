@@ -40,16 +40,14 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       description: "User data does not exist."
     };
   }
-
-  const nickname = foundUser.nickname || foundUser.email.split("@")[0];
   
   return {
-    title: `${nickname}'s Recipes | Mealicious`,
-    description: `Check out ${nickname}'s ${recipesView} recipes here on Mealicious!`,
+    title: `${foundUser.name}'s Recipes | Mealicious`,
+    description: `Check out ${foundUser.name}'s ${recipesView} recipes here on Mealicious!`,
     openGraph: {
       type: "website",
-      title: `${nickname}'s Recipes | Mealicious`,
-      description: `Check out ${nickname}'s ${recipesView} recipes here on Mealicious!`,
+      title: `${foundUser.name}'s Recipes | Mealicious`,
+      description: `Check out ${foundUser.name}'s ${recipesView} recipes here on Mealicious!`,
       images: foundUser.image || defaultProfilePicture
     }
   };
@@ -63,11 +61,10 @@ export default async function Page({ params, searchParams }: PageProps) {
   
   const foundUser = await getUserDetails(userId);
   if (!foundUser) notFound();
-  const { nickname, email } = foundUser;
   
   return (
     <div className="max-w-[1000px] w-full wrap-break-word flex-1 flex flex-col gap-2.5 mx-auto p-4">
-      <h1 className="font-bold text-4xl hyphens-auto">{nickname || email.split("@")[0]}&apos;s Recipes</h1>
+      <h1 className="font-bold text-4xl hyphens-auto">{foundUser.name}&apos;s Recipes</h1>
       <RecipesOptions />
       <Suspense key={`${recipesView}-${page}`} fallback={<RecipesSkeleton />}>
         {
@@ -104,8 +101,7 @@ const getUserDetails = cache(async (userId: string) => {
     where: (user, { eq }) => eq(user.id, userId),
     columns: {
       id: true,
-      email: true,
-      nickname: true,
+      name: true,
       image: true
     }
   });

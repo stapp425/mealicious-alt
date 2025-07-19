@@ -27,7 +27,6 @@ import { cache } from "react";
 import { and, count, eq, isNotNull } from "drizzle-orm";
 import { recipeReview } from "@/db/schema";
 import { getReviewsByRecipe } from "@/lib/actions/recipe";
-import { getNickname } from "@/lib/utils";
 
 type MetadataProps = {
   params: Promise<{ recipe_id: string }>;
@@ -133,8 +132,6 @@ export default async function Page({ params }: PageProps) {
     recipeStatisticsQuery
   ]);
 
-  const resolvedNickname = foundRecipe.creator ? getNickname({ nickname: foundRecipe.creator.nickname, email: foundRecipe.creator.email }) : "[deleted]";
-  
   return (
     <div className="flex-1 relative w-full">
       {
@@ -179,17 +176,17 @@ export default async function Page({ params }: PageProps) {
             <Avatar className="size-[50px]">
               <AvatarImage
                 src={foundRecipe.creator?.image || defaultProfilePicture}
-                alt={`Profile picture of ${resolvedNickname || "[deleted]"}`}
+                alt={`Profile picture of ${foundRecipe.creator?.name || "[deleted]"}`}
               />
               <AvatarFallback className="bg-mealicious-primary text-lg text-white font-semibold select-none">
-                {resolvedNickname.charAt(0).toUpperCase()}
+                {foundRecipe.creator?.name.charAt(0).toUpperCase() || "D"}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col justify-between items-start">
               {
                 foundRecipe.creator ? (
-                  <Link href={`/user/${foundRecipe.creator.id}`} className="font-semibold">
-                    {resolvedNickname}
+                  <Link href={`/user/${foundRecipe.creator.id}`} className="font-semibold hover:underline">
+                    {foundRecipe.creator.name}
                   </Link>
                 ) : (
                   <h2 className="text-muted-foreground italic">
@@ -301,7 +298,7 @@ const getRecipeDetails = cache(async (recipeId: string, userId?: string) => {
       creator: {
         columns: {
           id: true,
-          nickname: true,
+          name: true,
           email: true,
           image: true
         }

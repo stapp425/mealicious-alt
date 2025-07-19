@@ -30,7 +30,7 @@ export default async function SearchResults({ count, searchParams }: SearchResul
   
   const creatorSubQuery = db.select({
     id: user.id,
-    nickname: user.nickname,
+    name: user.name,
     email: user.email,
     image: user.image
   }).from(user)
@@ -75,7 +75,7 @@ export default async function SearchResults({ count, searchParams }: SearchResul
     calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith((val) => Number(val)),
     creator: {
       id: creatorSubQuery.id,
-      nickname: creatorSubQuery.nickname,
+      name: creatorSubQuery.name,
       email: creatorSubQuery.email,
       image: creatorSubQuery.image
     },

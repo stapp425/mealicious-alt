@@ -47,7 +47,7 @@ export default async function FavoritedRecipes({ userId, limit }: SavedRecipesPr
 
   const userSubQuery = db.select({
     id: user.id,
-    nickname: user.nickname,
+    name: user.name,
     email: user.email,
     image: user.image
   }).from(user)
@@ -66,7 +66,7 @@ export default async function FavoritedRecipes({ userId, limit }: SavedRecipesPr
     }[]>`coalesce(${recipeToDietSubQuery.diets}, '[]'::json)`,
     creator: {
       id: userSubQuery.id,
-      nickname: userSubQuery.nickname,
+      name: userSubQuery.name,
       email: userSubQuery.email,
       image: userSubQuery.image
     }

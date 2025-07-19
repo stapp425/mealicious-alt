@@ -74,7 +74,7 @@ export default function SidebarUser() {
                   {name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
+              <div className="flex flex-col truncate">
                 <span className="font-bold">{name}</span>
                 <span>{email}</span>
               </div>

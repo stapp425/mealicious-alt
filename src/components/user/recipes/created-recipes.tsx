@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { diet, nutrition, recipe, recipeToDiet, recipeToNutrition } from "@/db/schema";
-import { getDataWithCache } from "@/lib/actions/redis";
+import { getCachedData } from "@/lib/actions/redis";
 import { sql, and, eq, desc, count } from "drizzle-orm";
 import z from "zod";
 import Pagination from "@/components/user/recipes/pagination";
@@ -72,7 +72,7 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
     .limit(limit);
 
   const [[{ count: createdRecipesCount }], createdRecipes] = await Promise.all([
-    getDataWithCache({
+    getCachedData({
       cacheKey: `created_recipes_user_${userId}`,
       timeToLive: 120,
       call: () => createdRecipesCountQuery,

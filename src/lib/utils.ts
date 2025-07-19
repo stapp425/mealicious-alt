@@ -32,38 +32,40 @@ export function generatePagination(currentPage: number, totalPages: number): (".
   return [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages];
 }
 
-export function getDateDifference(oldDate: Date): string {
-  const now = Date.now();
+export function getDateDifference({ earlierDate, laterDate = new Date() }: {
+  earlierDate: Date;
+  laterDate?: Date;
+}): string {
   const differences = [
     {
       name: "year",
       pluralName: "years",
-      difference: differenceInYears(now, oldDate)
+      difference: differenceInYears(laterDate, earlierDate)
     },
     {
       name: "month",
       pluralName: "months",
-      difference: differenceInMonths(now, oldDate)
+      difference: differenceInMonths(laterDate, earlierDate)
     },
     {
       name: "week",
       pluralName: "weeks",
-      difference: differenceInWeeks(now, oldDate)
+      difference: differenceInWeeks(laterDate, earlierDate)
     },
     {
       name: "day",
       pluralName: "days",
-      difference: differenceInDays(now, oldDate)
+      difference: differenceInDays(laterDate, earlierDate)
     },
     {
       name: "hour",
       pluralName: "hours",
-      difference: differenceInHours(now, oldDate)
+      difference: differenceInHours(laterDate, earlierDate)
     },
     {
       name: "minute",
       pluralName: "minutes",
-      difference: differenceInMinutes(now, oldDate)
+      difference: differenceInMinutes(laterDate, earlierDate)
     }
   ];
 
@@ -97,8 +99,4 @@ export function getRatingKey(amount: number): Rating {
   }
 
   return ratingKey;
-}
-
-export function getNickname(user: { nickname: string | null; email: string; }) {
-  return user.nickname || user.email.split("@")[0];
 }

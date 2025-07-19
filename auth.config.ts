@@ -1,53 +1,107 @@
-import { NextAuthConfig, User } from "next-auth";
+import { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
-import { SignInFormSchema } from "@/lib/zod";
+import { CredentialsSchema, EmailVerificationFormSchema, EmailVerificationSchema, SignInFormSchema } from "@/lib/zod/auth";
 import { db } from "@/db";
-import bcrypt from "bcryptjs";
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { user } from "./src/db/schema/user";
-import { account, session } from "./src/db/schema/auth";
+import bcrypt, { compare } from "bcryptjs";
+import { account, emailVerification, session } from "@/db/schema/auth";
 import { NextResponse } from "next/server";
 import { v4 as uuid } from "uuid";
 import { encode } from "next-auth/jwt";
 import { getUserAgent } from "universal-user-agent";
-import { eq } from "drizzle-orm";
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { user } from "@/db/schema";
+import { compareOTPValues, generateEmailVerification } from "@/lib/functions/verification";
+import { eq, sql } from "drizzle-orm";
 
 const CredentialsProvider = Credentials({
   credentials: {
     email: {},
     password: {}
   },
-  authorize: async (credentials) => {    
-    const parsedCredentials = SignInFormSchema.safeParse(credentials);
+  authorize: async (credentials) => {
+    const validateSignInCredentials = SignInFormSchema.safeParse(credentials);
+    if (validateSignInCredentials.success) {
+      const { email, password } = validateSignInCredentials.data;
+      const foundUser = await db.query.user.findFirst({
+        where: (user, { eq }) => eq(user.email, email),
+        columns: {
+          id: true,
+          email: true,
+          name: true,
+          image: true,
+          password: true
+        }
+      });
 
-    if (!parsedCredentials.success)
-      return null;
+      // since this is the credentials provider, password CANNOT be NULL
+      if (!foundUser || !foundUser.password) return null;
+      if (!await bcrypt.compare(password, foundUser.password)) return null;
 
-    const { email, password } = parsedCredentials.data;
+      const { password: hashedPassword, ...userRest } = foundUser;
+      return userRest;
+    }
+
+    const validateEmailVerificationCredentials = EmailVerificationFormSchema.safeParse(credentials);
+    if (validateEmailVerificationCredentials.success) {
+      const { email, code } = validateEmailVerificationCredentials.data;
+      const foundUser = await db.query.user.findFirst({
+        where: (user, { eq }) => eq(user.email, email),
+        columns: {
+          id: true,
+          email: true,
+          name: true,
+          image: true
+        }
+      });
+
+      if (!foundUser) return null;
+
+      const compareResult = await compareOTPValues({ email, code });
+      if (!compareResult) return null;
+
+      // code was correct, mark the user as verified
+      const updateUserQuery = db.update(user)
+        .set({ emailVerified: new Date() })
+        .where(eq(user.email, email));
+
+      // verification entry is no longer needed
+      const deleteVerificationQuery = db.delete(emailVerification)
+        .where(eq(emailVerification.email, email));
+
+      await Promise.all([updateUserQuery, deleteVerificationQuery]);
+      return foundUser;
+    }
     
-    const foundUser = await db.query.user.findFirst({
-      where: (user, { eq }) => eq(user.email, email)
-    });
-
-    // since this is the credentials provider, password CANNOT be NULL
-    if (!foundUser || !foundUser.password)
-      return null;
-
-    if (!await bcrypt.compare(password, foundUser.password))
-      return null;
-
-    return foundUser as User;
+    // credentials record does not match either check
+    return null;
   }
 });
 
 export const config = {
-  adapter: DrizzleAdapter(db, {
-    usersTable: user,
-    accountsTable: account,
-    sessionsTable: session
-  }),
+  adapter: {
+    ...DrizzleAdapter(db, {
+      usersTable: user,
+      accountsTable: account,
+      sessionsTable: session
+    }),
+    createUser: async (createdUser) => {
+      const customUser = {
+        ...createdUser,
+        email: createdUser.email.toLowerCase(),
+        name: createdUser.email.toLowerCase().split("@")[0]
+      };
+
+      await db.insert(user).values(customUser);
+      return createdUser;
+    }
+  },
+  logger: {
+    error: (err) => {
+      console.error(err.message);
+    }
+  },
   providers: [Google, GitHub, CredentialsProvider],
   pages: {
     signIn: "/login",
@@ -61,9 +115,9 @@ export const config = {
     }) => {
       const { pathname } = nextUrl;
       
-      const isLoggedIn = !!auth?.user;
+      const isLoggedIn = auth?.user;
       const isInLanding = pathname === "/";
-      const isInAuthPortal = /^\/(login|register)$/.test(pathname);
+      const isInAuthPortal = /^\/(login|register|verify).*$/.test(pathname);
       
       if (isLoggedIn) {
         if (isInLanding || isInAuthPortal)
@@ -77,35 +131,38 @@ export const config = {
 
       return NextResponse.next();
     },
-    jwt: async ({ token, account }) => {
-      if (account?.provider === "credentials")
-        token.isUsingCredentials = true;
+    signIn: async ({ credentials, user }) => {
+      if (!credentials) return true; // OAuth users do not need verification
+      if (!user.email) return false;
 
+      const foundUnverifiedUser = await db.query.user.findFirst({
+        where: (userTable, { and, or, eq, isNull, exists, sql }) => and(
+          eq(userTable.email, sql`lower(${user.email})`),
+          or(
+            isNull(userTable.emailVerified),
+            exists(
+              db.select()
+                .from(emailVerification)
+                .where(eq(userTable.email, sql`lower(${user.email})`))
+            )
+          )
+        )
+      });
+
+      if (foundUnverifiedUser) {
+        await generateEmailVerification({ email: user.email });
+        return `/verify?id=${foundUnverifiedUser.id}`;
+      }
+
+      return true;
+    },
+    jwt: async ({ token, account }) => {
+      if (account?.provider === "credentials") token.isUsingCredentials = true;
       return token;
     },
     session: async ({ session, user }) => {
       session.user.id = user.id;
       return session;
-    }
-  },
-  events: {
-    createUser: async ({ user: createdUser }) => {
-      if (!createdUser.id || !createdUser.email) throw new Error("User does not exist!");
-      const username = createdUser.email.split("@")[0];
-
-      const foundUser = await db.query.user.findFirst({
-        where: (user, { eq }) => eq(user.id, createdUser.id!),
-        columns: {
-          id: true,
-          nickname: true
-        }
-      });
-
-      if (!foundUser?.nickname) {
-        await db.update(user)
-          .set({ nickname: username })
-          .where(eq(user.id, createdUser.id));
-      }
     }
   },
   jwt: {

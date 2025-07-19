@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import defaultProfilePicture from "@/img/default/default-pfp.svg";
-import { getDateDifference, getNickname } from "@/lib/utils";
+import { getDateDifference } from "@/lib/utils";
 
 type RecipeResultProps = {
   recipe: {
@@ -19,7 +19,7 @@ type RecipeResultProps = {
     calories: number;
     creator: {
       id: string;
-      nickname: string | null;
+      name: string;
       email: string;
       image: string | null;
     } | null;
@@ -60,8 +60,6 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
     recipe.statistics.twoStarCount * 2 + 
     recipe.statistics.oneStarCount * 1
   ) / totalReviewCount || 0;
-
-  const resolvedNickname = recipe.creator ? getNickname({ nickname: recipe.creator.nickname, email: recipe.creator.email }) : "[deleted]";
   
   return (
     <div
@@ -133,18 +131,18 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                   <Avatar>
                     <AvatarImage 
                       src={recipe.creator.image || defaultProfilePicture}
-                      alt={`Profile picture of ${resolvedNickname}`}
+                      alt={`Profile picture of ${recipe.creator.name}`}
                     />
                     <AvatarFallback className="bg-mealicious-primary text-white">
-                      {resolvedNickname.charAt(0).toUpperCase()}
+                      {recipe.creator.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Link>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{resolvedNickname}</p>
+                <p>{recipe.creator.name}</p>
               </TooltipContent>
-              <span className="font-semibold text-sm">{resolvedNickname}</span>
+              <span className="font-semibold text-sm">{recipe.creator.name}</span>
             </div>
           </Tooltip>
         )
@@ -166,7 +164,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
         </div>
       </div>
       <span className="italic text-muted-foreground text-sm">
-        Created {getDateDifference(recipe.createdAt)} ago
+        Created {getDateDifference({ earlierDate: recipe.createdAt })} ago
       </span>
     </div>
   );

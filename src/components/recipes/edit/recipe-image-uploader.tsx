@@ -30,15 +30,11 @@ export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderPro
   const addImageButton = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if (image) {
-      const url = URL.createObjectURL(image);
-      setImageURL(url);
-    }
-
-    return () => {
-      if (imageURL)
-        URL.revokeObjectURL(imageURL);
-    };
+    if (!image) return;
+    
+    const url = URL.createObjectURL(image);
+    setImageURL(url);
+    return () => URL.revokeObjectURL(url);
   }, [image]);
   
   return (

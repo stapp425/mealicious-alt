@@ -93,8 +93,8 @@ export default function AboutSection({ isSessionUser, about }: AboutSectionProps
             </div>
           </form>
         ) : (
-          <p className={cn(!about && "italic", "wrap-break-word hyphens-auto text-muted-foreground")}>
-            {optimisticState}
+          <p className={cn(!optimisticState && "italic", "wrap-break-word hyphens-auto text-muted-foreground")}>
+            {optimisticState || "No description available."}
           </p>
         )
       }
