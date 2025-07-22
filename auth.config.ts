@@ -2,9 +2,9 @@ import { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
-import { CredentialsSchema, EmailVerificationFormSchema, EmailVerificationSchema, SignInFormSchema } from "@/lib/zod/auth";
+import { EmailVerificationFormSchema, SignInFormSchema } from "@/lib/zod/auth";
 import { db } from "@/db";
-import bcrypt, { compare } from "bcryptjs";
+import bcrypt from "bcryptjs";
 import { account, emailVerification, session } from "@/db/schema/auth";
 import { NextResponse } from "next/server";
 import { v4 as uuid } from "uuid";
@@ -12,8 +12,8 @@ import { encode } from "next-auth/jwt";
 import { getUserAgent } from "universal-user-agent";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { user } from "@/db/schema";
-import { compareOTPValues, generateEmailVerification } from "@/lib/functions/verification";
-import { eq, sql } from "drizzle-orm";
+import { compareEmailVerificationOTPValues, generateEmailVerification } from "@/lib/functions/verification";
+import { eq } from "drizzle-orm";
 
 const CredentialsProvider = Credentials({
   credentials: {
@@ -58,7 +58,7 @@ const CredentialsProvider = Credentials({
 
       if (!foundUser) return null;
 
-      const compareResult = await compareOTPValues({ email, code });
+      const compareResult = await compareEmailVerificationOTPValues({ email, code });
       if (!compareResult) return null;
 
       // code was correct, mark the user as verified

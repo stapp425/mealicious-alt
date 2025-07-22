@@ -1,7 +1,7 @@
 import { check, pgTable, primaryKey } from "drizzle-orm/pg-core";
 import { cuisine, diet, dishType, nutrition, recipe, recipeFavorite, recipeReview, reviewLike, savedRecipe } from "./recipe";
 import { relations, sql } from "drizzle-orm";
-import { account, emailVerification, session } from "./auth";
+import { account, emailVerification, passwordReset, session } from "@/db/schema/auth";
 import { meal } from "@/db/schema/meal";
 import { plan } from "@/db/schema/plan";
 import { Unit } from "@/lib/types";
@@ -116,6 +116,10 @@ export const userRelations = relations(user, ({ one, many }) => ({
   emailVerification: one(emailVerification, {
     fields: [user.email],
     references: [emailVerification.email]
+  }),
+  passwordReset: one(passwordReset, {
+    fields: [user.email],
+    references: [passwordReset.email]
   }),
   recipesCreated: many(recipe),
   mealsCreated: many(meal),

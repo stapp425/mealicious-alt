@@ -1,6 +1,5 @@
 import z from "zod";
 import { getMatchingEmail, getMatchingName } from "@/lib/functions/auth";
-import { isAfter } from "date-fns";
 
 export const UsernameSchema = z.string({
   required_error: "A username is required."
@@ -45,38 +44,38 @@ export const SignInFormSchema = z.object({
 
 export type SignInForm = z.infer<typeof SignInFormSchema>;
 
-const SignUpSchema = z.object({
+export const SignUpFormSchema = z.object({
   name: UsernameSchema,
   email: EmailSchema,
   password: PasswordSchema,
   confirmPassword: z.string()
-});
-
-export const SignUpFormSchema = SignUpSchema
-  .refine(({ password, confirmPassword }) => 
-    password === confirmPassword, {
-      message: "Passwords do not match.",
-      path: ["confirmPassword"]
-    }
-  )
-  .superRefine(async (val, ctx) => {
+}).superRefine(async (val, ctx) => {
     const [foundUserWithName, foundUserWithEmail] = await Promise.all([getMatchingName(val.name), getMatchingEmail(val.email)]);
+    
+    if (val.password !== val.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Passwords do not match.",
+        path: ["confirmPassword"]
+      });
+    }
+
     if (foundUserWithName) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Username already exists.",
         path: ["name"]
       });
-  }
-  
-  if (foundUserWithEmail) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Email already exists.",
-      path: ["email"]
-    });
-  }
-});
+    }
+    
+    if (foundUserWithEmail) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Email already exists.",
+        path: ["email"]
+      });
+    }
+  });
 
 export type SignUpForm = z.infer<typeof SignUpFormSchema>;
 
@@ -95,27 +94,38 @@ export const CredentialsSchema = z.object({
 
 export type Credentials = z.infer<typeof CredentialsSchema>;
 
-export const EmailVerificationSchema = SignUpSchema
-  .omit({ confirmPassword: true })
-  .extend({
-    code: z.string({
-      required_error: "A verification code is required."
-    }).nonempty({
-      message: "Verification code cannot be negative."
-    }),
-    expires: z.coerce.date({
-      invalid_type_error: "Failed to coerce to a date.",
-      required_error: "A date is required."
-    }).refine((val) => isAfter(val, Date.now()), {
-      message: "Verificiation token has already expired."
-    })
-  });
-
-export type EmailVerification = z.infer<typeof EmailVerificationSchema>;
-
-export const EmailVerificationFormSchema = EmailVerificationSchema.pick({
-  email: true,
-  code: true
+export const EmailVerificationFormSchema = z.object({
+  email: EmailSchema,
+  code: z.string({
+    required_error: "A verification code is required."
+  }).nonempty({
+    message: "Verification code cannot be negative."
+  })
 });
 
-export type EmailVerificationFormSchema = z.infer<typeof EmailVerificationFormSchema>;
+export type EmailVerificationForm = z.infer<typeof EmailVerificationFormSchema>;
+
+export const ResetPasswordFormSchema = z.object({
+  email: EmailSchema,
+  code: z.string({
+    required_error: "A verification code is required."
+  }).nonempty({
+    message: "Verification code cannot be negative."
+  }),
+  password: PasswordSchema,
+  confirmPassword: z.string({
+    required_error: "A confirm password input is required."
+  }).nonempty({
+    message: "Confirm password input cannot be empty."
+  })
+}).superRefine(async (val, ctx) => {
+  if (val.password !== val.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Passwords do not match.",
+      path: ["confirmPassword"]
+    });
+  }
+});
+
+export type ResetPasswordForm = z.infer<typeof ResetPasswordFormSchema>;

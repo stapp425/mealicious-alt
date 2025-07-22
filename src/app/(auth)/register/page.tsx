@@ -43,7 +43,7 @@ export default async function Page() {
         <div className="h-8 flex justify-center text-muted-foreground items-center gap-3">
           Already have an account?
           <Separator orientation="vertical"/>
-          <Link href="/login" className="text-mealicious-primary hover:text-orange-700">
+          <Link href="/login" className="text-mealicious-primary hover:text-mealicious-primary-hover">
             Log In
           </Link>
         </div>

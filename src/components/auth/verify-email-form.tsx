@@ -45,7 +45,7 @@ export default function VerifyEmailForm({ email, codeLength = 6 }: VerifyEmailPr
       toast.success("Email successfully verified!");
     },
     onError: () => {
-      toast.error("Verification failed, please try again.");
+      toast.error("Verification failed. Try entering the code again or resend another code.");
       setLoading(false);
     }
   });
@@ -55,7 +55,7 @@ export default function VerifyEmailForm({ email, codeLength = 6 }: VerifyEmailPr
   });
   
   return (
-    <form onSubmit={onSubmit}className="grid gap-3.5">
+    <form onSubmit={onSubmit} className="grid gap-3.5">
       <h1 className="font-bold text-2xl">Almost There!</h1>
       <h2 className="font-semibold text-muted-foreground">
         Before signing up, we just need to confirm that this email is real. A verification code is sent to <b className="font-semibold text-accent-foreground">{email}</b>.
@@ -91,7 +91,7 @@ export default function VerifyEmailForm({ email, codeLength = 6 }: VerifyEmailPr
             setResendLoading(true);
             await generateEmailVerification({ email, codeLength });
             setResendLoading(false);
-            toast.success("Verification email sent!");
+            toast.success("Verification code sent!");
           }}
         >
           Resend OTP

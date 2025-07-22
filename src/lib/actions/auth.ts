@@ -1,14 +1,15 @@
 "use server";
 
-import { EmailVerificationFormSchema, SignInFormSchema, SignUpFormSchema } from "@/lib/zod/auth";
+import { EmailVerificationFormSchema, ResetPasswordFormSchema, SignInFormSchema, SignUpFormSchema } from "@/lib/zod/auth";
 import { db } from "@/db";
-import { user } from "@/db/schema";
+import { passwordReset, user } from "@/db/schema";
 import bcrypt from "bcryptjs";
 import { signIn as authSignIn, signOut as authSignOut } from "@/auth";
 import { AuthError, CredentialsSignin } from "next-auth";
 import { actionClient } from "@/safe-action";
 import z from "zod";
 import { generateEmailVerification } from "@/lib/functions/verification";
+import { eq } from "drizzle-orm";
 
 export const verifyEmail = actionClient
   .schema(EmailVerificationFormSchema)
@@ -33,6 +34,50 @@ export const verifyEmail = actionClient
     return {
       success: true as const,
       message: "User's email successfully verified!"
+    };
+  });
+
+export const resetPassword = actionClient
+  .schema(z.object({
+    resetPasswordData: ResetPasswordFormSchema
+  }))
+  .action(async ({
+    parsedInput: {
+      resetPasswordData: {
+        email,
+        password
+      }
+    }
+  }) => {
+    const foundUser = await db.query.user.findFirst({
+      where: (user, { eq }) => eq(user.email, email),
+      columns: {
+        id: true,
+        email: true,
+        password: true
+      }
+    });
+
+    if (!foundUser) throw new Error("User was not found.");
+    if (!foundUser.password) throw new Error("This user is ineligible for a password change.");
+
+    // check if the new password is the same as the old one
+    const compareResult = await bcrypt.compare(password, foundUser.password);
+    if (compareResult) throw new Error("New password matches the old password.");
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const updatePasswordOperation = db.update(user)
+      .set({ password: hashedPassword })
+      .where(eq(user.email, email));
+
+    const deletePasswordResetOperation = db.delete(passwordReset)
+      .where(eq(passwordReset.email, email));
+
+    await Promise.all([updatePasswordOperation, deletePasswordResetOperation]);
+    
+    return {
+      success: true as const,
+      message: "Password successfully changed!"
     };
   });
 

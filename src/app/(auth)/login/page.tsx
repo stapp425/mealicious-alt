@@ -9,6 +9,7 @@ import { GitHubButton, GoogleButton } from "@/components/auth/provider-buttons";
 import { Separator } from "@/components/ui/separator";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import ForgotPassword from "@/components/auth/forgot-password";
 
 export const metadata: Metadata = {
   title: "Login | Mealicious",
@@ -40,12 +41,15 @@ export default function Page() {
           <hr className="flex-1"/>
         </div>
         <SignInForm />
-        <div className="h-8 flex justify-center text-muted-foreground items-center gap-3">
-          Don&apos;t have an account?
-          <Separator orientation="vertical"/>
-          <Link href="/register" className="text-mealicious-primary hover:text-orange-700">
-            Sign Up
-          </Link>
+        <div className="grid gap-2">
+          <div className="h-8 flex justify-center text-muted-foreground items-center gap-3">
+            Don&apos;t have an account?
+            <Separator orientation="vertical"/>
+            <Link href="/register" className="text-mealicious-primary hover:text-mealicious-primary-hover">
+              Sign Up
+            </Link>
+          </div>
+          <ForgotPassword />
         </div>
       </div>
       <div className="relative hidden sm:block">

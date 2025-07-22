@@ -45,6 +45,22 @@ export const emailVerification = pgTable("email_verification", (t) => ({
   ).notNull()
 }));
 
+export const passwordReset = pgTable("password_reset", (t) => ({
+  id: t.text("pr_id")
+    .primaryKey()
+    .$default(() => nanoid()),
+  email: t.text("pr_email")
+    .notNull()
+    .unique()
+    .references(() => user.email, {
+      onDelete: "cascade"
+    }),
+  code: t.text("pr_code").notNull(),
+  expiration: t.timestamp("pr_expiration", { 
+    mode: "date"
+  }).notNull()
+}));
+
 export const session = pgTable("session", (t) => ({
   sessionToken: t.text("session_token").primaryKey(),
   userId: t.text("user_id")
@@ -73,6 +89,13 @@ export const sessionRelations = relations(session, ({ one }) => ({
 export const emailVerificationRelations = relations(emailVerification, ({ one }) => ({
   user: one(user, {
     fields: [emailVerification.email],
+    references: [user.email]
+  })
+}));
+
+export const passwordResetRelations = relations(passwordReset, ({ one }) => ({
+  user: one(user, {
+    fields: [passwordReset.email],
     references: [user.email]
   })
 }));
