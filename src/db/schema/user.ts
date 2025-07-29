@@ -37,7 +37,10 @@ export const userToCuisine = pgTable("user_to_cuisine", (t) => ({
     .notNull()
     .references(() => cuisine.id, {
       onDelete: "cascade"
-    })
+    }),
+  preferenceScore: t.integer("cuisine_score")
+    .notNull()
+    .default(1)
 }), (t) => [
   primaryKey({ 
     columns: [t.userId, t.cuisineId]
@@ -58,10 +61,7 @@ export const userToNutrition = pgTable("user_to_nutrition", (t) => ({
   unit: t.text("nutr_unit")
     .notNull()
     .$type<Unit["abbreviation"]>(),
-  amountLimit: t.numeric("nutr_amount_limit", {
-    precision: 6,
-    scale: 2
-  }).notNull()
+  amountLimit: t.integer("nutr_amount_limit").notNull()
 }), (t) => [
   primaryKey({
     columns: [t.userId, t.nutritionId]
@@ -79,7 +79,7 @@ export const userToDishType = pgTable("user_to_dish_type", (t) => ({
     .references(() => dishType.id),
   preferenceScore: t.integer("udt_score")
     .notNull()
-    .default(0)
+    .default(1)
 }), (t) => [
   primaryKey({
     columns: [t.userId, t.dishTypeId]
@@ -100,7 +100,7 @@ export const userToDiet = pgTable("user_to_diet", (t) => ({
     }),
   preferenceScore: t.integer("ud_score")
     .notNull()
-    .default(0)
+    .default(1)
 }), (t) => [
   primaryKey({
     columns: [t.userId, t.dietId]

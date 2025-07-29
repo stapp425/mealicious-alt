@@ -1,5 +1,6 @@
 "use server";
 
+import { ActionError } from "@/lib/types";
 import { db } from "@/db";
 import { user as userTable } from "@/db/schema";
 import { authActionClient } from "@/safe-action";
@@ -31,10 +32,10 @@ export const editProfileAbout = authActionClient
   });
 
 export const changePassword = authActionClient
-  .schema(z.object({ password: PasswordSchema }))
+  .schema(PasswordSchema)
   .action(async ({
     ctx: { user },
-    parsedInput: { password }
+    parsedInput: password
   }) => {
     const foundUser = await db.query.user.findFirst({
       where: (user, { eq }) => eq(user.id, user.id!),
@@ -44,8 +45,8 @@ export const changePassword = authActionClient
       }
     });
 
-    if (!foundUser) throw new Error("User does not exist.");
-    if (!foundUser.password) throw new Error("OAuth users do not have a password. If you are trying to change your password, change it through the associated provider.");
+    if (!foundUser) throw new ActionError("User does not exist.");
+    if (!foundUser.password) throw new ActionError("OAuth users do not have a password. If you are trying to change your password, change it through the associated provider.");
 
     // hash the password before inserting into db
     const salt = await bcrypt.genSalt(10);

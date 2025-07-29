@@ -4,7 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { MAX_INSTRUCTION_CONTENT_LENGTH, MAX_INSTRUCTION_TIME_AMOUNT, MAX_INSTRUCTION_TITLE_LENGTH, MAX_INSTRUCTIONS_LENGTH } from "@/lib/zod";
+import { 
+  MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH,
+  MAX_RECIPE_INSTRUCTION_TIME_AMOUNT,
+  MAX_RECIPE_INSTRUCTION_TITLE_LENGTH,
+  MAX_RECIPE_INSTRUCTIONS_LENGTH
+} from "@/lib/zod/recipe";
 import { ArrowDown, ArrowUp, Clock, Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFieldArray, useFormState } from "react-hook-form";
@@ -18,22 +23,22 @@ const InstructionInputSchema = z.object({
     required_error: "An instruction title is required."
   }).nonempty({
     message: "Instruction title cannot be empty."
-  }).max(MAX_INSTRUCTION_TITLE_LENGTH, {
-    message: `Instruction title length cannot exceed ${MAX_INSTRUCTION_TITLE_LENGTH.toLocaleString()} characters.`
+  }).max(MAX_RECIPE_INSTRUCTION_TITLE_LENGTH, {
+    message: `Instruction title length cannot exceed ${MAX_RECIPE_INSTRUCTION_TITLE_LENGTH.toLocaleString()} characters.`
   }),
   time: z.coerce.number({
     required_error: "An instruction time is required."
   }).positive({
     message: "Instruction time must be positive."
-  }).max(MAX_INSTRUCTION_TIME_AMOUNT, {
-    message: `Instruction time cannot exceed ${MAX_INSTRUCTION_TIME_AMOUNT.toLocaleString()}.`
+  }).max(MAX_RECIPE_INSTRUCTION_TIME_AMOUNT, {
+    message: `Instruction time cannot exceed ${MAX_RECIPE_INSTRUCTION_TIME_AMOUNT.toLocaleString()}.`
   }),
   description: z.string({
     required_error: "A description is required."
   }).nonempty({
     message: "Description cannot be empty."
-  }).max(MAX_INSTRUCTION_CONTENT_LENGTH, {
-    message: `A maximum of ${MAX_INSTRUCTION_CONTENT_LENGTH.toLocaleString()} characters are allowed.`
+  }).max(MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH, {
+    message: `A maximum of ${MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH.toLocaleString()} characters are allowed.`
   })
 });
 
@@ -65,8 +70,8 @@ export default function RecipeInstructions() {
         <p className="font-semibold text-muted-foreground">
           Add instructions to your recipe here.
         </p>
-        <span className={cn(instruction.description.length > MAX_INSTRUCTION_CONTENT_LENGTH && "text-red-500")}>
-          <b className="text-xl">{instruction.description.length}</b> / {MAX_INSTRUCTION_CONTENT_LENGTH}
+        <span className={cn(instruction.description.length > MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH && "text-red-500")}>
+          <b className="text-xl">{instruction.description.length}</b> / {MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH}
         </span>
       </div>
       {
@@ -94,7 +99,7 @@ export default function RecipeInstructions() {
           value={instruction.time}
           type="number"
           min={0}
-          max={MAX_INSTRUCTION_TIME_AMOUNT}
+          max={MAX_RECIPE_INSTRUCTION_TIME_AMOUNT}
           onChange={(e) => {
             const { value } = e.target;
             if (!touched) setTouched(true);
@@ -142,8 +147,8 @@ export default function RecipeInstructions() {
           <>
           <div className="flex items-center gap-2 text-sm">
             <Info size={16}/>
-            <span className={cn(formInstructionValues.length > MAX_INSTRUCTIONS_LENGTH && "text-red-500")}>
-              Instruction count: <b>{formInstructionValues.length}</b> / {MAX_INSTRUCTIONS_LENGTH}
+            <span className={cn(formInstructionValues.length > MAX_RECIPE_INSTRUCTIONS_LENGTH && "text-red-500")}>
+              Instruction count: <b>{formInstructionValues.length}</b> / {MAX_RECIPE_INSTRUCTIONS_LENGTH}
             </span>
           </div>
           <div className="flex-1 flex flex-col gap-3">
@@ -257,8 +262,8 @@ const RecipeInstruction = memo(({
             />
             mins
           </div>
-          <span className={cn(instructionInput.description.length > MAX_INSTRUCTION_CONTENT_LENGTH && "text-red-500")}>
-            <b className="text-xl">{instructionInput.description.length}</b> / {MAX_INSTRUCTION_CONTENT_LENGTH}
+          <span className={cn(instructionInput.description.length > MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH && "text-red-500")}>
+            <b className="text-xl">{instructionInput.description.length}</b> / {MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH}
           </span>
           <Textarea 
             value={instructionInput.description}

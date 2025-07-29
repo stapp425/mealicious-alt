@@ -1,6 +1,6 @@
 "use client";
 
-import { PreviewPlan } from "@/lib/zod";
+import { PreviewPlan } from "@/lib/zod/plan";
 import { createContext, useContext } from "react";
 
 type CreatePlanFormContextProps = {

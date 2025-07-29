@@ -8,6 +8,7 @@ import siteLogo from "@/img/logo/mealicious-logo.svg";
 import spaghettiBanner from "@/img/banner/spaghetti.jpg";
 import Link from "next/link";
 import VerifyEmailForm from "@/components/auth/verify-email-form";
+import { generateEmailVerification } from "@/lib/functions/verification";
 
 type PageProps = {
   searchParams: Promise<SearchParams>;
@@ -43,6 +44,8 @@ export default async function Page({ searchParams }: PageProps) {
   });
 
   if (!foundUser || foundUser.emailVerified) redirect("/login");
+  // always generate a new code upon entering page
+  await generateEmailVerification({ email: foundUser.email });
   
   return (
     <div className="size-full 2xl:max-w-[1250px] 2xl:max-h-[1000px] grid sm:grid-cols-[min(500px,33%)_1fr] xl:grid-cols-[min(750px,50%)_1fr] 2xl:border 2xl:border-border overflow-hidden">

@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { MAX_PLAN_TITLE_LENGTH, PlanEdition } from "@/lib/zod";
+import { MAX_PLAN_TITLE_LENGTH, EditPlanForm } from "@/lib/zod/plan";
 import { Info } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 
@@ -13,7 +13,7 @@ export default function PlanTitle() {
     formState: {
       errors
     }
-  } = useFormContext<PlanEdition>();
+  } = useFormContext<EditPlanForm>();
   const title = useWatch({ control, name: "title" });
   
   return (

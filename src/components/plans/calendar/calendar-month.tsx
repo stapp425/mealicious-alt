@@ -10,7 +10,7 @@ import { getPreviewPlansInTimeFrame } from "@/lib/actions/plan";
 import { usePlanCalendarContext } from "@/components/plans/calendar/plan-calendar";
 import { tz } from "@date-fns/tz";
 import { UTCDate } from "@date-fns/utc";
-import { PreviewPlan } from "@/lib/zod";
+import { PreviewPlan } from "@/lib/zod/plan";
 import { useSession } from "next-auth/react";
 
 const utc = tz("UTC");

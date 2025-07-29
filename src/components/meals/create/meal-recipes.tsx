@@ -1,7 +1,7 @@
 "use client";
 
 import { cn, MAX_RECIPE_RESULT_DISPLAY_LIMIT } from "@/lib/utils";
-import { MAX_MEAL_RECIPES, MealCreation } from "@/lib/zod";
+import { MAX_MEAL_RECIPES, CreateMealForm } from "@/lib/zod/meal";
 import { Info, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
@@ -27,7 +27,7 @@ type RecipeSearchProps = {
 };
 
 export default function MealRecipes({ userId }: RecipeSearchProps) {
-  const { control, formState: { errors } } = useFormContext<MealCreation>();
+  const { control, formState: { errors } } = useFormContext<CreateMealForm>();
   const { append, remove } = useFieldArray({ control, name: "recipes" });
   const mealRecipeValues = useWatch({ control, name: "recipes" });
   

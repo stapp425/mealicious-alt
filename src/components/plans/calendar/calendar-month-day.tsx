@@ -18,7 +18,7 @@ import { useEffect, useState, useTransition } from "react";
 import { getDetailedPlansInTimeFrame } from "@/lib/actions/plan";
 import { useSession } from "next-auth/react";
 import { Flame } from "lucide-react";
-import { DetailedPlan, PreviewPlan } from "@/lib/zod";
+import { DetailedPlan, PreviewPlan } from "@/lib/zod/plan";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";

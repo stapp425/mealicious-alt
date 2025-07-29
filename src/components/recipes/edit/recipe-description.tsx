@@ -2,7 +2,7 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { MAX_DESCRIPTION_LENGTH } from "@/lib/zod";
+import { MAX_RECIPE_DESCRIPTION_LENGTH } from "@/lib/zod/recipe";
 import { Info } from "lucide-react";
 import { useFormState, useWatch } from "react-hook-form";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
@@ -23,8 +23,8 @@ export default function RecipeDescription() {
         <p className="text-muted-foreground font-semibold">
           Add a brief description about your recipe here. (optional)
         </p>
-        <span className={cn(currentDescription && currentDescription.length > MAX_DESCRIPTION_LENGTH && "text-red-500", "shrink-0")}>
-          <b className="text-xl">{currentDescription?.length || 0}</b> / {MAX_DESCRIPTION_LENGTH}
+        <span className={cn(currentDescription && currentDescription.length > MAX_RECIPE_DESCRIPTION_LENGTH && "text-red-500", "shrink-0")}>
+          <b className="text-xl">{currentDescription?.length || 0}</b> / {MAX_RECIPE_DESCRIPTION_LENGTH}
         </span>
       </div>
       <Textarea

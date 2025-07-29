@@ -1,3 +1,10 @@
+export class ActionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ActionError";
+  }
+}
+
 export const MAX_REVIEW_DISPLAY_LIMIT = 5;
 
 export const sorts = ["title", "calories", "prepTime", "saveDate"] as const;

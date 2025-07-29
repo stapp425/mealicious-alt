@@ -1,7 +1,6 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { ImageDataSchema } from "@/lib/zod";
 import { Info, Plus } from "lucide-react";
 import { 
   useEffect, 
@@ -13,6 +12,7 @@ import defaultRecipeImage from "@/img/default/default-background.jpg";
 import { useFormState, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
+import { ImageSchema } from "@/lib/zod/recipe";
 
 export default function RecipeImageUploader() {
   const { control, setValue } = useCreateRecipeFormContext();
@@ -26,7 +26,11 @@ export default function RecipeImageUploader() {
   const addImageButton = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if (!image) return;
+    if (!image) {
+      if (addImageButton.current) addImageButton.current.value = "";
+      setImageURL(null);
+      return;
+    }
     
     const url = URL.createObjectURL(image);
     setImageURL(url);
@@ -45,14 +49,10 @@ export default function RecipeImageUploader() {
           if (!addedImage)
             return;
           
-          const imageValidityCheck = ImageDataSchema.safeParse({
-            name: addedImage?.name,
-            size: addedImage?.size,
-            type: addedImage?.type
-          });
-
-          if (!imageValidityCheck.success) {
-            toast.error(imageValidityCheck.error.errors[0]?.message || "Could not add image.");
+          const validateImage = ImageSchema.safeParse(addedImage);
+          if (!validateImage.success) {
+            toast.error(validateImage.error.errors[0].message);
+            e.target.value = "";
             return;
           }
 

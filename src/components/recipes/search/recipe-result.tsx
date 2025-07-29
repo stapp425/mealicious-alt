@@ -6,8 +6,7 @@ import Image from "next/image";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import defaultProfilePicture from "@/img/default/default-pfp.svg";
+import defaultProfilePicture from "@/img/default/default-pfp.jpg";
 import { getDateDifference } from "@/lib/utils";
 
 type RecipeResultProps = {
@@ -99,7 +98,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                     className="absolute bottom-3 right-3 object-cover rounded-full"
                   />
                 </TooltipTrigger>
-                <TooltipContent align="start">
+                <TooltipContent>
                   <p>{recipe.cuisine.adjective}</p>
                 </TooltipContent>
               </Tooltip>
@@ -128,15 +127,14 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                   onClick={(e) => e.stopPropagation()}
                   prefetch={false}
                 >
-                  <Avatar>
-                    <AvatarImage 
+                  <div className="relative size-8 rounded-full overflow-hidden">
+                    <Image 
                       src={recipe.creator.image || defaultProfilePicture}
                       alt={`Profile picture of ${recipe.creator.name}`}
+                      fill
+                      className="object-cover object-center bg-slate-100"
                     />
-                    <AvatarFallback className="bg-mealicious-primary text-white">
-                      {recipe.creator.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  </div>
                 </Link>
               </TooltipTrigger>
               <TooltipContent>

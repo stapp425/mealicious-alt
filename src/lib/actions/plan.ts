@@ -4,21 +4,19 @@ import { db } from "@/db";
 import { and, count, eq, gte, ilike, desc, lte, sql, asc } from "drizzle-orm";
 import { getCachedData, removeCacheKeys } from "@/lib/actions/redis";
 import { meal, mealToRecipe, nutrition, plan, planToMeal, recipe, recipeToNutrition } from "@/db/schema";
-import { MealType } from "@/lib/types";
-import { DetailedPlanSchema, PlanCreationSchema, PlanEditionSchema } from "@/lib/zod";
+import { ActionError, MealType } from "@/lib/types";
+import { DetailedPlanSchema, CreatePlanFormSchema, EditPlanFormSchema } from "@/lib/zod/plan";
 import { authActionClient } from "@/safe-action";
 import { getTime } from "date-fns";
 import { revalidatePath } from "next/cache";
-import z from "zod";
 import { UTCDate } from "@date-fns/utc";
+import z from "zod";
 
 export const createPlan = authActionClient
-  .schema(z.object({
-    createdPlan: PlanCreationSchema
-  }))
+  .schema(CreatePlanFormSchema)
   .action(async ({
     ctx: { user },
-    parsedInput: { createdPlan }
+    parsedInput: createdPlan
   }) => {
     const [{ planId }] = await db.insert(plan).values({
       title: createdPlan.title,
@@ -45,11 +43,9 @@ export const createPlan = authActionClient
   });
 
 export const updatePlan = authActionClient
-  .schema(z.object({
-    editedPlan: PlanEditionSchema
-  }))
+  .schema(EditPlanFormSchema)
   .action(async ({
-    parsedInput: { editedPlan },
+    parsedInput: editedPlan,
     ctx: { user }
   }) => {
     const foundPlan = await db.query.plan.findFirst({
@@ -60,11 +56,8 @@ export const updatePlan = authActionClient
       }
     });
 
-    if (!foundPlan)
-      throw new Error("Plan does not exist.");
-
-    if (user.id !== foundPlan.createdBy)
-      throw new Error("You are not authorized to edit this plan.");
+    if (!foundPlan) throw new ActionError("Plan does not exist.");
+    if (user.id !== foundPlan.createdBy) throw new ActionError("You are not authorized to edit this plan.");
 
     const updatePlanQuery = db.update(plan)
       .set({
@@ -96,8 +89,9 @@ export const updatePlan = authActionClient
 
 export const deletePlan = authActionClient
   .schema(z.object({
-    planId: z.string()
-      .nonempty({
+    planId: z.string({
+      required_error: "A plan ID is required."
+    }).nonempty({
         message: "Plan ID must not be empty."
       })
   }))
@@ -113,11 +107,8 @@ export const deletePlan = authActionClient
       }
     });
 
-    if (!foundPlan)
-      throw new Error("Plan does not exist.");
-
-    if (user.id !== foundPlan.createdBy)
-      throw new Error("You are not authorized to delete this plan.");
+    if (!foundPlan) throw new ActionError("Plan does not exist.");
+    if (user.id !== foundPlan.createdBy) throw new ActionError("You are not authorized to delete this plan.");
     
     await db.delete(plan).where(eq(plan.id, foundPlan.id));
     await removeCacheKeys(`user_${user.id}_plan*`);
@@ -282,8 +273,7 @@ export async function getDetailedPlansInTimeFrame({ userId, planId, startDate, e
   limit?: number;
   offset?: number;
 }) {
-  if (startDate && endDate && startDate > endDate)
-    throw new Error("Start date cannot be later than end date.");
+  if (startDate && endDate && startDate > endDate) throw new ActionError("Start date cannot be later than end date.");
   
   const recipeSubquery = db.select({
     recipe: sql`

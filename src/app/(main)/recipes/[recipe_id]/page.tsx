@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { Clock, Microwave, Clipboard, Medal, Earth, Printer, Pencil } from "lucide-react";
 import defaultImage from "@/img/default/default-background.jpg";
-import defaultProfilePicture from "@/img/default/default-pfp.svg";
+import defaultProfilePicture from "@/img/default/default-pfp.jpg";
 import { format } from "date-fns";
 import Link from "next/link";
 import Diets from "@/components/recipes/id/diets";
@@ -14,7 +14,6 @@ import Tags from "@/components/recipes/id/tags";
 import Description from "@/components/recipes/id/description";
 import Cuisine from "@/components/recipes/id/cuisine";
 import Instructions from "@/components/recipes/id/instructions";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Favorite, Saved } from "@/components/recipes/id/options";
 import Ingredients from "@/components/recipes/id/ingredients";
 import CookMode from "@/components/recipes/id/cook-mode";
@@ -169,19 +168,18 @@ export default async function Page({ params }: PageProps) {
             )
           }
         </div>
-        <section className="flex flex-col gap-3">
+        <section className="grid gap-3">
           <Description description={foundRecipe.description}/>
           <h1 className="font-bold text-xl">Author</h1>
           <div className="flex items-center gap-3">
-            <Avatar className="size-[50px]">
-              <AvatarImage
+            <div className="relative aspect-square h-full rounded-full overflow-hidden">
+              <Image 
                 src={foundRecipe.creator?.image || defaultProfilePicture}
                 alt={`Profile picture of ${foundRecipe.creator?.name || "[deleted]"}`}
+                fill
+                className="object-cover object-center bg-slate-100"
               />
-              <AvatarFallback className="bg-mealicious-primary text-lg text-white font-semibold select-none">
-                {foundRecipe.creator?.name.charAt(0).toUpperCase() || "D"}
-              </AvatarFallback>
-            </Avatar>
+            </div>
             <div className="flex flex-col justify-between items-start">
               {
                 foundRecipe.creator ? (

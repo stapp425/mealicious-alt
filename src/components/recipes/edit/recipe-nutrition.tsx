@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { unitAbbreviations } from "@/lib/types";
-import { MAX_SERVING_SIZE_AMOUNT } from "@/lib/zod";
+import { MAX_RECIPE_SERVING_SIZE_AMOUNT } from "@/lib/zod/recipe";
 import { Info, Minus, Plus } from "lucide-react";
 import { useFieldArray, useFormState } from "react-hook-form";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
@@ -58,7 +58,7 @@ export default function RecipeNutrition() {
         <Input
           type="number"
           min={0}
-          max={MAX_SERVING_SIZE_AMOUNT}
+          max={MAX_RECIPE_SERVING_SIZE_AMOUNT}
           step="any"
           className="w-18 sm:w-24"
           {...register("servingSize.amount")} 

@@ -44,7 +44,7 @@ export default function SignInForm() {
   });
   
   const onSubmit = handleSubmit(async (data) => {
-    await executeAsync({ signInData: data });
+    await executeAsync(data);
   });
   
   return (
@@ -68,6 +68,7 @@ export default function SignInForm() {
         <Input
           id="email"
           type="email"
+          autoComplete="username"
           {...register("email")}
           placeholder="E-Mail"
           className="shadow-none rounded-sm"
@@ -92,6 +93,7 @@ export default function SignInForm() {
         <PasswordInput
           id="password"
           {...register("password")}
+          autoComplete="current-password"
           className="shadow-none rounded-sm"
         />
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { DetailedPlan, PlanEdition, PlanEditionSchema } from "@/lib/zod";
+import { DetailedPlan, type EditPlanForm, EditPlanFormSchema } from "@/lib/zod/plan";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -24,8 +24,8 @@ export default function EditPlanForm() {
   const { replace } = useRouter();
   const [mounted, setMounted] = useState<boolean>(false);
   const matches = useMediaQuery("(min-width: 80rem)");
-  const editPlanForm = useForm<PlanEdition>({
-    resolver: zodResolver(PlanEditionSchema),
+  const editPlanForm = useForm<EditPlanForm>({
+    resolver: zodResolver(EditPlanFormSchema),
     defaultValues: {
       id: planToEdit.id,
       title: planToEdit.title,
@@ -40,8 +40,13 @@ export default function EditPlanForm() {
   });
   
   const { executeAsync } = useAction(updatePlan, {
-    onSuccess: ({ data }) => toast.success(data?.message),
-    onError: () => toast.error("Failed to update plan.")
+    onSuccess: ({ data }) => {
+      if (!data) return;
+      editPlanForm.reset();
+      replace("/plans");
+      toast.success(data.message);
+    },
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
 
   useEffect(() => {
@@ -49,9 +54,7 @@ export default function EditPlanForm() {
   }, []);
 
   const onSubmit = editPlanForm.handleSubmit(async (data) => {
-    await executeAsync({ editedPlan: data });
-    editPlanForm.reset();
-    replace("/plans");
+    await executeAsync(data);
   });
   
   return (

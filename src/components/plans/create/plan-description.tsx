@@ -1,6 +1,6 @@
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { MAX_PLAN_DESCRIPTION_LENGTH, PlanCreation } from "@/lib/zod";
+import { MAX_PLAN_DESCRIPTION_LENGTH, CreatePlanForm } from "@/lib/zod/plan";
 import { Info } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 
@@ -11,7 +11,7 @@ export default function PlanDescription() {
     formState: {
       errors
     }
-  } = useFormContext<PlanCreation>();
+  } = useFormContext<CreatePlanForm>();
   const currentDescription = useWatch({ control, name: "description" });
   
   return (

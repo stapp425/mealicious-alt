@@ -10,6 +10,7 @@ export const MAX_PLAN_DISPLAY_LIMIT = 5;
 
 export const MAX_RECIPE_RESULT_DISPLAY_LIMIT = 4;
 export const MAX_MEAL_RESULT_DISPLAY_LIMIT = 2;
+export const MAX_CUISINE_RESULT_DISPLAY_LIMIT = 4;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

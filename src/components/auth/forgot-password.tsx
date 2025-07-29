@@ -99,7 +99,7 @@ export default function ForgotPassword() {
   }, []);
 
   const onSubmit = handleSubmit(async (data) => {
-    await executeAsync({ resetPasswordData: data });
+    await executeAsync(data);
   });
 
   useEffect(() => {

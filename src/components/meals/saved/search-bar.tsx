@@ -2,12 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { MealType, mealTypes } from "@/lib/types";
-import { MAX_MEAL_CALORIES, MealSearch, MealSearchSchema } from "@/lib/zod";
+import { MAX_MEAL_SEARCH_CALORIES, MealSearch, MealSearchSchema } from "@/lib/zod/meal";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Search } from "lucide-react";
 import { parseAsIndex, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
@@ -107,12 +108,12 @@ export default function SearchBar() {
                   value={[currentMaxCalories]}
                   onValueChange={(val) => setValue("maxCalories", val[0])}
                   min={0}
-                  max={MAX_MEAL_CALORIES}
+                  max={MAX_MEAL_SEARCH_CALORIES}
                   step={10}
                 />
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold">0</h3>
-                  <h3 className="font-semibold">{MAX_MEAL_CALORIES}</h3>
+                  <h3 className="font-semibold">{MAX_MEAL_SEARCH_CALORIES}</h3>
                 </div>
               </div>
               <Button 

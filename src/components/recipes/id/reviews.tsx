@@ -2,8 +2,7 @@
 
 import React, { memo, useState, useTransition } from "react";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import defaultProfilePicture from "@/img/default/default-pfp.svg";
+import defaultProfilePicture from "@/img/default/default-pfp.jpg";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EllipsisVertical, Loader2, ThumbsUp, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -17,6 +16,7 @@ import { MAX_REVIEW_DISPLAY_LIMIT, Review, Statistics } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { deleteReview, getReviewsByRecipe, toggleReviewLike } from "@/lib/actions/recipe";
+import Image from "next/image";
 
 type ReviewsProps = {
   recipeId: string;
@@ -174,29 +174,32 @@ const ReviewCard = memo(({ review, isReviewLiked, isAuthor, setReviews }: Review
   const [likeCount, setLikeCount] = useState<number>(review.likeCount);
   const [open, setOpen] = useState<boolean>(false);
   const { executeAsync: executeDeleteReview, isExecuting: isDeleteReviewExecuting } = useAction(deleteReview, {
-    onSuccess: () => toast.warning("Successfully deleted review!"),
-    onError: ({ error: { serverError } }) => toast.error(serverError || "Something went wrong.")
+    onSuccess: ({ data }) => {
+      if (!data) return;
+      toast.warning(data.message);
+    },
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
   const { executeAsync: executeToggleLike, isExecuting: isExecuteToggleLikeExecuting } = useAction(toggleReviewLike, {
     onSuccess: ({ data }) => {
-      setIsLiked(!!data?.isLiked);
-      setLikeCount((c) => data?.isLiked ? c + 1 : c - 1);
+      if (!data) return;
+      setIsLiked(!!data.isLiked);
+      setLikeCount((c) => data.isLiked ? c + 1 : c - 1);
     },
-    onError: ({ error: { serverError } }) => toast.error(serverError || "Something went wrong.")
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
   
   return (
     <div className="bg-sidebar border border-border flex flex-col gap-2 p-3 rounded-md">
       <div className="flex items-center gap-3">
-        <Avatar>
-          <AvatarImage 
+        <div className="relative aspect-square size-8 rounded-full overflow-hidden">
+          <Image 
             src={review.creator.image || defaultProfilePicture}
             alt={`Profile picture of ${review.creator}`}
+            fill
+            className="object-cover object-center bg-slate-100"
           />
-          <AvatarFallback>
-            {review.creator.name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        </div>
         <Link 
           href={`/user/${review.creator.id}`}
           className="font-bold"

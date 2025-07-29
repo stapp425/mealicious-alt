@@ -18,10 +18,11 @@ export function Favorite({ recipeId, isRecipeFavorite, favoriteCount }: Favorite
   const [_favoriteCount, _setFavoriteCount] = useState<number>(favoriteCount);
   const { executeAsync, isExecuting } = useAction(toggleRecipeFavorite, {
     onSuccess: ({ data }) => {
+      if (!data) return;
       setIsFavorite((f) => !f);
-      _setFavoriteCount((c) => data?.isFavorite ? c + 1 : c - 1);
+      _setFavoriteCount((c) => data.isFavorite ? c + 1 : c - 1);
     },
-    onError: () => toast.error(`Could not ${isFavorite ? "unfavorite" : "favorite"} recipe.`)
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
 
   return (
@@ -64,6 +65,7 @@ export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedPr
   const [_savedCount, _setSavedCount] = useState<number>(savedCount);
   const { executeAsync, isExecuting } = useAction(toggleSavedListRecipe, {
     onSuccess: ({ data }) => {
+      if (!data) return;
       setIsSaved((s) => !s);
       _setSavedCount((c) => data?.isSaved ? c + 1 : c - 1);
       if (data?.isSaved)
@@ -71,7 +73,7 @@ export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedPr
       else
         toast.warning("Successfully removed recipe from saved list!");
     },
-    onError: () => toast.error(`Could not ${isSaved ? "remove" : "add"} recipe.`)
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
   
   const label = isSaved ? "Unsave" : "Save";

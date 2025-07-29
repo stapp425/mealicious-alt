@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { PlanEdition } from "@/lib/zod";
+import { EditPlanForm } from "@/lib/zod/plan";
 import { Info } from "lucide-react";
 import { useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
@@ -16,7 +16,7 @@ export default function PlanTags() {
     formState: {
       errors
     }
-  } = useFormContext<PlanEdition>();
+  } = useFormContext<EditPlanForm>();
   const tags = useWatch({ control, name: "tags" });
   
   return (

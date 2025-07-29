@@ -2,7 +2,7 @@
 
 import { diet } from "@/db/schema";
 import { cn } from "@/lib/utils";
-import { MAX_DIETS_LENGTH } from "@/lib/zod";
+import { MAX_RECIPE_DIETS_LENGTH } from "@/lib/zod/recipe";
 import { InferSelectModel } from "drizzle-orm";
 import { useMemo, useState } from "react";
 import { useFieldArray, useFormState, useWatch } from "react-hook-form";
@@ -97,7 +97,7 @@ export default function RecipeDiets({ diets }: RecipeDietsProps) {
           </Popover>
           <button
             type="button"
-            disabled={!diet.id || !diet.name || formDietValues.length >= MAX_DIETS_LENGTH}
+            disabled={!diet.id || !diet.name || formDietValues.length >= MAX_RECIPE_DIETS_LENGTH}
             onClick={() => {
               append(diet);
               setDiet({
@@ -140,8 +140,8 @@ export default function RecipeDiets({ diets }: RecipeDietsProps) {
         <p className="font-semibold text-muted-foreground">
           Add some diets to your recipe here. (optional)
         </p>
-        <span className={cn(formDietValues.length > MAX_DIETS_LENGTH && "text-red-500")}>
-          <b className="text-xl">{formDietValues.length}</b> / {MAX_DIETS_LENGTH}
+        <span className={cn(formDietValues.length > MAX_RECIPE_DIETS_LENGTH && "text-red-500")}>
+          <b className="text-xl">{formDietValues.length}</b> / {MAX_RECIPE_DIETS_LENGTH}
         </span>
       </div>
       {

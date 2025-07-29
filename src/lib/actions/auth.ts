@@ -1,6 +1,11 @@
 "use server";
 
-import { EmailVerificationFormSchema, ResetPasswordFormSchema, SignInFormSchema, SignUpFormSchema } from "@/lib/zod/auth";
+import { 
+  EmailVerificationFormSchema,
+  ResetPasswordFormSchema,
+  SignInFormSchema,
+  SignUpFormSchema
+} from "@/lib/zod/auth";
 import { db } from "@/db";
 import { passwordReset, user } from "@/db/schema";
 import bcrypt from "bcryptjs";
@@ -10,6 +15,7 @@ import { actionClient } from "@/safe-action";
 import z from "zod";
 import { generateEmailVerification } from "@/lib/functions/verification";
 import { eq } from "drizzle-orm";
+import { ActionError } from "@/lib/types";
 
 export const verifyEmail = actionClient
   .schema(EmailVerificationFormSchema)
@@ -27,7 +33,7 @@ export const verifyEmail = actionClient
         redirect: false
       });
     } catch (err) {
-      if (err instanceof CredentialsSignin && err.type === "CredentialsSignin") throw new Error("Code does not match. Please try again.");
+      if (err instanceof CredentialsSignin && err.type === "CredentialsSignin") throw new ActionError("Code does not match. Please try again.");
       throw err;
     }
     
@@ -38,15 +44,11 @@ export const verifyEmail = actionClient
   });
 
 export const resetPassword = actionClient
-  .schema(z.object({
-    resetPasswordData: ResetPasswordFormSchema
-  }))
+  .schema(ResetPasswordFormSchema)
   .action(async ({
     parsedInput: {
-      resetPasswordData: {
-        email,
-        password
-      }
+      email,
+      password
     }
   }) => {
     const foundUser = await db.query.user.findFirst({
@@ -58,12 +60,12 @@ export const resetPassword = actionClient
       }
     });
 
-    if (!foundUser) throw new Error("User was not found.");
+    if (!foundUser) throw new ActionError("User was not found.");
     if (!foundUser.password) throw new Error("This user is ineligible for a password change.");
 
     // check if the new password is the same as the old one
     const compareResult = await bcrypt.compare(password, foundUser.password);
-    if (compareResult) throw new Error("New password matches the old password.");
+    if (compareResult) throw new ActionError("New password matches the old password.");
     
     const hashedPassword = await bcrypt.hash(password, 10);
     const updatePasswordOperation = db.update(user)
@@ -82,20 +84,15 @@ export const resetPassword = actionClient
   });
 
 export const signUp = actionClient
-  .schema(z.object({
-    registerData: SignUpFormSchema
-  }))
+  .schema(SignUpFormSchema)
   .action(async ({ 
     parsedInput: { 
-      registerData: {
-        email,
-        name,
-        password
-      }
+      email,
+      name,
+      password
     }
   }) => {
     const hashedPassword = await bcrypt.hash(password, 10);
-    
     const [{ userId }] = await db
       .insert(user)
       .values({ 
@@ -117,15 +114,11 @@ export const signUp = actionClient
   });
 
 export const signInWithCredentials = actionClient
-  .schema(z.object({
-    signInData: SignInFormSchema
-  }))
+  .schema(SignInFormSchema)
   .action(async ({ 
     parsedInput: {
-      signInData: {
-        email,
-        password
-      }
+      email,
+      password
     }
   }) => {
     try {
@@ -140,7 +133,7 @@ export const signInWithCredentials = actionClient
         redirectUrl: z.string().parse(redirectUrl)
       };
     } catch (err) {
-      if (err instanceof AuthError && err.type === "CredentialsSignin") throw new Error("Invalid username or password.");
+      if (err instanceof AuthError && err.type === "CredentialsSignin") throw new ActionError("Invalid username or password.");
       throw err;
     }
   });

@@ -8,11 +8,10 @@ import Pagination from "@/components/meals/saved/pagination";
 import { Metadata } from "next";
 import { Suspense } from "react";
 import { nanoid } from "nanoid";
-import SearchResults from "@/components/meals/saved/search-results";
+import SearchResults, { SearchResultsSkeleton } from "@/components/meals/saved/search-results";
 import { createLoader, parseAsIndex, parseAsInteger, parseAsString, parseAsStringLiteral, SearchParams } from "nuqs/server";
 import { mealTypes } from "@/lib/types";
 import SearchBar from "@/components/meals/saved/search-bar";
-import SearchResultsSkeleton from "@/components/meals/saved/search-results-skeleton";
 import { MAX_MEAL_DISPLAY_LIMIT } from "@/lib/utils";
 
 export const metadata: Metadata = {

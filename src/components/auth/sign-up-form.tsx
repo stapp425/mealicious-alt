@@ -82,7 +82,7 @@ export default function SignUpForm() {
   });
 
   const onSubmit = handleSubmit(async (data) => {
-    await executeAsync({ registerData: data });
+    await executeAsync(data);
   });
 
   return (

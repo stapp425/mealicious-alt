@@ -1,24 +1,39 @@
 import { generatePagination } from "@/lib/utils";
 import { parseAsIndex, useQueryState } from "nuqs";
-import { useCallback, useState } from "react";
+import React from "react";
 
-export function usePagination(totalPages: number) {
-  const [currentPage, setCurrentPage] = useState<number>(0);
+type UsePaginationProps = {
+  totalPages: number;
+  onSetPage?: (page: number) => void;
+};
+
+export function usePagination({ 
+  totalPages,
+  onSetPage
+}: UsePaginationProps) {
+  const [currentPage, setCurrentPage] = React.useState(0);
+
   const isFirstPage = currentPage <= 0;
   const isLastPage = currentPage >= totalPages - 1;
   const list = generatePagination(currentPage, totalPages);
 
-  const setToPage = useCallback((newPage: number) => {
-    setCurrentPage(Math.min(Math.max(newPage, 0), totalPages))
-  }, [totalPages]);
+  const setToPage = React.useCallback((newPage: number) => {
+    const clampedPage = Math.min(Math.max(newPage, 0), totalPages - 1);
+    setCurrentPage(clampedPage);
+    onSetPage?.(clampedPage);
+  }, [onSetPage, totalPages]);
 
-  const incrementPage = useCallback(() => {
-    setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
-  }, [totalPages]);
+  const incrementPage = React.useCallback(() => {
+    const clampedPage = Math.min(currentPage + 1, totalPages - 1);
+    setCurrentPage(clampedPage);
+    onSetPage?.(clampedPage);
+  }, [onSetPage, totalPages, currentPage]);
 
-  const decrementPage = useCallback(() => {
-    setCurrentPage((p) => Math.max(p - 1, 0));
-  }, []);
+  const decrementPage = React.useCallback(() => {
+    const clampedPage = Math.max(currentPage - 1, 0)
+    setCurrentPage(clampedPage);
+    onSetPage?.(clampedPage);
+  }, [onSetPage, totalPages, currentPage]);
 
   return {
     isFirstPage,
@@ -31,30 +46,45 @@ export function usePagination(totalPages: number) {
   };
 }
 
-export function useQueryPagination(totalPages: number) {
+type UseQueryPaginationProps = UsePaginationProps & {
+  pageParameterName?: string;
+  shallow?: boolean;
+};
+
+export function useQueryPagination({ 
+  totalPages,
+  shallow = true,
+  pageParameterName = "page",
+  onSetPage
+}: UseQueryPaginationProps) {
   const [currentPage, setCurrentPage] = useQueryState(
-    "page",
+    pageParameterName,
     parseAsIndex
       .withDefault(0)
-      .withOptions({
-        shallow: false
-      }),
+      .withOptions({ shallow })
   );
+
   const isFirstPage = currentPage <= 0;
   const isLastPage = currentPage >= totalPages - 1;
   const list = generatePagination(currentPage, totalPages);
 
-  const setToPage = useCallback((newPage: number) => {
-    setCurrentPage(Math.min(Math.max(newPage, 0), totalPages))
-  }, [totalPages]);
+  const setToPage = React.useCallback((newPage: number) => {
+    const clampedPage = Math.min(Math.max(newPage, 0), totalPages - 1);
+    setCurrentPage(clampedPage);
+    onSetPage?.(clampedPage);
+  }, [onSetPage, setCurrentPage, totalPages]);
 
-  const incrementPage = useCallback(() => {
-    setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
-  }, [totalPages]);
+  const incrementPage = React.useCallback(() => {
+    const clampedPage = Math.min(currentPage + 1, totalPages - 1);
+    setCurrentPage(clampedPage);
+    onSetPage?.(clampedPage);
+  }, [onSetPage, setCurrentPage, totalPages, currentPage]);
 
-  const decrementPage = useCallback(() => {
-    setCurrentPage((p) => Math.max(p - 1, 0));
-  }, []);
+  const decrementPage = React.useCallback(() => {
+    const clampedPage = Math.max(currentPage - 1, 0)
+    setCurrentPage(clampedPage);
+    onSetPage?.(clampedPage);
+  }, [onSetPage, setCurrentPage, totalPages, currentPage]);
 
   return {
     isFirstPage,

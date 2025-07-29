@@ -3,7 +3,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { MAX_TITLE_LENGTH } from "@/lib/zod";
+import { MAX_RECIPE_TITLE_LENGTH } from "@/lib/zod/recipe";
 import { Info } from "lucide-react";
 import { useFormState, useWatch } from "react-hook-form";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
@@ -26,8 +26,8 @@ export default function RecipeTitle() {
         <p className="font-semibold text-muted-foreground">
           Add a title to your recipe here.
         </p>
-        <span className={cn(currentTitle.length > MAX_TITLE_LENGTH && "text-red-500")}>
-          <b className="text-xl">{currentTitle.length}</b> / {MAX_TITLE_LENGTH}
+        <span className={cn(currentTitle.length > MAX_RECIPE_TITLE_LENGTH && "text-red-500")}>
+          <b className="text-xl">{currentTitle.length}</b> / {MAX_RECIPE_TITLE_LENGTH}
         </span>
       </div>
       <Input

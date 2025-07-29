@@ -6,8 +6,7 @@ import { Clock, Flame } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import defaultProfilePicture from "@/img/default/default-pfp.svg";
+import defaultProfilePicture from "@/img/default/default-pfp.jpg";
 
 type FavoritedRecipesResultProps = {
   recipe: {
@@ -80,15 +79,14 @@ export default function FavoritedRecipesResult({ recipe }: FavoritedRecipesResul
                   onClick={(e) => e.stopPropagation()}
                   prefetch={false}
                 >
-                  <Avatar>
-                    <AvatarImage 
+                  <div className="relative size-8 rounded-full overflow-hidden">
+                    <Image 
                       src={recipe.creator.image || defaultProfilePicture}
                       alt={`Profile picture of ${recipe.creator.name}`}
+                      fill
+                      className="object-cover object-center bg-slate-100"
                     />
-                    <AvatarFallback className="bg-mealicious-primary text-white">
-                      {recipe.creator.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  </div>
                 </Link>
               </TooltipTrigger>
               <TooltipContent>

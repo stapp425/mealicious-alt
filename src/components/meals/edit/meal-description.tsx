@@ -2,7 +2,7 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { MAX_MEAL_DESCRIPTION_LENGTH, MealEdition } from "@/lib/zod";
+import { MAX_MEAL_DESCRIPTION_LENGTH, EditMealForm } from "@/lib/zod/meal";
 import { Info } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 
@@ -13,7 +13,7 @@ export default function MealDescription() {
     formState: {
       errors
     }
-  } = useFormContext<MealEdition>();
+  } = useFormContext<EditMealForm>();
   const currentDescription = useWatch({ control, name: "description" });
   
   return (

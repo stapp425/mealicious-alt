@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: {
-    position: "bottom-left"
+    position: "bottom-right"
   },
   images: {
     remotePatterns: [
@@ -12,7 +12,14 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     authInterrupts: true
-  }
+  },
+  redirects: async () => [
+    {
+      source: "/settings",
+      destination: "/settings/account",
+      permanent: true
+    }
+  ]
 };
 
 export default nextConfig;

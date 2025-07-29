@@ -1,10 +1,11 @@
 import { db } from "@/db";
-import MealResult from "./meal-result";
+import { Skeleton } from "@/components/ui/skeleton";
 import { meal, mealToRecipe, nutrition, recipe, recipeToNutrition } from "@/db/schema";
 import { and, eq, ilike, lte, sql } from "drizzle-orm";
 import { cn, MAX_MEAL_DISPLAY_LIMIT } from "@/lib/utils";
 import { Info, SearchX } from "lucide-react";
 import { MealType } from "@/lib/types";
+import MealResult from "./meal-result";
 
 type SearchResultsProps = {
   count: number;
@@ -110,6 +111,22 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
             </div>
             </>
           )
+        }
+      </div>
+    </div>
+  );
+}
+
+export function SearchResultsSkeleton() {
+  return (
+    <div className="flex-1 flex flex-col gap-3">
+      <Skeleton className="w-[225px] h-[35px] rounded-sm"/>
+      <Skeleton className="w-[325px] h-[25px] rounded-sm"/>
+      <div className="w-full grid lg:grid-cols-2 gap-3">
+        {
+          Array.from({ length: MAX_MEAL_DISPLAY_LIMIT }, (_, i) => i).map((i) => (
+            <Skeleton key={i} className="h-[475px] rounded-md"/>
+          ))
         }
       </div>
     </div>

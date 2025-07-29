@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { MAX_MEAL_TITLE_LENGTH, MealEdition } from "@/lib/zod";
+import { MAX_MEAL_TITLE_LENGTH, EditMealForm } from "@/lib/zod/meal";
 import { Info } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 
@@ -11,7 +11,7 @@ export default function MealTitle() {
     formState: {
       errors
     }
-  } = useFormContext<MealEdition>();
+  } = useFormContext<EditMealForm>();
   const title = useWatch({ control, name: "title" });
   
   return (

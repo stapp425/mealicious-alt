@@ -12,7 +12,12 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Unit, unitAbbreviations } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { MAX_INGREDIENT_AMOUNT, MAX_INGREDIENT_NAME_LENGTH, MAX_INGREDIENTS_LENGTH, UnitSchema } from "@/lib/zod";
+import {
+  MAX_RECIPE_INGREDIENT_AMOUNT,
+  MAX_RECIPE_INGREDIENT_NAME_LENGTH,
+  MAX_RECIPE_INGREDIENTS_LENGTH
+} from "@/lib/zod/recipe";
+import { UnitSchema } from "@/lib/zod";
 import { Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFieldArray, useFormState } from "react-hook-form";
@@ -30,13 +35,13 @@ type Ingredient = {
 const IngredientInputSchema = z.object({
   name: z.string().nonempty({
     message: "Name cannot be empty."
-  }).max(MAX_INGREDIENT_NAME_LENGTH, {
-    message: `Name cannot have more than ${MAX_INGREDIENT_NAME_LENGTH.toLocaleString()} characters.`
+  }).max(MAX_RECIPE_INGREDIENT_NAME_LENGTH, {
+    message: `Name cannot have more than ${MAX_RECIPE_INGREDIENT_NAME_LENGTH.toLocaleString()} characters.`
   }),
   amount: z.number().positive({
     message: "Amount must be positive."
-  }).max(MAX_INGREDIENT_AMOUNT, {
-    message: `Amount must be at most ${MAX_INGREDIENT_AMOUNT.toLocaleString()}.`
+  }).max(MAX_RECIPE_INGREDIENT_AMOUNT, {
+    message: `Amount must be at most ${MAX_RECIPE_INGREDIENT_AMOUNT.toLocaleString()}.`
   }),
   unit: UnitSchema,
   isAllergen: z.boolean(),
@@ -85,7 +90,7 @@ export default function RecipeIngredients() {
           <Input
             type="number"
             min={0}
-            max={MAX_INGREDIENT_AMOUNT}
+            max={MAX_RECIPE_INGREDIENT_AMOUNT}
             step="any"
             value={ingredient.amount}
             placeholder="Amount"
@@ -160,7 +165,7 @@ export default function RecipeIngredients() {
       </div>
       <button
         type="button"
-        disabled={!!error || formIngredientValues.length >= MAX_INGREDIENT_AMOUNT}
+        disabled={!!error || formIngredientValues.length >= MAX_RECIPE_INGREDIENT_AMOUNT}
         onClick={() => {
           append(ingredient);
           setIngredient({
@@ -183,8 +188,8 @@ export default function RecipeIngredients() {
           <Separator />
           <div className="flex items-center gap-2 text-sm">
             <Info size={16}/>
-            <span className={cn(formIngredientValues.length > MAX_INGREDIENTS_LENGTH && "text-red-500")}>
-              Ingredient count: <b>{formIngredientValues.length}</b> / {MAX_INGREDIENTS_LENGTH}
+            <span className={cn(formIngredientValues.length > MAX_RECIPE_INGREDIENTS_LENGTH && "text-red-500")}>
+              Ingredient count: <b>{formIngredientValues.length}</b> / {MAX_RECIPE_INGREDIENTS_LENGTH}
             </span>
           </div>
           <div className="flex flex-col gap-3">

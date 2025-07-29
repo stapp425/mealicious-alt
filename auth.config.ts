@@ -149,11 +149,7 @@ export const config = {
         )
       });
 
-      if (foundUnverifiedUser) {
-        await generateEmailVerification({ email: user.email });
-        return `/verify?id=${foundUnverifiedUser.id}`;
-      }
-
+      if (foundUnverifiedUser) return `/verify?id=${foundUnverifiedUser.id}`;
       return true;
     },
     jwt: async ({ token, account }) => {

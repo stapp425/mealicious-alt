@@ -1,9 +1,10 @@
 "use server";
 
+import { ActionError } from "@/lib/types";
 import { authActionClient } from "@/safe-action";
 import { db } from "@/db";
 import { and, eq, sql } from "drizzle-orm";
-import { RecipeCreationSchema, RecipeEditionSchema, ReviewCreationSchema } from "@/lib/zod";
+import { CreateRecipeFormSchema, EditRecipeFormSchema, CreateReviewFormSchema } from "@/lib/zod/recipe";
 import { ingredient, instruction, recipe, recipeFavorite, recipeReview, recipeStatistics, recipeToDiet, recipeToDishType, recipeToNutrition, reviewLike, savedRecipe } from "@/db/schema";
 import { deleteRecipeQueryIndex, insertRecipeQueryIndex } from "@/lib/actions/algolia";
 import { revalidatePath } from "next/cache";
@@ -13,12 +14,10 @@ import axios from "axios";
 import z from "zod";
 
 export const createRecipe = authActionClient
-  .schema(z.object({
-    createdRecipe: RecipeCreationSchema.omit({ image: true })
-  }))
+  .schema(CreateRecipeFormSchema.omit({ image: true }))
   .action(async ({ 
     ctx: { user },
-    parsedInput: { createdRecipe }
+    parsedInput: createdRecipe
   }) => {
     const [{ recipeId }] = await db.insert(recipe)
       .values({
@@ -116,12 +115,10 @@ export const createRecipe = authActionClient
   });
 
 export const updateRecipe = authActionClient
-  .schema(z.object({
-    editedRecipe: RecipeEditionSchema.omit({ image: true })
-  }))
+  .schema(EditRecipeFormSchema.omit({ image: true }))
   .action(async ({ 
     ctx: { user },
-    parsedInput: { editedRecipe }
+    parsedInput: editedRecipe
   }) => {
     const foundRecipe = await db.query.recipe.findFirst({
       where: (recipe, { eq }) => eq(recipe.id, editedRecipe.id),
@@ -133,11 +130,8 @@ export const updateRecipe = authActionClient
       }
     });
 
-    if (!foundRecipe)
-      throw new Error("Recipe does not exist.");
-
-    if (foundRecipe.createdBy !== user.id)
-      throw new Error("You are not authorized to edit this recipe.");
+    if (!foundRecipe) throw new ActionError("Recipe does not exist.");
+    if (foundRecipe.createdBy !== user.id) throw new ActionError("You are not authorized to edit this recipe.");
 
     const updateRecipeQuery = db.update(recipe)
       .set({
@@ -266,11 +260,8 @@ export const deleteRecipe = authActionClient
       }
     });
 
-    if (!foundRecipe)
-      throw new Error("Recipe does not exist.");
-
-    if (user.id !== foundRecipe.createdBy)
-      throw new Error("You are not authorized to delete this recipe.");
+    if (!foundRecipe) throw new ActionError("Recipe does not exist.");
+    if (user.id !== foundRecipe.createdBy) throw new ActionError("You are not authorized to delete this recipe.");
 
     const { url } = await generatePresignedUrlForImageDelete(foundRecipe.image);
     const deleteImageOperation = axios.delete(url);
@@ -292,7 +283,9 @@ export const updateRecipeImage = authActionClient
       .nonempty({
         message: "Recipe ID must not be empty."
       }),
-    imageName: z.string()
+    imageName: z.string({
+      required_error: "An image name is required."
+    })
   }))
   .action(async ({ parsedInput: { recipeId, imageName }}) => {
     await db.update(recipe).set({
@@ -361,7 +354,9 @@ export const toggleRecipeFavorite = authActionClient
 
 export const toggleSavedListRecipe = authActionClient
   .schema(z.object({
-    recipeId: z.string().nonempty({
+    recipeId: z.string({
+      required_error: "A recipe ID is required."
+    }).nonempty({
       message: "Recipe ID cannot be empty."
     })
   }))
@@ -418,7 +413,7 @@ export const createReview = authActionClient
     recipeId: z.string().nonempty({
       message: "Recipe ID cannot be empty."
     }),
-    review: ReviewCreationSchema
+    review: CreateReviewFormSchema
   }))
   .action(async ({ ctx: { user }, parsedInput: { recipeId, review } }) => {
     const foundRecipe = await db.query.recipe.findFirst({
@@ -428,9 +423,7 @@ export const createReview = authActionClient
       }
     });
 
-    if (!foundRecipe)
-      throw new Error("Recipe does not exist.");
-
+    if (!foundRecipe) throw new ActionError("Recipe does not exist.");
     const foundReview = await db.query.recipeReview.findFirst({
       where: (review, { eq, and }) => and(
         eq(review.recipeId, recipeId),
@@ -438,9 +431,7 @@ export const createReview = authActionClient
       )
     });
 
-    if (foundReview)
-      throw new Error("You have already created a review for this recipe!");
-
+    if (foundReview) throw new ActionError("You have already created a review for this recipe!");
     const insertRecipeReviewQuery = db.insert(recipeReview).values({
       recipeId,
       userId: user.id!,
@@ -478,9 +469,7 @@ export const deleteReview = authActionClient
         recipeId: recipeReview.recipeId
       });
 
-    if (!deletedReview)
-      throw new Error("Review does not exist.");
-
+    if (!deletedReview) throw new ActionError("Review does not exist.");
     let deletedRating: `${"one" | "two" | "three" | "four" | "five"}StarCount` = "oneStarCount";
     
     switch (deletedReview.rating) {
@@ -527,18 +516,14 @@ export const toggleReviewLike = authActionClient
         where: (review, { eq }) => eq(review.id, reviewId)
       });
 
-      if (!foundReview)
-        throw new Error("Review does not exist.");
-      
+      if (!foundReview) throw new ActionError("Review does not exist.");
       await db.insert(reviewLike).values({
         reviewId,
         userId: user.id!
       });
 
       await db.update(recipeReview)
-        .set({
-          likeCount: sql`${recipeReview.likeCount} + 1`
-        })
+        .set({ likeCount: sql`${recipeReview.likeCount} + 1` })
         .where(eq(recipeReview.id, reviewId));
 
       return {

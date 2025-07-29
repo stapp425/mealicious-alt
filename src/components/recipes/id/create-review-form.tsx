@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { createReview } from "@/lib/actions/recipe";
 import { cn } from "@/lib/utils";
-import { ReviewCreation, ReviewCreationSchema } from "@/lib/zod";
+import { type CreateReviewForm, CreateReviewFormSchema } from "@/lib/zod/recipe";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Info, Loader2 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
@@ -20,7 +20,12 @@ type CreateReviewFormProps = {
 export default function CreateReviewForm({ recipeId }: CreateReviewFormProps) {
   const { refresh } = useRouter();
   const { executeAsync } = useAction(createReview, {
-    onSuccess: () => toast.success("Successfully created recipe!"),
+    onSuccess: ({ data }) => {
+      if (!data) return;
+      reset();
+      refresh();
+      toast.success("Successfully created review!");
+    },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });
   const {
@@ -33,18 +38,12 @@ export default function CreateReviewForm({ recipeId }: CreateReviewFormProps) {
       isSubmitting,
       errors
     }
-  } = useForm<ReviewCreation>({
-    resolver: zodResolver(ReviewCreationSchema),
+  } = useForm<CreateReviewForm>({
+    resolver: zodResolver(CreateReviewFormSchema),
   });
 
   const onSubmit = handleSubmit(async (data) => {
-    const createReviewResult = await executeAsync({ recipeId, review: data });
-    
-    if (!createReviewResult?.data)
-      return;
-
-    reset();
-    refresh();
+    await executeAsync({ recipeId, review: data });
   });
 
   const rating = watch("rating");

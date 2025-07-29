@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { ImageDataSchema } from "@/lib/zod";
+import { ImageSchema } from "@/lib/zod/recipe";
 import { Info, Plus } from "lucide-react";
 import { 
   useEffect, 
@@ -30,12 +30,16 @@ export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderPro
   const addImageButton = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if (!image) return;
+    if (!image) {
+      if (addImageButton.current) addImageButton.current.value = "";
+      setImageURL(recipeImageUrl);
+      return;
+    }
     
     const url = URL.createObjectURL(image);
     setImageURL(url);
     return () => URL.revokeObjectURL(url);
-  }, [image]);
+  }, [image, recipeImageUrl]);
   
   return (
     <div className="bg-sidebar border border-border h-[425px] flex flex-col overflow-hidden relative group rounded-md">
@@ -49,14 +53,10 @@ export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderPro
           if (!addedImage)
             return;
           
-          const imageValidityCheck = ImageDataSchema.safeParse({
-            name: addedImage?.name,
-            size: addedImage?.size,
-            type: addedImage?.type
-          });
-
-          if (!imageValidityCheck.success) {
-            toast.error(imageValidityCheck.error.errors[0]?.message || "Could not add image.");
+          const validateImage = ImageSchema.safeParse(addedImage);
+          if (!validateImage.success) {
+            toast.error(validateImage.error.errors[0]?.message);
+            e.target.value = "";
             return;
           }
 

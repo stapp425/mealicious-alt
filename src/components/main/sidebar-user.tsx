@@ -6,11 +6,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem
 } from "@/components/ui/sidebar";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +25,8 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import Image from "next/image";
+import defaultProfilePicture from "@/img/default/default-pfp.jpg";
 
 export default function SidebarUser() {
   const { data, status } = useSession();
@@ -65,15 +62,14 @@ export default function SidebarUser() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="cursor-pointer flex justify-start gap-2.5 px-2 py-8">
-              <Avatar className="size-9">
-                <AvatarImage
-                  src={image || undefined}
-                  alt={`${name}'s Profile Picture`}
+              <div className="relative size-9 rounded-full overflow-hidden">
+                <Image 
+                  src={image || defaultProfilePicture}
+                  alt={`Profile picture of ${name}`}
+                  fill
+                  className="object-cover object-center bg-slate-100"
                 />
-                <AvatarFallback>
-                  {name?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              </div>
               <div className="flex flex-col truncate">
                 <span className="font-bold">{name}</span>
                 <span>{email}</span>

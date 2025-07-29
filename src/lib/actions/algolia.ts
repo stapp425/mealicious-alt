@@ -1,7 +1,11 @@
 "use server";
 
 import { searchClient, writeClient } from "@/lib/algolia";
-import { RecipeSearchIndexDeletionSchema, RecipeSearchIndexInsertionSchema, RecipeSearchIndexSchema } from "@/lib/zod";
+import { 
+  RecipeSearchIndexDeletionSchema,
+  RecipeSearchIndexInsertionSchema,
+  RecipeSearchIndexSchema
+} from "@/lib/zod/recipe";
 import { recentSearchesPluginData } from "@/lib/functions/algolia";
 
 export async function searchForRecipesQueryIndices(query: string) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { MealCreation, MealCreationSchema } from "@/lib/zod";
+import { type CreateMealForm, CreateMealFormSchema } from "@/lib/zod/meal";
 import { FormProvider, useForm } from "react-hook-form";
 import MealRecipeSearch from "@/components/meals/create/meal-recipes";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,8 +27,8 @@ export default function CreateMealForm({ userId }: CreateMealFormProps) {
     onError: () => toast.error("Failed to create meal.")
   });
   
-  const createMealForm = useForm<MealCreation>({
-    resolver: zodResolver(MealCreationSchema),
+  const createMealForm = useForm<CreateMealForm>({
+    resolver: zodResolver(CreateMealFormSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -38,7 +38,7 @@ export default function CreateMealForm({ userId }: CreateMealFormProps) {
   });
 
   const onSubmit = createMealForm.handleSubmit(async (data) => {
-    await executeAsync({ createdMeal: data });
+    await executeAsync(data);
   });
 
   return (

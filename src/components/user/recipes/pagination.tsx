@@ -10,7 +10,10 @@ type PaginationProps = {
 };
 
 export default function Pagination({ totalPages }: PaginationProps) {
-  const pagination = useQueryPagination(totalPages);
+  const pagination = useQueryPagination({
+    totalPages,
+    shallow: false
+  });
   
   return (
     <div className="flex items-center h-12 gap-3 mx-auto mt-auto">

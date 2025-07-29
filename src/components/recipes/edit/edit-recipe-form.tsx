@@ -2,7 +2,7 @@
 
 import { Unit } from "@/lib/types";
 import { diet, dishType, nutrition } from "@/db/schema";
-import { RecipeEdition, RecipeEditionSchema } from "@/lib/zod";
+import { type EditRecipeForm, EditRecipeFormSchema } from "@/lib/zod/recipe";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { InferSelectModel } from "drizzle-orm";
 import { LoaderCircle } from "lucide-react";
@@ -95,10 +95,10 @@ type EditRecipeFormProps = {
   };
 };
 
-type RecipeFormContextProps = {
-  control: Control<RecipeEdition>;
-  register: UseFormRegister<RecipeEdition>;
-  setValue: UseFormSetValue<RecipeEdition>;
+type RecipeFormContextProps<T extends EditRecipeForm = EditRecipeForm> = {
+  control: Control<T>;
+  register: UseFormRegister<T>;
+  setValue: UseFormSetValue<T>;
 };
 
 const EditRecipeFormContext = createContext<RecipeFormContextProps | null>(null);
@@ -140,8 +140,8 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
     formState: {
       isSubmitting
     }
-  } = useForm<RecipeEdition>({
-    resolver: zodResolver(RecipeEditionSchema),
+  } = useForm<EditRecipeForm>({
+    resolver: zodResolver(EditRecipeFormSchema),
     mode: "onSubmit",
     reValidateMode: "onSubmit",
     defaultValues: {
@@ -180,8 +180,8 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      const { image, ...dataRest } = data;
-      const recipeEditionResult = await updateRecipe({ editedRecipe: dataRest });
+      const { image, ...formDataRest } = data;
+      const recipeEditionResult = await updateRecipe(formDataRest);
 
       if (!recipeEditionResult?.data)
         throw new Error("Failed to update recipe.");

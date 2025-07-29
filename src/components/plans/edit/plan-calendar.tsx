@@ -2,7 +2,7 @@
 
 import { useFormContext, useWatch } from "react-hook-form";
 import { Calendar } from "@/components/ui/calendar";
-import { PlanCreationSchema, PlanEdition } from "@/lib/zod";
+import { EditPlanFormSchema, EditPlanForm } from "@/lib/zod/plan";
 import { toast } from "sonner";
 import { Info, Calendar as CalendarIcon } from "lucide-react";
 import { useEditPlanFormContext } from "@/components/plans/edit/edit-plan-form-provider";
@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 
 const now = new Date();
 const inUtc = { in: tz("UTC") };
-const DateSchema = PlanCreationSchema.shape.date;
+const DateSchema = EditPlanFormSchema.shape.date;
 
 export default function PlanCalendar() {
   const { startDate, endDate, plans, planToEdit: { date: planToEditDate } } = useEditPlanFormContext();
@@ -23,7 +23,7 @@ export default function PlanCalendar() {
     formState: {
       errors
     }
-  } = useFormContext<PlanEdition>();
+  } = useFormContext<EditPlanForm>();
   const date = useWatch({ control, name: "date" });
 
   return (

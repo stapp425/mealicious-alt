@@ -66,29 +66,29 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
   
   const { executeAsync: executeDeleteRecipe, isExecuting: isDeleteRecipeExecuting } = useAction(deleteRecipe, {
     onSuccess: ({ data }) => {
+      if (!data) return;
       setOpen(false);
-      toast.warning(data?.message || "Recipe has been succesfully deleted!");
       refresh();
+      toast.warning(data.message);
     },
-    onError: ({ error: { serverError } }) => toast.error(serverError || "Something went wrong.")
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
 
   const { executeAsync: executeToggleFavorite, isExecuting: isToggleFavoriteExecuting } = useAction(toggleRecipeFavorite, {
     onSuccess: ({ data }) => {
-      setIsFavorite(data?.isFavorite || false)
+      if (!data) return;
+      setIsFavorite(data.isFavorite);
     },
-    onError: ({ error: { serverError } }) => toast.error(serverError || "Something went wrong.")
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
 
   const { executeAsync: executeToggleSaved, isExecuting: isToggleSavedExecuting } = useAction(toggleSavedListRecipe, {
     onSuccess: () => {
       setOpen(false);
-      toast.warning("Recipe has been unsaved!");
       refresh();
+      toast.warning("Recipe has been unsaved!");
     },
-    onError: () => {
-      toast.error("Failed to delete saved recipe.");
-    }
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
 
   return (

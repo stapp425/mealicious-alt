@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { MAX_TAGS_LENGTH } from "@/lib/zod";
+import { MAX_RECIPE_TAGS_LENGTH } from "@/lib/zod/recipe";
 import { Info } from "lucide-react";
 import { useState } from "react";
 import { useFormState, useWatch } from "react-hook-form";
@@ -24,8 +24,8 @@ export default function RecipeTags() {
         <p className="font-semibold text-muted-foreground">
           Add extra tags to your recipe here. (optional)
         </p>
-        <span className={cn(tags.length > MAX_TAGS_LENGTH && "text-red-500")}>
-          <b className="text-xl">{tags.length}</b> / {MAX_TAGS_LENGTH}
+        <span className={cn(tags.length > MAX_RECIPE_TAGS_LENGTH && "text-red-500")}>
+          <b className="text-xl">{tags.length}</b> / {MAX_RECIPE_TAGS_LENGTH}
         </span>
       </div>
       {
@@ -43,7 +43,7 @@ export default function RecipeTags() {
           onChange={(e) => setTag(e.target.value)}
         />
         <button
-          disabled={!tag || tags.includes(tag) || tags.length >= MAX_TAGS_LENGTH}
+          disabled={!tag || tags.includes(tag) || tags.length >= MAX_RECIPE_TAGS_LENGTH}
           onClick={() => {
             setValue("tags", [...tags, tag]);
             setTag("");

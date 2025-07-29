@@ -2,7 +2,7 @@
 
 import { getSavedMealsForPlanForm, getSavedMealsForPlanFormCount } from "@/lib/actions/plan";
 import { MAX_MEAL_RESULT_DISPLAY_LIMIT } from "@/lib/utils";
-import { PlanCreation } from "@/lib/zod";
+import { CreatePlanForm } from "@/lib/zod/plan";
 import { Check, Flame, Info, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
@@ -37,7 +37,7 @@ export default function PlanMeals({ userId }: RecipeSearchProps) {
     formState: {
       errors
     }
-  } = useFormContext<PlanCreation>();
+  } = useFormContext<CreatePlanForm>();
   const planMealValues = useWatch({ control, name: "meals" });
   
   const [open, setOpen] = useState<boolean>(false);

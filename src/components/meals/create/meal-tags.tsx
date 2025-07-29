@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { MealCreation } from "@/lib/zod";
+import { CreateMealForm } from "@/lib/zod/meal";
 import { Info } from "lucide-react";
 import { useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
@@ -15,7 +15,7 @@ export default function MealTags() {
     formState: {
       errors
     }
-  } = useFormContext<MealCreation>();
+  } = useFormContext<CreateMealForm>();
   const tags = useWatch({ control, name: "tags" });
   const [tag, setTag] = useState<string>("");
   

@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DetailedPlan } from "@/lib/zod";
+import { DetailedPlan } from "@/lib/zod/plan";
 import { useState } from "react";
 import { tz } from "@date-fns/tz";
 import { format } from "date-fns";

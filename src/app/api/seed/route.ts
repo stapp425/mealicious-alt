@@ -279,7 +279,7 @@ export async function POST() {
     },
     {
       name: "Vitamin C",
-      description: "A vitamin, known as ascorbic acid, that the body uses as an antioxidants that prevent free molecules from causing damage to surrounding cells.",
+      description: "A vitamin, known as ascorbic acid, that the body uses as an antioxidant that prevent free molecules from causing damage to surrounding cells.",
       allowedUnits: ["mg"],
       sortIndex: 27
     },

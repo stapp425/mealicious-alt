@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { userRecipesView } from "@/lib/types";
 import { createLoader, parseAsIndex, parseAsStringLiteral, SearchParams } from "nuqs/server";
 import { cache, Suspense } from "react";
-import defaultProfilePicture from "@/img/default/default-pfp.svg";
+import defaultProfilePicture from "@/img/default/default-pfp.jpg";
 import { Metadata } from "next";
 import CreatedRecipes from "@/components/user/recipes/created-recipes";
 import RecipesOptions from "@/components/user/recipes/recipes-options";
@@ -48,7 +48,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       type: "website",
       title: `${foundUser.name}'s Recipes | Mealicious`,
       description: `Check out ${foundUser.name}'s ${recipesView} recipes here on Mealicious!`,
-      images: foundUser.image || defaultProfilePicture
+      images: foundUser.image || defaultProfilePicture.src
     }
   };
 }

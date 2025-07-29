@@ -1,6 +1,6 @@
 "use client";
 
-import { PlanCreation, PlanCreationSchema } from "@/lib/zod";
+import { type CreatePlanForm, CreatePlanFormSchema } from "@/lib/zod/plan";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -22,8 +22,8 @@ export default function CreatePlanForm() {
   const { replace } = useRouter();
   const [mounted, setMounted] = useState<boolean>(false);
   const matches = useMediaQuery("(min-width: 80rem)");
-  const createPlanForm = useForm<PlanCreation>({
-    resolver: zodResolver(PlanCreationSchema),
+  const createPlanForm = useForm<CreatePlanForm>({
+    resolver: zodResolver(CreatePlanFormSchema),
     defaultValues: {
       title: "",
       tags: [],
@@ -32,8 +32,13 @@ export default function CreatePlanForm() {
   });
   
   const { executeAsync } = useAction(createPlan, {
-    onSuccess: ({ data }) => toast.success(data?.message),
-    onError: () => toast.error("Failed to create plan.")
+    onSuccess: ({ data }) => {
+      if (!data) return;
+      createPlanForm.reset();
+      replace("/plans");
+      toast.success(data.message);
+    },
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
 
   useEffect(() => {
@@ -41,9 +46,7 @@ export default function CreatePlanForm() {
   }, []);
 
   const onSubmit = createPlanForm.handleSubmit(async (data) => {
-    await executeAsync({ createdPlan: data });
-    createPlanForm.reset();
-    replace("/plans");
+    await executeAsync(data);
   });
   
   return (

@@ -4,17 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RecipeSearch, RecipeSearchSchema } from "@/lib/zod";
+import { RecipeSearch, RecipeSearchSchema } from "@/lib/zod/recipe";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { parseAsIndex, parseAsString, useQueryState, useQueryStates } from "nuqs";
-import { useForm } from "react-hook-form";
+import { Check, ChevronDown, Info, Plus, Search, X } from "lucide-react";
+import { parseAsBoolean, parseAsIndex, parseAsString, useQueryStates } from "nuqs";
+import { Control, useForm, UseFormSetValue, useWatch } from "react-hook-form";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { useMediaQuery } from "usehooks-ts";
-import { useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type SearchBarProps = {
   cuisines: {
@@ -30,79 +30,178 @@ type SearchBarProps = {
     id: string;
     name: string;
   }[];
+  hasCuisinePreferences: boolean;
+  hasDietPreferences: boolean;
+  hasDishTypePreferences: boolean;
 };
 
-export default function SearchBar({ cuisines, diets, dishTypes }: SearchBarProps) {
+type Item = {
+  id: string;
+  label: string;
+  icon?: string;
+};
+
+export default function SearchBar({ cuisines, diets, dishTypes, hasCuisinePreferences, hasDietPreferences, hasDishTypePreferences }: SearchBarProps) {
   const [mounted, setMounted] = useState<boolean>(false);
   const matches = useMediaQuery("(min-width: 48rem)");
-  const { replace } = useRouter();
-  const [query, setQuery] = useQueryState(
-    "query",
-    parseAsString.withDefault("")
-  );
   
-  const [{ cuisine, diet, dishType }, setParams] = useQueryStates({
+  const [{ 
+    query,
+    cuisine,
+    diet,
+    dishType,
+    isUsingCuisinePreferences,
+    isUsingDishTypePreferences,
+    isUsingDietPreferences
+  }, setParams] = useQueryStates({
+    query: parseAsString.withDefault(""),
     cuisine: parseAsString,
     diet: parseAsString,
     dishType: parseAsString,
-    page: parseAsIndex.withDefault(0)
-  }, {
-    shallow: false,
-    throttleMs: 500
+    page: parseAsIndex.withDefault(0),
+    isUsingCuisinePreferences: parseAsBoolean.withDefault(false),
+    isUsingDishTypePreferences: parseAsBoolean.withDefault(false),
+    isUsingDietPreferences: parseAsBoolean.withDefault(false)
   });
 
   const {
+    control,
     register,
     handleSubmit,
-    watch,
     setValue,
     reset,
-    formState: {
-      isSubmitting,
-      isValid
-    }
+    watch,
+    formState: { isSubmitting }
   } = useForm<RecipeSearch>({
     resolver: zodResolver(RecipeSearchSchema),
     defaultValues: { 
       query,
-      cuisine: cuisines.find((c) => c.adjective === cuisine),
-      diet: diets.find((d) => d.name === diet),
-      dishType: dishTypes.find((dt) => dt.name === dishType)
+      cuisine: !isUsingCuisinePreferences ? cuisines.find((c) => c.adjective === cuisine) : undefined,
+      diet: !isUsingDietPreferences ? diets.find((d) => d.name === diet) : undefined,
+      dishType: !isUsingDishTypePreferences ? dishTypes.find((dt) => dt.name === dishType) : undefined,
+      isUsingCuisinePreferences: false,
+      isUsingDietPreferences: false,
+      isUsingDishTypePreferences: false
     }
   });
 
-  const onSubmit = handleSubmit(({ query, cuisine, diet, dishType }) => {
-    const searchParams = new URLSearchParams();
-
-    if (query) searchParams.set("query", query);
-    if (cuisine?.adjective) searchParams.set("cuisine", cuisine.adjective);
-    if (diet?.name) searchParams.set("diet", diet.name);
-    if (dishType?.name) searchParams.set("dishType", dishType.name);
-
-    replace(`/recipes/search/?${searchParams.toString()}`);
+  const onSubmit = handleSubmit((data) => {
+    setParams({
+      query: data.query || null,
+      cuisine: data.cuisine?.adjective || null,
+      diet: data.diet?.name || null,
+      dishType: data.dishType?.name || null,
+      isUsingCuisinePreferences: data.isUsingCuisinePreferences,
+      isUsingDietPreferences: data.isUsingDietPreferences,
+      isUsingDishTypePreferences: data.isUsingDishTypePreferences
+    }, {
+      shallow: false,
+      throttleMs: 500
+    });
   });
+  
+  const [currentCuisine, cuisinePreferencesStatus] = useWatch({ control, name: ["cuisine", "isUsingCuisinePreferences"] });
+  const [currentDiet, dietPreferencesStatus] = useWatch({ control, name: ["diet", "isUsingDietPreferences"] });
+  const [currentDishType, dishTypePreferencesStatus] = useWatch({ control, name: ["dishType", "isUsingDishTypePreferences"] });
+
+  const currentCuisineItem = useMemo(
+    () => currentCuisine ? {
+      id: currentCuisine.id,
+      icon: currentCuisine.icon,
+      label: currentCuisine.adjective
+    } : undefined,
+    [currentCuisine]
+  );
+
+  const currentDietItem = useMemo(
+    () => currentDiet ? {
+      id: currentDiet.id,
+      label: currentDiet.name
+    } : undefined,
+    [currentDiet]
+  );
+
+  const currentDishTypeItem = useMemo(
+    () => currentDishType ? {
+      id: currentDishType.id,
+      label: currentDishType.name
+    } : undefined,
+    [currentDishType]
+  );
+
+  const mappedCuisines = useMemo(
+    () => cuisines.map((c) => ({ 
+      id: c.id,
+      icon: c.icon,
+      label: c.adjective
+    })),
+    [cuisines]
+  );
+
+  const mappedDiets = useMemo(
+    () => diets.map((d) => ({ 
+      id: d.id,
+      label: d.name
+    })),
+    [diets]
+  );
+
+  const mappedDishTypes = useMemo(
+    () => dishTypes.map((dt) => ({ 
+      id: dt.id,
+      label: dt.name
+    })),
+    [dishTypes]
+  );
+
+  const setCuisine = useCallback(
+    (item: Item) => setValue(
+      "cuisine",
+      cuisines.find((c) => c.id === item.id),
+      { shouldDirty: true }
+    ),
+    [setValue, cuisines]
+  );
+
+  const setDiet = useCallback(
+    (item: Item) => setValue(
+      "diet",
+      diets.find((d) => d.id === item.id),
+      { shouldDirty: true }
+    ),
+    [setValue, diets]
+  );
+
+  const setDishType = useCallback(
+    (item: Item) => setValue(
+      "dishType",
+      dishTypes.find((dt) => dt.id === item.id),
+      { shouldDirty: true }
+    ),
+    [setValue, dishTypes]
+  );
+
+  const isOptionsTouched = useMemo(
+    () => currentCuisine || currentDiet || currentDishType || cuisinePreferencesStatus || dietPreferencesStatus || dishTypePreferencesStatus,
+    [currentCuisine, currentDiet, currentDishType, cuisinePreferencesStatus, dietPreferencesStatus, dishTypePreferencesStatus]
+  );
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  const currentCuisine = watch("cuisine");
-  const currentDiet = watch("diet");
-  const currentDishType = watch("dishType");
+  }, [setMounted]);
   
   return (
     <Popover>
       <form onSubmit={onSubmit} className="w-full flex flex-col items-start gap-3">
         <div className="w-full flex justify-between items-stretch gap-3">
           <Input 
-            placeholder="Recipe Title (optional)"
-            {...register("query", {
-              onChange: (e) => setQuery(e.target.value)
-            })}
+            placeholder="Recipe Title"
+            {...register("query")}
+            className="shadow-none rounded-sm"
           />
           <button
             type="submit"
-            disabled={!isValid || isSubmitting}
+            disabled={isSubmitting}
             className="font-semibold text-sm mealicious-button flex items-center gap-3 px-4 rounded-sm"
           >
             <span className="hidden sm:block">Search</span>
@@ -110,240 +209,232 @@ export default function SearchBar({ cuisines, diets, dishTypes }: SearchBarProps
           </button>
         </div>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="w-full sm:w-fit cursor-pointer gap-4 px-4!">
+          <Button 
+            variant="outline"
+            className="w-full sm:w-fit cursor-pointer gap-4 px-4! rounded-sm shadow-none"
+          >
             Advanced Filters
             <Plus />
           </Button>
         </PopoverTrigger>
-        <div className="empty:hidden flex flex-wrap items-center gap-4">
-          {
-            cuisine && (
-              <button
-                onClick={() => {
-                  reset({
-                    query,
-                    cuisine: undefined,
-                    diet: diets.find((d) => d.name === diet),
-                    dishType: dishTypes.find((dt) => dt.name === dishType)
-                  });
-
-                  setParams((p) => ({
-                    ...p,
-                    cuisine: null,
-                    page: 0
-                  }));
-                }}
-                className="mealicious-button font-semibold text-sm flex items-center gap-4 cursor-pointer py-1.5 px-4 rounded-md"
-              >
-                Cuisine: {cuisine}
-                <X size={16}/>
-              </button>
-            )
-          }
-          {
-            diet && (
-              <button
-                onClick={() => {
-                  reset({
-                    query,
-                    cuisine: cuisines.find((c) => c.adjective === cuisine),
-                    diet: undefined,
-                    dishType: dishTypes.find((dt) => dt.name === dishType)
-                  });
-
-                  setParams((p) => ({
-                    ...p,
-                    diet: null,
-                    page: 0
-                  }));
-                }}
-                className="mealicious-button font-semibold text-sm flex items-center gap-4 cursor-pointer py-1.5 px-4 rounded-md"
-              >
-                Diet: {diet}
-                <X size={16}/>
-              </button>
-            )
-          }
-          {
-            dishType && (
-              <button
-                onClick={() => {
-                  reset({
-                    query,
-                    cuisine: cuisines.find((c) => c.adjective === cuisine),
-                    diet: diets.find((d) => d.name === diet),
-                    dishType: undefined
-                  });
-
-                  setParams((p) => ({
-                    ...p,
-                    dishType: null,
-                    page: 0
-                  }));
-                }}
-                className="mealicious-button font-semibold text-sm flex items-center gap-4 cursor-pointer py-1.5 px-4 rounded-md"
-              >
-                Dish Type: {dishType}
-                <X size={16}/>
-              </button>
-            )
-          }
+        <div className="hidden has-[.flex]:flex flex-wrap items-center gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              setParams((p) => ({
+                ...p,
+                isUsingCuisinePreferences: false
+              }), {
+                shallow: false,
+                throttleMs: 500
+              });
+            }}
+            className={cn(
+              isUsingCuisinePreferences
+                ? "mealicious-button font-semibold text-sm flex items-center gap-4 cursor-pointer py-1.5 px-4 rounded-sm"
+                : "hidden"
+            )}
+          >
+            Using Cuisine Preferences
+            <X size={16}/>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setParams((p) => ({
+                ...p,
+                cuisine: null,
+                page: 0
+              }), {
+                shallow: false,
+                throttleMs: 500
+              });
+            }}
+            className={cn(
+              cuisine
+                ? "mealicious-button font-semibold text-sm flex items-center gap-4 cursor-pointer py-1.5 px-4 rounded-sm"
+                : "hidden"
+            )}
+          >
+            Cuisine: {cuisine}
+            <X size={16}/>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setParams((p) => ({
+                ...p,
+                isUsingDietPreferences: false
+              }), {
+                shallow: false,
+                throttleMs: 500
+              });
+            }}
+            className={cn(
+              isUsingDietPreferences
+                ? "mealicious-button font-semibold text-sm flex items-center gap-4 cursor-pointer py-1.5 px-4 rounded-sm"
+                : "hidden"
+            )}
+          >
+            Using Diet Preferences
+            <X size={16}/>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setParams((p) => ({
+                ...p,
+                diet: null,
+                page: 0
+              }), {
+                shallow: false,
+                throttleMs: 500
+              });
+            }}
+            className={cn(
+              diet
+                ? "mealicious-button font-semibold text-sm flex items-center gap-4 cursor-pointer py-1.5 px-4 rounded-sm"
+                : "hidden"
+            )}
+          >
+            Diet: {diet}
+            <X size={16}/>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setParams((p) => ({
+                ...p,
+                isUsingDishTypePreferences: false
+              }), {
+                shallow: false,
+                throttleMs: 500
+              });
+            }}
+            className={cn(
+              isUsingDishTypePreferences
+                ? "mealicious-button font-semibold text-sm flex items-center gap-4 cursor-pointer py-1.5 px-4 rounded-sm"
+                : "hidden"
+            )}
+          >
+            Using Dish Type Preferences
+            <X size={16}/>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setParams((p) => ({
+                ...p,
+                dishType: null,
+                page: 0
+              }), {
+                shallow: false,
+                throttleMs: 500
+              });
+            }}
+            className={cn(
+              dishType 
+                ? "mealicious-button font-semibold text-sm flex items-center gap-4 cursor-pointer py-1.5 px-4 rounded-sm"
+                : "hidden",
+            )}
+          >
+            Dish Type: {dishType}
+            <X size={16}/>
+          </button>
         </div>
-        <PopoverContent asChild align={mounted && matches ? "start" : "center"} sideOffset={12.5} className="w-[clamp(300px,calc(100vw-30px),475px)] p-0">
+        <PopoverContent 
+          align={mounted && matches ? "start" : "center"}
+          sideOffset={12.5}
+          className="w-[clamp(300px,calc(100vw-30px),475px)] p-0"
+          asChild
+        >
           <div className="flex flex-col">
             <h1 className="font-bold text-lg p-4">Advanced Filtering Options</h1>
             <Separator />
             <div className="flex flex-col gap-3 p-4">
+              <div className="flex items-center gap-2 text-sm">
+                <Info size={16}/>
+                For refined searches, add personal preferences in settings.
+              </div>
               <div className="w-full flex flex-col gap-3">
                 <h2 className="font-bold text-lg">Cuisine</h2>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="font-normal cursor-pointer flex-1 justify-between"
-                    >
-                      {currentCuisine?.id && currentCuisine?.adjective ? currentCuisine.adjective : "Select a cuisine..."}
-                      <ChevronDown className="opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[clamp(250px,25vw,450px)] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Search cuisine..." className="h-9" />
-                      <CommandList>
-                        <CommandEmpty>
-                          No cuisines found.
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {
-                            cuisines.map((c) => (
-                              <CommandItem
-                                key={c.id}
-                                value={c.adjective}
-                                onSelect={(val) => setValue("cuisine", cuisines.find(({ adjective }) => adjective === val)!)}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Image
-                                    src={c.icon} 
-                                    alt={`Origin of ${c.adjective} cuisine`}
-                                    width={35}
-                                    height={35}
-                                    className="rounded-full shadow-sm"
-                                  />
-                                  {c.adjective}
-                                </div>
-                                <Check
-                                  className={cn(
-                                    "ml-auto",
-                                    c.id === currentCuisine?.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                              </CommandItem>
-                            ))
-                          }
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <SelectCommand
+                  items={mappedCuisines}
+                  selectedItem={currentCuisineItem}
+                  disabled={cuisinePreferencesStatus}
+                  placeholder="Select a cuisine..."
+                  emptyText="No cuisines found."
+                  onSelect={setCuisine}
+                />
+                {
+                  hasCuisinePreferences && (
+                    <PreferencesStatus 
+                      id="isUsingCuisinePreferences"
+                      field="cuisine"
+                      control={control}
+                      setValue={setValue}
+                      label="Use Cuisine Preferences"
+                    />
+                  )
+                }
               </div>
-              <div className="flex flex-col lg:flex-row justify-between gap-3 lg:items-center">
-                <div className="w-full flex flex-col gap-3">
-                  <h2 className="font-bold text-lg">Diet</h2>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className="font-normal cursor-pointer flex-1 justify-between"
-                      >
-                        {currentDiet?.id && currentDiet?.name ? currentDiet.name : "Select a diet..."}
-                        <ChevronDown className="opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[200px] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search diet..." className="h-9" />
-                        <CommandList>
-                          <CommandEmpty>
-                            No diets found.
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {
-                              diets.map((d) => (
-                                <CommandItem
-                                  key={d.id}
-                                  value={d.name}
-                                  onSelect={() => setValue("diet", diets.find(({ id }) => id === d.id)!)}
-                                >
-                                  {d.name}
-                                  <Check
-                                    className={cn(
-                                      "ml-auto",
-                                      d.id === currentDiet?.id ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))
-                            }
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="w-full flex flex-col gap-3">
-                  <h2 className="font-bold text-lg">Dish Type</h2>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className="font-normal cursor-pointer flex-1 justify-between"
-                      >
-                        {currentDishType?.id && currentDishType?.name ? currentDishType.name : "Select a dish type..."}
-                        <ChevronDown className="opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[200px] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search dish type..." className="h-9" />
-                        <CommandList>
-                          <CommandEmpty>
-                            No dish types found.
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {
-                              dishTypes.map((d) => (
-                                <CommandItem
-                                  key={d.id}
-                                  value={d.name}
-                                  onSelect={() => setValue("dishType", dishTypes.find(({ id }) => id === d.id)!)}
-                                >
-                                  {d.name}
-                                  <Check
-                                    className={cn(
-                                      "ml-auto",
-                                      d.id === currentDishType?.id ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))
-                            }
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
+              <div className="w-full flex flex-col gap-3">
+                <h2 className="font-bold text-lg">Diet</h2>
+                <SelectCommand
+                  items={mappedDiets}
+                  selectedItem={currentDietItem}
+                  disabled={dietPreferencesStatus}
+                  placeholder="Select a diet..."
+                  emptyText="No diets found."
+                  onSelect={setDiet}
+                />
+                {
+                  hasDietPreferences && (
+                    <PreferencesStatus 
+                      id="isUsingDietPreferences"
+                      field="diet"
+                      control={control}
+                      setValue={setValue}
+                      label="Use Diet Preferences"
+                    />
+                  )
+                }
+              </div>
+              <div className="w-full flex flex-col gap-3">
+                <h2 className="font-bold text-lg">Dish Type</h2>
+                <SelectCommand
+                  items={mappedDishTypes}
+                  selectedItem={currentDishTypeItem}
+                  disabled={dishTypePreferencesStatus}
+                  placeholder="Select a dish type..."
+                  emptyText="No dish types found."
+                  onSelect={setDishType}
+                />
+                {
+                  hasDishTypePreferences && (
+                    <PreferencesStatus 
+                      id="isUsingDishTypePreferences"
+                      field="dishType"
+                      control={control}
+                      setValue={setValue}
+                      label="Use Dish Type Preferences"
+                    />
+                  )
+                }
               </div>
               <Button 
                 variant="link"
-                onClick={() => {
-                  reset({ query });
-                  setParams(null);
-                }}
-                className="size-fit cursor-pointer text-red-500 p-0"
+                onClick={() => reset({ 
+                  query: watch("query"),
+                  isUsingCuisinePreferences: false,
+                  isUsingDietPreferences: false,
+                  isUsingDishTypePreferences: false
+                })}
+                className={cn(
+                  isOptionsTouched
+                    ? "size-fit cursor-pointer text-red-500 p-0"
+                    : "hidden"
+                )}
               >
                 Clear All Filters
               </Button>
@@ -354,3 +445,122 @@ export default function SearchBar({ cuisines, diets, dishTypes }: SearchBarProps
     </Popover>
   );
 }
+
+type SelectCommandProps = {
+  items: Item[];
+  selectedItem?: Item;
+  disabled?: boolean;
+  placeholder?: string;
+  emptyText?: string;
+  onSelect: (item: Item) => void;
+};
+
+const SelectCommand = memo(({ 
+  items,
+  selectedItem,
+  disabled = false,
+  placeholder = "Select an item...",
+  emptyText = "No items found.",
+  onSelect,
+}: SelectCommandProps) => {
+  const handleSelect = useCallback(
+    (value: string) => onSelect(items.find((i) => i.label === value)!),
+    [onSelect, items]
+  );
+  
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          disabled={disabled}
+          className="font-normal cursor-pointer flex-1 justify-between shadow-none rounded-sm"
+        >
+          {selectedItem?.label ? selectedItem.label : placeholder}
+          <ChevronDown className="opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[clamp(250px,25vw,450px)] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={placeholder} className="h-9"/>
+          <CommandList>
+            <CommandEmpty>
+              {emptyText}
+            </CommandEmpty>
+            <CommandGroup>
+              {
+                items.map((i) => (
+                  <CommandItem
+                    key={i.id}
+                    value={i.label}
+                    onSelect={handleSelect}
+                  >
+                    <div className="flex items-center gap-2">
+                      {
+                        i.icon && (
+                          <Image
+                            src={i.icon} 
+                            alt={i.label}
+                            width={35}
+                            height={35}
+                            className="rounded-full shadow-sm"
+                          />
+                        )
+                      }
+                      {i.label}
+                    </div>
+                    <Check
+                      className={cn(
+                        "ml-auto",
+                        i.id === selectedItem?.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))
+              }
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+});
+
+SelectCommand.displayName = "SelectCommand";
+
+type PreferencesStatusProps<T extends RecipeSearch = RecipeSearch> = {
+  id: "isUsingCuisinePreferences" | "isUsingDietPreferences" | "isUsingDishTypePreferences";
+  field: "cuisine" | "diet" | "dishType"
+  label: string;
+  control: Control<T>;
+  setValue: UseFormSetValue<T>;
+};
+
+const PreferencesStatus = memo(({ id, field, label, control, setValue }: PreferencesStatusProps) => {
+  const preferenceStatus = useWatch({ control, name: id });
+  return (
+    <div className="flex items-center gap-3">
+      <Checkbox
+        id={id}
+        checked={preferenceStatus}
+        onCheckedChange={(val) => {
+          if (val) setValue(field, undefined);
+          setValue(
+            id,
+            val === true,
+            { shouldDirty: true }
+          );
+        }}
+      />
+      <label
+        htmlFor={id}
+        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      >
+        {label}
+      </label>
+    </div>
+  );
+});
+
+PreferencesStatus.displayName = "PreferencesStatus";

@@ -4,13 +4,13 @@ import { getMatchingEmail, getMatchingName } from "@/lib/functions/auth";
 export const UsernameSchema = z.string({
   required_error: "A username is required."
 }).min(6, {
-  message: "Username must have at least 6 characters long."
+  message: "Username must have at least 6 characters."
 }).max(20, {
   message: "Username cannot have more than 20 characters."
 }).regex(/^[^_].*[^_]$/, {
   message: "Username cannot start or end with a _."
 }).regex(/^[^\W]+$/, {
-  message: "Username cannot contain symbols."
+  message: "Username cannot contain whitespace or symbols."
 });
 
 export const PasswordSchema = z.string({

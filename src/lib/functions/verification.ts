@@ -6,6 +6,25 @@ import { resend } from "@/lib/resend";
 import bcrypt from "bcryptjs";
 import { isAfter } from "date-fns";
 import { getDateDifference } from "@/lib/utils";
+import { CreateEmailOptions } from "resend";
+
+// to be used client-side
+export async function generateCode(codeLength: number = 6) {
+  const code = String(Math.floor(Math.random() * 10 ** Math.max(0, codeLength))).padStart(codeLength, "0");
+  const hashedCode = await bcrypt.hash(code, 10);
+
+  return [code, hashedCode] as const;
+}
+
+// to be used client-side
+export async function sendEmail(payload: CreateEmailOptions) {
+  return await resend.emails.send(payload);
+}
+
+// to be used client-side
+export async function compareValues(str: string, hashedStr: string) {
+  return await bcrypt.compare(str, hashedStr);
+}
 
 export async function generateEmailVerification({ 
   email,

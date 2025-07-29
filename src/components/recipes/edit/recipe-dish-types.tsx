@@ -20,7 +20,7 @@ import {
 import { InferSelectModel } from "drizzle-orm";
 import { dishType } from "@/db/schema/recipe";
 import { useFieldArray, useFormState, useWatch } from "react-hook-form";
-import { MAX_DISH_TYPES_LENGTH } from "@/lib/zod";
+import { MAX_RECIPE_DISH_TYPES_LENGTH } from "@/lib/zod/recipe";
 import { useMemo, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
@@ -104,7 +104,7 @@ export default function RecipeDishTypes({ dishTypes }: RecipeDishTypes) {
               formDishTypeValues.some((fdt) => 
                 fdt.id === dishType.id && 
                 fdt.name === dishType.name) ||
-              formDishTypeValues.length >= MAX_DISH_TYPES_LENGTH
+              formDishTypeValues.length >= MAX_RECIPE_DISH_TYPES_LENGTH
             }
             onClick={() => {
               append(dishType);
@@ -148,8 +148,8 @@ export default function RecipeDishTypes({ dishTypes }: RecipeDishTypes) {
         <p className="font-semibold text-muted-foreground">
           Add some dish types to your recipe here. (optional)
         </p>
-        <span className={cn(formDishTypeValues.length > MAX_DISH_TYPES_LENGTH && "text-red-500")}>
-          <b className="text-xl">{formDishTypeValues.length}</b> / {MAX_DISH_TYPES_LENGTH}
+        <span className={cn(formDishTypeValues.length > MAX_RECIPE_DISH_TYPES_LENGTH && "text-red-500")}>
+          <b className="text-xl">{formDishTypeValues.length}</b> / {MAX_RECIPE_DISH_TYPES_LENGTH}
         </span>
       </div>
       {

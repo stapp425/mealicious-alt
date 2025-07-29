@@ -1,7 +1,7 @@
 "use client";
 
 import { diet, dishType, nutrition } from "@/db/schema/recipe";
-import { RecipeCreation, RecipeCreationSchema } from "@/lib/zod";
+import { type CreateRecipeForm, CreateRecipeFormSchema } from "@/lib/zod/recipe";
 import { InferSelectModel } from "drizzle-orm";
 import { LoaderCircle } from "lucide-react";
 import { Control, useForm, UseFormRegister, UseFormSetValue } from "react-hook-form";
@@ -37,10 +37,10 @@ type CreateRecipeFormProps = {
   readonly dishTypes: Omit<InferSelectModel<typeof dishType>, "description">[];
 };
 
-type RecipeFormContextProps = {
-  control: Control<RecipeCreation>;
-  register: UseFormRegister<RecipeCreation>;
-  setValue: UseFormSetValue<RecipeCreation>;
+type RecipeFormContextProps<T extends CreateRecipeForm = CreateRecipeForm> = {
+  control: Control<T>;
+  register: UseFormRegister<T>;
+  setValue: UseFormSetValue<T>;
 };
 
 const CreateRecipeFormContext = createContext<RecipeFormContextProps | null>(null);
@@ -64,8 +64,8 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
     formState: {
       isSubmitting
     }
-  } = useForm<RecipeCreation>({
-    resolver: zodResolver(RecipeCreationSchema),
+  } = useForm<CreateRecipeForm>({
+    resolver: zodResolver(CreateRecipeFormSchema),
     mode: "onSubmit",
     reValidateMode: "onSubmit",
     delayError: 250,
@@ -108,7 +108,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
   const onSubmit = handleSubmit(async (formData) => {
     try {
       const { image, ...formDataRest } = formData;
-      const recipeCreationResult = await createRecipe({ createdRecipe: formDataRest });
+      const recipeCreationResult = await createRecipe(formDataRest);
 
       if (!recipeCreationResult?.data)
         throw new Error("Failed to create recipe.");

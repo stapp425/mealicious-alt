@@ -1,6 +1,6 @@
 "use client";
 
-import { MealEdition, MealEditionSchema } from "@/lib/zod";
+import { type EditMealForm, EditMealFormSchema } from "@/lib/zod/meal";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAction } from "next-safe-action/hooks";
 import { useRouter } from "next/navigation";
@@ -42,8 +42,8 @@ export default function EditMealForm({ userId, meal }: EditMealFormProps) {
     onError: () => toast.error("Failed to edit meal.")
   });
   
-  const editMealForm = useForm<MealEdition>({
-    resolver: zodResolver(MealEditionSchema),
+  const editMealForm = useForm<EditMealForm>({
+    resolver: zodResolver(EditMealFormSchema),
     defaultValues: {
       id: meal.id,
       title: meal.title,
@@ -54,7 +54,7 @@ export default function EditMealForm({ userId, meal }: EditMealFormProps) {
   });
 
   const onSubmit = editMealForm.handleSubmit(async (data) => {
-    await executeAsync({ editedMeal: data });
+    await executeAsync(data);
   });
   
   return (

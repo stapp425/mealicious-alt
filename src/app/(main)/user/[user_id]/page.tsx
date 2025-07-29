@@ -5,9 +5,8 @@ import { ArrowDownToLine, Calendar, Heart, Pencil } from "lucide-react";
 import { Metadata } from "next";
 import { cache, Suspense } from "react";
 import { notFound } from "next/navigation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
-import defaultProfilePicture from "@/img/default/default-pfp.svg";
+import defaultProfilePicture from "@/img/default/default-pfp.jpg";
 import { Separator } from "@/components/ui/separator";
 import CreatedRecipes from "@/components/user/main/created-recipes";
 import SavedRecipes from "@/components/user/main/saved-recipes";
@@ -15,6 +14,7 @@ import FavoritedRecipes from "@/components/user/main/favorited-recipes";
 import { CarouselSkeleton } from "@/components/user/main/user-info-carousel";
 import { auth } from "@/auth";
 import AboutSection from "@/components/user/main/about-section";
+import Image from "next/image";
 
 type PageProps = {
   params: Promise<{ user_id: string; }>;
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: { params: Promise<{ user_id: 
       type: "website",
       title: `${name} | Mealicious`,
       description: `${name}. Created Recipes: ${counts.created} • Favorited Recipes: ${counts.favorited} • Saved Recipes: ${counts.saved}`,
-      images: image || defaultProfilePicture,
+      images: image || defaultProfilePicture.src,
     }
   };
 }
@@ -64,15 +64,14 @@ export default async function Page({ params }: PageProps) {
   return (
     <div className="flex-1 relative max-w-screen lg:max-w-[750px] overflow-x-hidden flex flex-col gap-3 mx-auto p-4">
       <section className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-8">
-        <Avatar className="size-35">
-          <AvatarImage 
+        <div className="relative size-35 rounded-full overflow-hidden">
+          <Image 
             src={image || defaultProfilePicture}
             alt={`Profile picture of ${name}`}
+            fill
+            className="object-cover object-center bg-slate-100"
           />
-          <AvatarFallback className="bg-mealicious-primary text-white font-semibold text-5xl">
-            {name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        </div>
         <div className="flex-1 grid gap-2">
           <h1 className="font-bold text-3xl">{name}</h1>
           <div className="flex text-muted-foreground items-center gap-2">

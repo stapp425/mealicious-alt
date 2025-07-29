@@ -7,12 +7,17 @@ import {
   user,
   recipeStatistics,
   recipeToNutrition,
-  nutrition
+  nutrition,
+  userToCuisine,
+  userToDiet,
+  userToDishType
 } from "@/db/schema";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MAX_GRID_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
-import { and, eq, exists, ilike, sql } from "drizzle-orm";
+import { and, asc, eq, exists, ilike, sql } from "drizzle-orm";
 import { Info, SearchX } from "lucide-react";
 import RecipeResult from "@/components/recipes/search/recipe-result";
+import { auth } from "@/auth";
 
 type SearchResultsProps = {
   count: number;
@@ -22,11 +27,25 @@ type SearchResultsProps = {
     diet: string;
     dishType: string;
     page: number;
+    isUsingCuisinePreferences: boolean;
+    isUsingDietPreferences: boolean;
+    isUsingDishTypePreferences: boolean;
   }
 };
 
 export default async function SearchResults({ count, searchParams }: SearchResultsProps) {  
-  const { query, cuisine, diet, dishType, page } = searchParams;
+  const session = await auth();
+  const userId = session?.user?.id;
+  const { 
+    query,
+    cuisine,
+    diet,
+    dishType,
+    page,
+    isUsingCuisinePreferences,
+    isUsingDietPreferences,
+    isUsingDishTypePreferences
+  } = searchParams;
   
   const creatorSubQuery = db.select({
     id: user.id,
@@ -66,6 +85,44 @@ export default async function SearchResults({ count, searchParams }: SearchResul
     ))
     .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
     .as("recipe_to_nutrition_sub");
+
+  const preferencesOrdering = [
+    isUsingCuisinePreferences && userId ? asc(
+      db.select({ score: sql`coalesce(${userToCuisine.preferenceScore}, 0)` })
+        .from(userToCuisine)
+        .where(and(
+          eq(userToCuisine.userId, userId),
+          eq(userToCuisine.cuisineId, recipe.cuisineId)
+        ))
+        .limit(1)
+    ) : undefined,
+    isUsingDietPreferences && userId ? asc(
+      db.select({ score: sql`coalesce(${userToDiet.preferenceScore}, 0)` })
+        .from(userToDiet)
+        .where(and(
+          eq(userToDiet.userId, userId),
+          exists(
+            db.select()
+              .from(recipeToDiet)
+              .where(eq(userToDiet.dietId, recipeToDiet.dietId))
+          )
+        ))
+        .limit(1)
+    ) : undefined,
+    isUsingDishTypePreferences && userId ? asc(
+      db.select({ score: sql`coalesce(${userToDishType.preferenceScore}, 0)` })
+        .from(userToDishType)
+        .where(and(
+          eq(userToDishType.userId, userId),
+          exists(
+            db.select()
+              .from(recipeToDishType)
+              .where(eq(userToDishType.dishTypeId, recipeToDishType.dishTypeId))
+          )
+        ))
+        .limit(1)
+    ) : undefined,
+  ]
 
   const searchedRecipes = await db.select({
     id: recipe.id,
@@ -132,6 +189,7 @@ export default async function SearchResults({ count, searchParams }: SearchResul
     .leftJoinLateral(cuisineSubQuery, sql`true`)
     .leftJoinLateral(caloriesSubQuery, sql`true`)
     .limit(MAX_GRID_RECIPE_DISPLAY_LIMIT)
+    .orderBy(...preferencesOrdering.filter((o) => !!o))
     .offset(page * MAX_GRID_RECIPE_DISPLAY_LIMIT);
 
   return (
@@ -160,6 +218,22 @@ export default async function SearchResults({ count, searchParams }: SearchResul
           </div>
         )
       }
+    </div>
+  );
+}
+
+export function SearchResultsSkeleton() {
+  return (
+    <div className="flex-1 w-full flex flex-col gap-3">
+      <Skeleton className="w-[225px] h-[35px] rounded-sm"/>
+      <Skeleton className="w-[325px] h-[25px] rounded-sm"/>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        {
+          Array.from({ length: MAX_GRID_RECIPE_DISPLAY_LIMIT }, (_, i) => i).map((i) => (
+            <Skeleton key={i} className="h-[500px] sm:h-[425px] rounded-md"/>
+          ))
+        }
+      </div>
     </div>
   );
 }

@@ -224,7 +224,7 @@ export const diet = pgTable("diet", (t) => ({
   name: t.varchar("diet_name", { length: 100 })
     .notNull()
     .unique(),
-  description: t.text("diet_desc")
+  description: t.text("diet_desc").notNull()
 }));
 
 export const recipeToDiet = pgTable("recipe_to_diet", (t) => ({
