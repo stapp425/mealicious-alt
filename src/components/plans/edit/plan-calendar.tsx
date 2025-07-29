@@ -40,7 +40,7 @@ export default function PlanCalendar() {
           </div>
         )
       }
-      <div className="w-fit bg-mealicious-primary font-semibold text-sm flex items-center gap-2 py-2 px-3 rounded-sm">
+      <div className="w-fit bg-mealicious-primary text-white font-semibold text-sm flex items-center gap-2 py-2 px-3 rounded-sm">
         <CalendarIcon size={16}/>
         Selected Date
         <Separator orientation="vertical"/>
@@ -63,7 +63,7 @@ export default function PlanCalendar() {
         components={{
           DayButton: ({ day, ...props }) => {
             const shouldDisable = !isSameDay(day.date, planToEditDate, inUtc) && (
-              plans.filter((p) => isSameDay(p.date, day.date, inUtc)).length !== 0 ||
+              plans.filter((p) => isSameDay(p.date, day.date, inUtc)).length > 0 ||
               isBefore(day.date, now) || isAfter(day.date, endDate) ||
               !DateSchema.safeParse(day.date).success
             );

@@ -1,5 +1,5 @@
 import { mealTypes } from "@/lib/types";
-import { add, endOfDay, startOfDay } from "date-fns";
+import { add, endOfDay, isBefore, startOfDay } from "date-fns";
 import { IdSchema } from "@/lib/zod";
 import { MAX_MEAL_TITLE_LENGTH, MealTypeSchema } from "@/lib/zod/meal";
 import z from "zod";
@@ -22,7 +22,7 @@ const PlanFormSchema = z.object({
     const start = startOfDay(now);
     const end = endOfDay(add(now, { months: 1 }));
 
-    if (val < start) {
+    if (isBefore(val, start)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Plan date cannot be set on a past date.",

@@ -174,12 +174,10 @@ const DishTypePreference = memo(({ index, control, setPreferenceValue }: DishTyp
       >
         {
           Array.from({ length: MAX_DISH_TYPE_SCORE + 1 }, (_, i) => String(i)).map((i) => (
-            <div key={i} className="flex-1 border border-border has-[[data-state=checked]]:border-mealicious-primary has-[[data-state=checked]]:bg-mealicious-primary/20 flex flex-col sm:flex-row justify-around items-center gap-2 rounded-sm py-2 px-3">
-              <RadioGroupItem value={i} id={`${dishTypePreference.name}-score-${i}`} />
-              <Label htmlFor={`${dishTypePreference.name}-score-${i}`} className="text-muted-foreground/50 [[data-state=checked]~&]:text-primary">
-                {i}
-              </Label>
-            </div>
+            <Label key={i} className="flex-1 border border-border has-[[data-state=checked]]:border-mealicious-primary has-[[data-state=checked]]:bg-mealicious-primary/20 flex flex-col sm:flex-row justify-around items-center gap-2 rounded-sm py-2 px-3">
+              <RadioGroupItem value={i}/>
+              <span className="text-muted-foreground/50 [[data-state=checked]~&]:text-primary">{i}</span>
+            </Label>
           ))
         }
       </RadioGroup>
