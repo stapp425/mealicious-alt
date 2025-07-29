@@ -168,7 +168,7 @@ const DietPreference = memo(({ index, control, setPreferenceValue }: DietPrefere
       <RadioGroup 
         value={String(dietPreference.score)}
         onValueChange={(val) => setPreferenceValue(`preferences.${index}.score`, Number(val), { shouldDirty: true })}
-        className="flex justify-between gap-2.5"
+        className="flex justify-between gap-2"
       >
         {
           Array.from({ length: MAX_DIET_SCORE + 1 }, (_, i) => String(i)).map((i) => (

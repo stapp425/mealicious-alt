@@ -170,7 +170,7 @@ const DishTypePreference = memo(({ index, control, setPreferenceValue }: DishTyp
       <RadioGroup 
         value={String(dishTypePreference.score)}
         onValueChange={(val) => setPreferenceValue(`preferences.${index}.score`, Number(val), { shouldDirty: true })}
-        className="flex justify-between gap-2.5"
+        className="flex justify-between gap-2"
       >
         {
           Array.from({ length: MAX_DISH_TYPE_SCORE + 1 }, (_, i) => String(i)).map((i) => (
