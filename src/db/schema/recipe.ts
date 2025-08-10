@@ -1,6 +1,6 @@
 import { sql, relations, InferInsertModel } from "drizzle-orm";
 import { pgTable, check, unique, primaryKey } from "drizzle-orm/pg-core";
-import { user, userToCuisine, userToDiet, userToDishType, userToNutrition } from "./user";
+import { user, userToCuisine, userToDiet, userToDishType } from "./user";
 import { mealToRecipe } from "./meal";
 import { Unit } from "@/lib/types";
 import { nanoid } from "nanoid";
@@ -390,8 +390,7 @@ export const instructionRelations = relations(instruction, ({ one }) => ({
 }));
 
 export const nutritionRelations = relations(nutrition, ({ many }) => ({
-  recipesUsingNutrition: many(recipeToNutrition),
-  preferredByUsers: many(userToNutrition)
+  recipesUsingNutrition: many(recipeToNutrition)
 }));
 
 export const recipeToNutritionRelations = relations(recipeToNutrition, ({ one }) => ({

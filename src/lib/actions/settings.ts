@@ -1,10 +1,17 @@
 "use server";
 
 import { db } from "@/db";
-import { cuisine, emailVerification, passwordReset, user as userTable, userToCuisine, userToDiet, userToDishType, userToNutrition } from "@/db/schema";
+import { cuisine, emailVerification, passwordReset, user as userTable, userToCuisine, userToDiet, userToDishType } from "@/db/schema";
 import { authActionClient } from "@/safe-action";
-import { asc, count, eq, ilike, sql } from "drizzle-orm";
-import { ChangeCuisinePreferencesFormSchema, ChangeDietPreferencesFormSchema, ChangeDishTypePreferencesFormSchema, ChangeEmailFormSchema, ChangeNutritionPreferencesFormSchema, ChangePasswordFormSchema, ChangeUsernameFormSchema } from "@/lib/zod/settings";
+import { asc, count, eq, ilike } from "drizzle-orm";
+import {
+  ChangeCuisinePreferencesFormSchema,
+  ChangeDietPreferencesFormSchema,
+  ChangeDishTypePreferencesFormSchema,
+  ChangeEmailFormSchema,
+  ChangePasswordFormSchema,
+  ChangeUsernameFormSchema
+} from "@/lib/zod/settings";
 import { z } from "zod";
 import { ActionError } from "@/lib/types";
 import bcrypt from "bcryptjs";
@@ -140,34 +147,6 @@ export const updatePassword = authActionClient
       message: "Password successfully changed!"
     };
   });
-
-export const updateNutritionPreferences = authActionClient
-  .schema(ChangeNutritionPreferencesFormSchema)
-  .action(async ({
-    parsedInput: { preferences },
-    ctx: { user }
-  }) => {
-    await db.insert(userToNutrition)
-      .values(preferences.map((p) => ({
-        userId: user.id,
-        nutritionId: p.id,
-        unit: p.unit,
-        amountLimit: p.amountLimit
-      })))
-      .onConflictDoUpdate({
-        target: [userToNutrition.userId, userToNutrition.nutritionId],
-        set: {
-          unit: sql`excluded."nutr_unit"`,
-          amountLimit: sql`excluded."nutr_amount_limit"`
-        }
-      });
-
-    return {
-      success: true as const,
-      message: "Nutrition preferences successfully changed!"
-    };
-  });
-
 
 export const updateCuisinePreferences = authActionClient
   .schema(ChangeCuisinePreferencesFormSchema)

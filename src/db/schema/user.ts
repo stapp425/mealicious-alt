@@ -1,10 +1,9 @@
 import { check, pgTable, primaryKey } from "drizzle-orm/pg-core";
-import { cuisine, diet, dishType, nutrition, recipe, recipeFavorite, recipeReview, reviewLike, savedRecipe } from "./recipe";
+import { cuisine, diet, dishType, recipe, recipeFavorite, recipeReview, reviewLike, savedRecipe } from "./recipe";
 import { relations, sql } from "drizzle-orm";
 import { account, emailVerification, passwordReset, session } from "@/db/schema/auth";
 import { meal } from "@/db/schema/meal";
 import { plan } from "@/db/schema/plan";
-import { Unit } from "@/lib/types";
 import { nanoid } from "nanoid";
 
 export const user = pgTable("user", (t) => ({
@@ -44,27 +43,6 @@ export const userToCuisine = pgTable("user_to_cuisine", (t) => ({
 }), (t) => [
   primaryKey({ 
     columns: [t.userId, t.cuisineId]
-  })
-]);
-
-export const userToNutrition = pgTable("user_to_nutrition", (t) => ({
-  userId: t.text("user_id")
-    .notNull()
-    .references(() => user.id, {
-      onDelete: "cascade"
-    }),
-  nutritionId: t.text("nutr_id")
-    .notNull()
-    .references(() => nutrition.id, {
-      onDelete: "cascade"
-    }),
-  unit: t.text("nutr_unit")
-    .notNull()
-    .$type<Unit["abbreviation"]>(),
-  amountLimit: t.integer("nutr_amount_limit").notNull()
-}), (t) => [
-  primaryKey({
-    columns: [t.userId, t.nutritionId]
   })
 ]);
 
@@ -124,7 +102,6 @@ export const userRelations = relations(user, ({ one, many }) => ({
   recipesCreated: many(recipe),
   mealsCreated: many(meal),
   plansCreated: many(plan),
-  preferredNutritionAmounts: many(userToNutrition),
   preferredDishTypes: many(userToDishType),
   preferredDiets: many(userToDiet),
   preferredCuisines: many(userToCuisine),
@@ -143,17 +120,6 @@ export const userToCuisineRelations = relations(userToCuisine, ({ one }) => ({
   cuisine: one(cuisine, {
     fields: [userToCuisine.cuisineId],
     references: [cuisine.id]
-  })
-}));
-
-export const userToNutritionRelations = relations(userToNutrition, ({ one }) => ({
-  user: one(user, {
-    fields: [userToNutrition.userId],
-    references: [user.id]
-  }),
-  nutrition: one(nutrition, {
-    fields: [userToNutrition.nutritionId],
-    references: [nutrition.id]
   })
 }));
 
