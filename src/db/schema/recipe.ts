@@ -21,21 +21,25 @@ export const recipe = pgTable("recipe", (t) => ({
   sourceName: t.varchar("recipe_source_name", { length: 256 }),
   sourceUrl: t.varchar("recipe_source_url", { length: 2048 }),
   cookTime: t.numeric("recipe_cook_time", {
+    mode: "number",
     precision: 6,
-    scale: 2
-  }).notNull().default("0"),
+    scale: 2,
+  }).notNull().default(0),
   prepTime: t.numeric("recipe_prep_time", {
+    mode: "number",
     precision: 6,
     scale: 2
-  }).notNull().default("0"),
+  }).notNull().default(0),
   readyTime: t.numeric("recipe_ready_time", {
+    mode: "number",
     precision: 6,
     scale: 2
-  }).notNull().default("0"),
+  }).notNull().default(0),
   servingSizeUnit: t.text("recipe_serving_size_unit")
     .notNull()
     .$type<Unit["abbreviation"]>(),
   servingSizeAmount: t.numeric("recipe_serving_size_amount", {
+    mode: "number",
     precision: 6,
     scale: 2
   }).notNull(),
@@ -109,6 +113,7 @@ export const instruction = pgTable("instruction", (t) => ({
     .$default(() => nanoid()),
   title: t.text("inst_title").notNull(),
   time: t.numeric("inst_time", {
+    mode: "number",
     precision: 5,
     scale: 2
   }).notNull(),
@@ -157,6 +162,7 @@ export const recipeToNutrition = pgTable("recipe_to_nutrition", (t) => ({
     .notNull()
     .$type<Unit["abbreviation"]>(),
   amount: t.numeric("unit_amount", { 
+    mode: "number",
     precision: 6, 
     scale: 2
   }).notNull()
@@ -182,6 +188,7 @@ export const ingredient = pgTable("ingredient", (t) => ({
     .notNull()
     .$type<Unit["abbreviation"]>(),
   amount: t.numeric("ing_amount", {
+    mode: "number",
     precision: 5,
     scale: 2
   }).notNull(),

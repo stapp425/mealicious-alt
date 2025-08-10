@@ -34,7 +34,10 @@ export const createPlan = authActionClient
       type: mt as MealType
     })));
 
-    await removeCacheKeys(`user_${user.id!}_plan*`);
+    await Promise.all([
+      removeCacheKeys(`user_${user.id}_plan*`),
+      removeCacheKeys(`user_${user.id}_upcoming_plan`)
+    ]);
     
     return {
       success: true,
@@ -79,7 +82,10 @@ export const updatePlan = authActionClient
       type: mt as MealType
     })));
 
-    await removeCacheKeys(`user_${user.id!}_plan*`);
+    await Promise.all([
+      removeCacheKeys(`user_${user.id}_plan*`),
+      removeCacheKeys(`user_${user.id}_upcoming_plan`)
+    ]);
 
     return {
       success: true as const,
@@ -111,7 +117,11 @@ export const deletePlan = authActionClient
     if (user.id !== foundPlan.createdBy) throw new ActionError("You are not authorized to delete this plan.");
     
     await db.delete(plan).where(eq(plan.id, foundPlan.id));
-    await removeCacheKeys(`user_${user.id}_plan*`);
+    await Promise.all([
+      removeCacheKeys(`user_${user.id}_plan*`),
+      removeCacheKeys(`user_${user.id}_upcoming_plan`)
+    ]);
+    
     revalidatePath("/plans");
 
     return {

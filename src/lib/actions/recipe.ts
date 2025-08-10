@@ -12,6 +12,7 @@ import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
 import { getRatingKey } from "@/lib/utils";
 import axios from "axios";
 import z from "zod";
+import { removeCacheKeys } from "@/lib/actions/redis";
 
 export const createRecipe = authActionClient
   .schema(CreateRecipeFormSchema.omit({ image: true }))
@@ -26,10 +27,10 @@ export const createRecipe = authActionClient
         tags: createdRecipe.tags,
         sourceName: createdRecipe.source?.name || undefined,
         sourceUrl: createdRecipe.source?.url || undefined,
-        cookTime: createdRecipe.cookTime.toFixed(2),
-        prepTime: createdRecipe.prepTime.toFixed(2),
-        readyTime: createdRecipe.readyTime.toFixed(2),
-        servingSizeAmount: createdRecipe.servingSize.amount.toFixed(2),
+        cookTime: createdRecipe.cookTime,
+        prepTime: Number(createdRecipe.prepTime.toFixed(2)),
+        readyTime: Number(createdRecipe.readyTime.toFixed(2)),
+        servingSizeAmount: Number(createdRecipe.servingSize.amount.toFixed(2)),
         servingSizeUnit: createdRecipe.servingSize.unit,
         createdBy: user.id,
         cuisineId: createdRecipe.cuisine?.id || undefined,
@@ -54,7 +55,7 @@ export const createRecipe = authActionClient
       .values(createdRecipe.nutrition.map((n) => ({
         recipeId,
         nutritionId: n.id,
-        amount: n.amount.toFixed(2),
+        amount: Number(n.amount.toFixed(2)),
         unit: n.unit
       }))) : undefined;
 
@@ -62,7 +63,7 @@ export const createRecipe = authActionClient
       .values(createdRecipe.ingredients.map((i) => ({
         recipeId,
         name: i.name,
-        amount: i.amount.toFixed(2),
+        amount: Number(i.amount.toFixed(2)),
         unit: i.unit,
         isAllergen: i.isAllergen,
         note: i.note
@@ -86,7 +87,7 @@ export const createRecipe = authActionClient
         title: inst.title,
         description: inst.description,
         index: i + 1,
-        time: inst.time.toFixed(2)
+        time: Number(inst.time.toFixed(2))
       }))) : undefined;
 
     await Promise.all([
@@ -106,6 +107,7 @@ export const createRecipe = authActionClient
       });
     }
 
+    await removeCacheKeys(`user_${user.id}_created_recipes_count`);
     revalidatePath("/recipes");
 
     return {
@@ -141,11 +143,11 @@ export const updateRecipe = authActionClient
         cuisineId: editedRecipe.cuisine?.id || null,
         sourceName: editedRecipe.source?.name || null,
         sourceUrl: editedRecipe.source?.url || null,
-        servingSizeAmount: editedRecipe.servingSize.amount.toFixed(2),
+        servingSizeAmount: Number(editedRecipe.servingSize.amount.toFixed(2)),
         servingSizeUnit: editedRecipe.servingSize.unit,
-        cookTime: editedRecipe.cookTime.toFixed(2),
-        prepTime: editedRecipe.prepTime.toFixed(2),
-        readyTime: editedRecipe.readyTime.toFixed(2),
+        cookTime: Number(editedRecipe.cookTime.toFixed(2)),
+        prepTime: Number(editedRecipe.prepTime.toFixed(2)),
+        readyTime: Number(editedRecipe.readyTime.toFixed(2)),
         tags: editedRecipe.tags,
         updatedAt: new Date(),
       })
@@ -158,7 +160,7 @@ export const updateRecipe = authActionClient
       .values(editedRecipe.nutrition.map((n) => ({
         recipeId: foundRecipe.id,
         nutritionId: n.id,
-        amount: n.amount.toFixed(2),
+        amount: Number(n.amount.toFixed(2)),
         unit: n.unit
       }))) : undefined;
 
@@ -169,7 +171,7 @@ export const updateRecipe = authActionClient
       .values(editedRecipe.ingredients.map((i) => ({
         recipeId: foundRecipe.id,
         name: i.name,
-        amount: i.amount.toFixed(2),
+        amount: Number(i.amount.toFixed(2)),
         unit: i.unit,
         isAllergen: i.isAllergen,
         note: i.note
@@ -202,7 +204,7 @@ export const updateRecipe = authActionClient
         title: inst.title,
         description: inst.description,
         index: i + 1,
-        time: inst.time.toFixed(2)
+        time: Number(inst.time.toFixed(2))
       }))) : undefined;
 
     await Promise.all([
@@ -230,7 +232,7 @@ export const updateRecipe = authActionClient
     } else {
       await deleteRecipeQueryIndex(foundRecipe.id);
     }
-
+    
     revalidatePath("/recipes");
     revalidatePath(`/recipes/${foundRecipe.id}`);
     revalidatePath(`/recipes/${foundRecipe.id}/edit`);
@@ -267,8 +269,9 @@ export const deleteRecipe = authActionClient
     const deleteImageOperation = axios.delete(url);
     const deleteRecipeQuery = db.delete(recipe).where(eq(recipe.id, foundRecipe.id));
     const deleteRecipeQueryIndexOperation = deleteRecipeQueryIndex(foundRecipe.id);
+    const removeCacheKeyOperation = removeCacheKeys(`user_${user.id}_created_recipes_count`);
 
-    await Promise.all([deleteImageOperation, deleteRecipeQuery, deleteRecipeQueryIndexOperation]);
+    await Promise.all([deleteImageOperation, deleteRecipeQuery, deleteRecipeQueryIndexOperation, removeCacheKeyOperation]);
     revalidatePath("/recipes");
 
     return {
@@ -343,6 +346,7 @@ export const toggleRecipeFavorite = authActionClient
       isFavorite = true;
     }
 
+    await removeCacheKeys(`user_${user.id}_favorited_recipes_count`);
     revalidatePath("/recipes");
     revalidatePath(`/recipes/${recipeId}`);
 
@@ -399,6 +403,7 @@ export const toggleSavedListRecipe = authActionClient
       isSaved = true;
     }
 
+    await removeCacheKeys(`user_${user.id}_saved_recipes_count`);
     revalidatePath("/recipes");
     revalidatePath(`/recipes/${recipeId}`);
 

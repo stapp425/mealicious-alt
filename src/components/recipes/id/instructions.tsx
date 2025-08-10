@@ -11,7 +11,7 @@ type InstructionsProps = {
   instructions: {
     id: string;
     title: string;
-    time: string;
+    time: number;
     index: number;
     description: string;
   }[];
@@ -121,7 +121,7 @@ export default function Instructions({ instructions }: InstructionsProps) {
                   <h2 className="font-bold text-lg hyphens-auto line-clamp-2 -mt-1">{i.title}</h2>
                   <div className="font-semibold text-sm text-nowrap flex items-center gap-1.5 text-muted-foreground">
                     <Clock size={14}/>
-                    {Math.floor(Number(i.time))} mins
+                    {Math.floor(i.time)} mins
                   </div>
                 </div>
               </div>

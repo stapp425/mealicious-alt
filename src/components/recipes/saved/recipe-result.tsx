@@ -41,7 +41,7 @@ type RecipeResultProps = {
     description: string | null;
     image: string;
     calories: number;
-    prepTime: string;
+    prepTime: number;
     diets: {
       id: string;
       name: string;
@@ -162,7 +162,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
               <Separator orientation="vertical"/>
               <div className="flex items-center gap-1.5 font-semibold text-sm">
                 <Clock size={14}/>
-                <span>{Math.floor(Number(recipe.prepTime))} min</span>
+                <span>{Math.floor(recipe.prepTime)} min</span>
               </div>
             </div>
             <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-end gap-2 mt-auto">

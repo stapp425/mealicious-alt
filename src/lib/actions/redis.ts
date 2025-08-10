@@ -1,6 +1,7 @@
 "use server";
 
 import { redis } from "@/lib/redis";
+import { UTCDate } from "@date-fns/utc";
 import { differenceInSeconds } from "date-fns";
 import { ZodType } from "zod";
 
@@ -36,7 +37,7 @@ export async function getCachedData<T>({ schema, cacheKey, call, timeToLive }: {
   await redis.set(
     cacheKey,
     JSON.stringify(databaseResult),
-    "EX", typeof timeToLive === "number" ? timeToLive : differenceInSeconds(timeToLive, Date.now())
+    "EX", typeof timeToLive === "number" ? timeToLive : differenceInSeconds(timeToLive, new UTCDate())
   );
 
   return databaseResult;
@@ -52,5 +53,5 @@ export async function removeCacheKeys(pattern: string) {
     keys.push(...foundKeys);
   } while (count !== "0");
   
-  await redis.unlink(keys);
+  if (keys.length > 0) await redis.unlink(keys);
 }

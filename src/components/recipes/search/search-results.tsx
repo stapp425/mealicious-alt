@@ -128,8 +128,8 @@ export default async function SearchResults({ count, searchParams }: SearchResul
     id: recipe.id,
     title: recipe.title,
     image: recipe.image,
-    prepTime: sql`${recipe.prepTime}`.mapWith((val) => Number(val)),
-    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith((val) => Number(val)),
+    prepTime: recipe.prepTime,
+    calories: sql<number>`coalesce(${caloriesSubQuery.calories}, 0)`,
     creator: {
       id: creatorSubQuery.id,
       name: creatorSubQuery.name,

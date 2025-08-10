@@ -30,7 +30,7 @@ export function usePagination({
   }, [onSetPage, totalPages, currentPage]);
 
   const decrementPage = React.useCallback(() => {
-    const clampedPage = Math.max(currentPage - 1, 0)
+    const clampedPage = Math.max(currentPage - 1, 0);
     setCurrentPage(clampedPage);
     onSetPage?.(clampedPage);
   }, [onSetPage, totalPages, currentPage]);

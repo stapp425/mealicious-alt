@@ -18,12 +18,10 @@ export const UnitSchema = z.custom<Unit["abbreviation"]>((val) => (typeof val ==
   units.find(({ abbreviation }) => abbreviation == val)
 ), { message: "Value must be a valid unit." });
 
-export const UrlSchema = z.object({
-  url: z.string({
-    required_error: "A URL is required."
-  }).url({
-    message: "URL must be in a valid URL format."
-  })
+export const UrlSchema = z.string({
+  required_error: "A URL is required."
+}).url({
+  message: "URL must be in a valid URL format."
 });
 
 export const ImageDataSchema = z.object({
@@ -45,3 +43,12 @@ export const ImageDataSchema = z.object({
     message: "The file must be a valid image type."
   })
 });
+
+export const CountSchema = z.array(z.object({
+  count: z.number({
+    invalid_type_error: "Expected a number, but received an invalid type.",
+    required_error: "A count is required."
+  }).nonnegative({
+    message: "Count cannot be negative."
+  })
+}));

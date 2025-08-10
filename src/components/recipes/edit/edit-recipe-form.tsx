@@ -42,14 +42,14 @@ type EditRecipeFormProps = {
     title: string;
     image: string;
     tags: string[];
-    cookTime: string;
-    prepTime: string;
-    readyTime: string;
+    cookTime: number;
+    prepTime: number;
+    readyTime: number;
     isPublic: boolean;
     createdBy: string | null;
     sourceName: string | null;
     sourceUrl: string | null;
-    servingSizeAmount: string;
+    servingSizeAmount: number;
     servingSizeUnit: Unit["abbreviation"];
     cuisine: {
       id: string;
@@ -70,7 +70,7 @@ type EditRecipeFormProps = {
     }[];
     nutritionalFacts: {
       unit: Unit["abbreviation"];
-      amount: string;
+      amount: number;
       nutrition: {
         name: string;
         id: string;
@@ -81,7 +81,7 @@ type EditRecipeFormProps = {
       name: string;
       id: string;
       unit: Unit["abbreviation"];
-      amount: string;
+      amount: number;
       isAllergen: boolean;
       note: string | null;
     }[];
@@ -89,7 +89,7 @@ type EditRecipeFormProps = {
       id: string;
       description: string;
       title: string;
-      time: string;
+      time: number;
       index: number;
     }[];
   };

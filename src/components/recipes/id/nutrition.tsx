@@ -8,10 +8,10 @@ import { Info, Minus, Plus } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
 
 type NutritionProps = {
-  servingSizeAmount: string;
+  servingSizeAmount: number;
   servingSizeUnit: Unit["abbreviation"];
   nutritions: {
-    amount: string;
+    amount: number;
     unit: Unit["abbreviation"];
     nutrition: {
       name: string;
@@ -42,7 +42,7 @@ export default function Nutrition({ servingSizeAmount, servingSizeUnit, nutritio
       </Popover>
       <Separator />
       <div className="flex justify-between items-center gap-2">
-        <h2 className="border border-border font-semibold py-2 px-4 rounded-sm">Serving Size: {Math.round(Number(servingSizeAmount))} {servingSizeUnit}</h2>
+        <h2 className="border border-border font-semibold py-2 px-4 rounded-sm">Serving Size: {Math.round(servingSizeAmount)} {servingSizeUnit}</h2>
         <div className="flex items-stretch gap-2">
           <button 
             disabled={count <= 1}
@@ -70,7 +70,7 @@ export default function Nutrition({ servingSizeAmount, servingSizeUnit, nutritio
             <>
             <div key={n.nutrition?.id} className="flex justify-between items-center gap-2">
               <h3 className="font-semibold">{n.nutrition?.name}</h3>
-              <p className="w-[85px]">{Math.round(Number(n.amount)) * count} {n.unit}</p>
+              <p className="w-[85px]">{Math.round(n.amount) * count} {n.unit}</p>
             </div>
             {i < nutritions.length - 1 && <Separator />}
             </>

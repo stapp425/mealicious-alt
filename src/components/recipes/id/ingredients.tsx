@@ -11,7 +11,7 @@ type IngredientsProps = {
   ingredients: {
     id: string;
     name: string;
-    amount: string;
+    amount: number;
     unit: Unit["abbreviation"];
     note: string | null;
     isAllergen: boolean;
@@ -42,7 +42,7 @@ export default function Ingredients({ ingredients }: IngredientsProps) {
               <Checkbox id={i.name}/>
               <div className="flex flex-col items-start">
                 <Label htmlFor={i.name} className="text-base">
-                  {i.amount} {Number(i.amount) !== 1 ? foundUnit.pluralName : foundUnit.name} ({i.unit}) {i.name}
+                  {i.amount} {i.amount !== 1 ? foundUnit.pluralName : foundUnit.name} ({i.unit}) {i.name}
                 </Label>
                 {i.note && <p className="text-muted-foreground text-sm">{i.note}</p>}
               </div>
