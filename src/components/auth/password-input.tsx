@@ -24,6 +24,7 @@ export default function PasswordInput({ id, className, ...props }: PasswordInput
         id={id}
         type={visible ? "text" : "password"}
         placeholder="Password"
+        maxLength={20}
         className={cn("h-full", className)}
         {...props}
         onChange={(e) => {

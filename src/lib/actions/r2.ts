@@ -8,7 +8,7 @@ import { r2 } from "@/lib/r2";
 export async function generatePresignedUrlForImageUpload(params: { name: string; type: string; size: number; }) {
   const parsedBody = ImageDataSchema.safeParse(params);
 
-  if (!parsedBody.success) throw new Error(parsedBody.error.errors[0].message);
+  if (!parsedBody.success) throw new Error(parsedBody.error.message);
   
   const { name, type, size } = parsedBody.data;
   const putCommand = new PutObjectCommand({

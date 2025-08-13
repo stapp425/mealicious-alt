@@ -1,44 +1,61 @@
-import z from "zod";
+import z from "zod/v4";
 import { getMatchingEmail, getMatchingName } from "@/lib/functions/auth";
+import { comparePasswordResetOTPValues, compareValues, getMatchingUserInfo } from "@/lib/functions/verification";
 
 export const UsernameSchema = z.string({
-  required_error: "A username is required."
+  error: (issue) => typeof issue.input === "undefined"
+    ? "A username is required."
+    : "Expected a string, but received an invalid type."
 }).min(6, {
-  message: "Username must have at least 6 characters."
+  abort: true,
+  error: "Username must have at least 6 characters."
 }).max(20, {
-  message: "Username cannot have more than 20 characters."
+  abort: true,
+  error: "Username cannot have more than 20 characters."
 }).regex(/^[^_].*[^_]$/, {
-  message: "Username cannot start or end with a _."
+  abort: true,
+  error: "Username cannot start or end with an _."
 }).regex(/^[^\W]+$/, {
-  message: "Username cannot contain whitespace or symbols."
+  error: "Username cannot contain whitespace or symbols."
 });
 
 export const PasswordSchema = z.string({
-  required_error: "A password is required."
+  error: (issue) => typeof issue.input === "undefined"
+    ? "A password is required."
+    : "Expected a string, but received an invalid type."
 }).min(12, {
-  message: "Password must have at least 12 characters."
+  abort: true,
+  error: "Password must have at least 12 characters."
 }).max(20, {
-  message: "Password cannot have more than 20 characters."
+  abort: true,
+  error: "Password cannot have more than 20 characters."
 }).regex(/^.*[A-Z].*$/, {
+  abort: true,
   message: "Password must contain at least one uppercase letter."
 }).regex(/^.*[_\W].*$/, {
+  abort: true,
   message: "Password must contain at least one symbol."
 }).regex(/^.*[0-9]+.*$/, {
+  abort: true,
   message: "Password must contain at least one digit."
 });
 
-export const EmailSchema = z.string({
-  required_error: "An e-mail is required.",
-}).email({
-  message: "Input does not match a valid e-mail format."
+export const EmailSchema = z.email({
+  error: (issue) => issue.code === "invalid_format"
+    ? "Input does not match an email format."
+    : "Expected a string, but received an invalid type."
+}).nonempty({
+  error: "Email cannot be left empty."
 });
 
 export const SignInFormSchema = z.object({
-  email: EmailSchema,
+  email: EmailSchema.transform((val) => val.toLowerCase()),
   password: z.string({
-    message: "A password is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A password is required."
+      : "Expected a string, but received an invalid type."
   }).nonempty({
-    message: "Password cannot be empty."
+    error: "Password cannot be empty."
   })
 });
 
@@ -46,32 +63,40 @@ export type SignInForm = z.infer<typeof SignInFormSchema>;
 
 export const SignUpFormSchema = z.object({
   name: UsernameSchema,
-  email: EmailSchema,
+  email: EmailSchema.transform((val) => val.toLowerCase()),
   password: PasswordSchema,
-  confirmPassword: z.string()
-}).superRefine(async (val, ctx) => {
-    const [foundUserWithName, foundUserWithEmail] = await Promise.all([getMatchingName(val.name), getMatchingEmail(val.email)]);
+  confirmPassword: z.string({
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A confirm password input is required."
+      : "Expected a string, but received an invalid type."
+  })
+}).check(async (ctx) => {
+    const { name, email, password, confirmPassword } = ctx.value;
+    const [foundUserWithName, foundUserWithEmail] = await Promise.all([getMatchingName(name), getMatchingEmail(email)]);
     
-    if (val.password !== val.confirmPassword) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+    if (password !== confirmPassword) {
+      ctx.issues.push({
+        code: "custom",
+        input: confirmPassword,
         message: "Passwords do not match.",
         path: ["confirmPassword"]
       });
     }
 
     if (foundUserWithName) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Username already exists.",
+      ctx.issues.push({
+        code: "custom",
+        input: name,
+        message: "Username already in use.",
         path: ["name"]
       });
     }
     
     if (foundUserWithEmail) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Email already exists.",
+      ctx.issues.push({
+        code: "custom",
+        input: email,
+        message: "Email already in use.",
         path: ["email"]
       });
     }
@@ -80,15 +105,13 @@ export const SignUpFormSchema = z.object({
 export type SignUpForm = z.infer<typeof SignUpFormSchema>;
 
 export const CredentialsSchema = z.object({
-  email: z.string({
-    required_error: "An email is required."
-  }).email({
-    message: "Email must be in the valid format."
-  }),
+  email: EmailSchema,
   password: z.string({
-    required_error: "A password is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A password is required."
+      : "Expected a string, but received an invalid type."
   }).nonempty({
-    message: "Password cannot be empty."
+    error: "Password cannot be empty."
   })
 });
 
@@ -97,7 +120,7 @@ export type Credentials = z.infer<typeof CredentialsSchema>;
 export const EmailVerificationFormSchema = z.object({
   email: EmailSchema,
   code: z.string({
-    required_error: "A verification code is required."
+    error: "A verification code is required."
   }).nonempty({
     message: "Verification code cannot be negative."
   })
@@ -108,24 +131,134 @@ export type EmailVerificationForm = z.infer<typeof EmailVerificationFormSchema>;
 export const ResetPasswordFormSchema = z.object({
   email: EmailSchema,
   code: z.string({
-    required_error: "A verification code is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A verification code is required."
+      : "Expected a string, but received an invalid type."
   }).nonempty({
-    message: "Verification code cannot be negative."
+    error: "Verification code cannot be empty."
   }),
   password: PasswordSchema,
   confirmPassword: z.string({
-    required_error: "A confirm password input is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A confirm password input is required."
+      : "Expected a string, but received an invalid type."
   }).nonempty({
-    message: "Confirm password input cannot be empty."
+    error: "Confirm password input cannot be empty."
   })
-}).superRefine(async (val, ctx) => {
-  if (val.password !== val.confirmPassword) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+}).check(async (ctx) => {
+  const { email, code, password, confirmPassword } = ctx.value;
+  
+  const foundUser = await getMatchingUserInfo(email);
+  if (!foundUser) {
+    ctx.issues.push({
+      code: "custom",
+      fatal: true,
+      input: email,
+      message: "Email does not exist.",
+      path: ["email"]
+    });
+
+    return z.NEVER;
+  }
+
+  if (!foundUser.password) {
+    ctx.issues.push({
+      code: "custom",
+      fatal: true,
+      input: password,
+      message: "This user is ineligible for a password reset.",
+      path: ["email"]
+    });
+
+    return z.NEVER;
+  }
+
+  const compareCodeResult = await comparePasswordResetOTPValues({ email, code });
+  if (!compareCodeResult) {
+    ctx.issues.push({
+      code: "custom",
+      fatal: true,
+      input: code,
+      message: "Code does not match.",
+      path: ["code"]
+    });
+
+    return z.NEVER;
+  }
+
+  if (password !== confirmPassword) {
+    ctx.issues.push({
+      code: "custom",
+      fatal: true,
+      input: confirmPassword,
       message: "Passwords do not match.",
       path: ["confirmPassword"]
     });
+
+    return z.NEVER;
+  }
+
+  const passwordCompareResult = await compareValues(password, foundUser.password);
+  if (passwordCompareResult) {
+    ctx.issues.push({
+      code: "custom",
+      fatal: true,
+      input: password,
+      message: "New password matches the old password.",
+      path: ["password"]
+    });
+
+    return z.NEVER;
   }
 });
 
 export type ResetPasswordForm = z.infer<typeof ResetPasswordFormSchema>;
+
+export const ReCaptchaResultSchema = z.object({
+  data: z.discriminatedUnion("success", [
+    z.object({
+      success: z.literal(true),
+      score: z.number({
+        error: (issue) => typeof issue.input === "undefined"
+          ? "A score is required."
+          : "Expected a number, but received an invalid type."
+      }).nonnegative({
+        abort: true,
+        error: "Score cannot be negative."
+      }).max(1, {
+        error: "Score cannot be more than 1."
+      }),
+      challenge_ts: z.iso.datetime({
+        error: (issue) => issue.code === "invalid_format"
+          ? "Format of input does not match the date time standard format."
+          : "Expected a string, but received an invalid type."
+      }),
+      hostname: z.string({
+        error: (issue) => typeof issue.input === "undefined"
+          ? "A hostname is required."
+          : "Expected a string, but received an invalid type."
+      }),
+      action: z.optional(z.string({
+        error: (issue) => typeof issue.input === "undefined"
+          ? "An action string is required."
+          : "Expected a string, but received an invalid type."
+      })),
+    }),
+    z.object({
+      success: z.literal(false),
+      "error-codes": z.array(
+        z.enum([
+          "missing-input-secret",
+          "invalid-input-secret",
+          "missing-input-response",
+          "invalid-input-response",
+          "bad-request",
+          "timeout-or-duplicate"
+        ]),
+        "Expected an array, but received an invalid type."
+      )
+    })
+  ])
+}).transform((val) => val.data);
+
+export type ReCaptchaResult = z.infer<typeof ReCaptchaResultSchema>;

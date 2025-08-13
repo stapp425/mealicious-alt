@@ -2,10 +2,10 @@ import { db } from "@/db";
 import { diet, nutrition, recipe, recipeFavorite, recipeToDiet, recipeToNutrition, user } from "@/db/schema";
 import { getCachedData } from "@/lib/actions/redis";
 import { sql, and, eq, exists, count } from "drizzle-orm";
-import z from "zod";
 import { SearchX } from "lucide-react";
 import Pagination from "@/components/user/recipes/pagination";
 import FavoritedRecipesResult from "@/components/user/recipes/favorited-recipes-result";
+import z from "zod/v4";
 
 type FavoritedRecipesProps = {
   userId: string;

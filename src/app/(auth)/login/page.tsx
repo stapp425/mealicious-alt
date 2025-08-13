@@ -37,7 +37,7 @@ export default function Page() {
         </div>
         <div className="flex justify-between items-center gap-3">
           <hr className="flex-1"/>
-          <h2 className="text-muted-foreground font-semibold text-xs text-nowrap">OR LOG IN WITH YOUR E-MAIL</h2>
+          <h2 className="text-muted-foreground font-semibold text-xs text-nowrap">OR LOG IN WITH YOUR EMAIL</h2>
           <hr className="flex-1"/>
         </div>
         <SignInForm />
@@ -60,7 +60,7 @@ export default function Page() {
           priority
           className="object-cover object-center contrast-80"
         />
-        <div className="select-none absolute bottom-4 right-4 w-fit bg-white text-black font-semibold py-2 px-5 text-sm rounded-sm">
+        <div className="select-none absolute bottom-4 left-4 w-fit bg-white text-black font-semibold py-2 px-5 text-sm rounded-sm">
           Image by <Link 
             href="https://www.freepik.com/free-photo/high-angle-delicious-ramen-bowl_10223145.htm#fromView=search&page=1&position=11&uuid=677d8979-48db-4a4d-9337-588d14365bdc&query=ramen"
             target="_blank"

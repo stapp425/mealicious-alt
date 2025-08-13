@@ -1,4 +1,4 @@
-import z from "zod";
+import z from "zod/v4";
 import { Unit, units } from "@/lib/types";
 
 export const maxFileSize = {
@@ -7,48 +7,65 @@ export const maxFileSize = {
 };
 
 export const IdSchema = z.string({
-  required_error: "An ID is required."
+  error: (issue) => typeof issue.input === "undefined"
+    ? "An id."
+    : "Expected a string, but received an invalid type."
 }).nonempty({
-  message: "ID cannot be empty."
+  error: "Id cannot be empty."
 });
 
-export const UnitSchema = z.custom<Unit["abbreviation"]>((val) => (typeof val === "string" && val), {
-  message: "Value must not be empty."
+export const UnitSchema = z.custom<Unit["abbreviation"]>((val) => typeof val === "string", {
+  error: "Value must not be empty."
 }).refine((val) => (
   units.find(({ abbreviation }) => abbreviation == val)
-), { message: "Value must be a valid unit." });
+), { error: "Value must be a valid unit." });
 
-export const UrlSchema = z.string({
-  required_error: "A URL is required."
-}).url({
-  message: "URL must be in a valid URL format."
+export const UrlSchema = z.url({
+  error: (issue) => issue.code === "invalid_format"
+    ? "URL must be in a valid URL format."
+    : "Expected a string, but received an invalid type."
 });
 
 export const ImageDataSchema = z.object({
   name: z.string({
-    required_error: "A file name is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A file name is required."
+      : "Expected a string, but received an invalid type."
   }).regex(/^.*\.(jpeg|jpg|png|webp)$/, {
-    message: "File extension must have a valid image extension."
+    abort: true,
+    error: "File extension must have a valid image extension."
   }),
   size: z.coerce.number({
-    required_error: "A file size is required."
+    error: (issue) => typeof issue.code === "undefined"
+      ? "A file size is required."
+      : "Expected a number, but received an invalid type."
   }).min(1, {
-    message: "File size must be greater than 0B."
+    abort: true,
+    error: "File size must be greater than 0B."
   }).max(maxFileSize.amount, {
-    message: `File size must be at most ${maxFileSize.label}.`
+    abort: true,
+    error: `File size must be at most ${maxFileSize.label}.`
   }),
   type: z.string({
-    required_error: "A file type is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A file type is required."
+      : "Expected a string, but received an invalid type."
   }).regex(/^image\/(jpeg|jpg|png|webp)$/, {
-    message: "The file must be a valid image type."
+    error: "The file must be a valid image type."
   })
 });
 
 export const CountSchema = z.array(z.object({
   count: z.number({
-    invalid_type_error: "Expected a number, but received an invalid type.",
-    required_error: "A count is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A count is required."
+      : "Expected a number, but received an invalid type."
   }).nonnegative({
-    message: "Count cannot be negative."
+    abort: true,
+    error: "Count cannot be negative."
+  }).int({
+    error: "Count must be an integer."
   })
-}));
+})).length(1, {
+  error: "Count array can only have one element."
+});

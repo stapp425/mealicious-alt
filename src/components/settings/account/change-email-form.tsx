@@ -201,7 +201,7 @@ const EmailVerification = memo(({ open, loading, email, codeLength = 6 }: EmailV
       generatedCode.current = "";
       setCode("");
     }
-  }, [open]);
+  }, [open, setCode]);
 
   return (
     <div className="grid gap-2.5">

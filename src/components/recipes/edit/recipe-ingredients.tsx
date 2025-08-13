@@ -20,9 +20,9 @@ import {
 import { UnitSchema } from "@/lib/zod";
 import { Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFieldArray, useFormState } from "react-hook-form";
-import z from "zod";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
+import { useFieldArray, useFormState } from "react-hook-form";
+import z from "zod/v4";
 
 type Ingredient = {
   name: string;
@@ -33,19 +33,29 @@ type Ingredient = {
 };
 
 const IngredientInputSchema = z.object({
-  name: z.string().nonempty({
-    message: "Name cannot be empty."
+  name: z.string({
+    error: (issue) => typeof issue.input === "undefined"
+      ? "An ingredient name is required."
+      : "Expected a string, but received an invalid type."
+  }).nonempty({
+    abort: true,
+    error: "Name cannot be empty."
   }).max(MAX_RECIPE_INGREDIENT_NAME_LENGTH, {
-    message: `Name cannot have more than ${MAX_RECIPE_INGREDIENT_NAME_LENGTH.toLocaleString()} characters.`
+    error: `Name cannot have more than ${MAX_RECIPE_INGREDIENT_NAME_LENGTH.toLocaleString()} characters.`
   }),
-  amount: z.number().positive({
-    message: "Amount must be positive."
+  amount: z.number({
+    error: (issue) => typeof issue.input === "undefined"
+      ? "An ingredient amount is required."
+      : "Expected a number, but received an invalid type."
+  }).positive({
+    abort: true,
+    error: "Amount must be positive."
   }).max(MAX_RECIPE_INGREDIENT_AMOUNT, {
-    message: `Amount must be at most ${MAX_RECIPE_INGREDIENT_AMOUNT.toLocaleString()}.`
+    error: `Amount must be at most ${MAX_RECIPE_INGREDIENT_AMOUNT.toLocaleString()}.`
   }),
   unit: UnitSchema,
-  isAllergen: z.boolean(),
-  note: z.optional(z.string())
+  isAllergen: z.boolean("Expected a boolean, but received an invalid type."),
+  note: z.optional(z.string("Expected a string, but received an invalid type."))
 });
 
 export default function RecipeIngredients() {
@@ -69,7 +79,7 @@ export default function RecipeIngredients() {
   const setIngredientContent = useCallback((index: number, ingredient: Ingredient) => update(index, ingredient), []);
 
   const parsedIngredient = IngredientInputSchema.safeParse(ingredient);
-  const error = parsedIngredient.error?.errors[0]?.message;
+  const error = parsedIngredient.error?.message;
   
   return (
     <div className="flex flex-col gap-3">
@@ -238,7 +248,7 @@ const RecipeIngredient = memo(({
   const [ingredientInput, setIngredientInput] = useState<Ingredient>(currentIngredientContent);
 
   const error = useMemo(
-    () => IngredientInputSchema.safeParse(ingredientInput).error?.errors[0]?.message || (
+    () => IngredientInputSchema.safeParse(ingredientInput).error?.message || (
       ingredientInput.name === currentIngredientContent.name &&
       ingredientInput.amount === currentIngredientContent.amount &&
       ingredientInput.unit === currentIngredientContent.unit &&

@@ -1,5 +1,4 @@
 import { db } from "@/db";
-import { emailVerification } from "@/db/schema";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createLoader, parseAsString, SearchParams } from "nuqs/server";
@@ -28,13 +27,10 @@ export default async function Page({ searchParams }: PageProps) {
   if (!id) redirect("/login");
   
   const foundUser = await db.query.user.findFirst({
-    where: (user, { and, eq, exists, sql }) => and(
+    where: (user, { and, eq, isNotNull, isNull }) => and(
       eq(user.id, id),
-      exists(
-        db.select()
-          .from(emailVerification)
-          .where(eq(emailVerification.email, sql`lower(${user.email})`))
-      )
+      isNotNull(user.password),
+      isNull(user.emailVerified)
     ),
     columns: {
       id: true,

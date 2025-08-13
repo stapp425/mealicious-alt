@@ -35,7 +35,7 @@ export default function RecipeImageUploader() {
     const url = URL.createObjectURL(image);
     setImageURL(url);
     return () => URL.revokeObjectURL(url);
-  }, [image]);
+  }, [image, setImageURL]);
   
   return (
     <div className="bg-sidebar border border-border h-[425px] flex flex-col overflow-hidden relative group rounded-md">
@@ -51,7 +51,7 @@ export default function RecipeImageUploader() {
           
           const validateImage = ImageSchema.safeParse(addedImage);
           if (!validateImage.success) {
-            toast.error(validateImage.error.errors[0].message);
+            toast.error(validateImage.error.message);
             e.target.value = "";
             return;
           }

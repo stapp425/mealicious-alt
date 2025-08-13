@@ -15,10 +15,10 @@ import { toast } from "sonner";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
 
 type ImageUploaderProps = {
-  recipeImageUrl: string;
+  recipeImageURL: string;
 };
 
-export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderProps) {
+export default function RecipeImageUploader({ recipeImageURL }: ImageUploaderProps) {
   const { control, setValue } = useEditRecipeFormContext();
   const { 
     errors: {
@@ -26,20 +26,20 @@ export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderPro
     }
   } = useFormState({ control, name: "image" });
   const image = useWatch({ control, name: "image" });
-  const [imageURL, setImageURL] = useState<string>(recipeImageUrl);
+  const [imageURL, setImageURL] = useState<string>(recipeImageURL);
   const addImageButton = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     if (!image) {
       if (addImageButton.current) addImageButton.current.value = "";
-      setImageURL(recipeImageUrl);
+      setImageURL(recipeImageURL);
       return;
     }
     
     const url = URL.createObjectURL(image);
     setImageURL(url);
     return () => URL.revokeObjectURL(url);
-  }, [image, recipeImageUrl]);
+  }, [image, setImageURL, recipeImageURL]);
   
   return (
     <div className="bg-sidebar border border-border h-[425px] flex flex-col overflow-hidden relative group rounded-md">
@@ -55,7 +55,7 @@ export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderPro
           
           const validateImage = ImageSchema.safeParse(addedImage);
           if (!validateImage.success) {
-            toast.error(validateImage.error.errors[0]?.message);
+            toast.error(validateImage.error.message);
             e.target.value = "";
             return;
           }
@@ -83,11 +83,11 @@ export default function RecipeImageUploader({ recipeImageUrl }: ImageUploaderPro
               Change Image
             </button>
             {
-              recipeImageUrl !== imageURL && (
+              recipeImageURL !== imageURL && (
                 <button
                   type="button"
                   onClick={() => {
-                    setImageURL(recipeImageUrl);
+                    setImageURL(recipeImageURL);
                     setValue("image", null);
                   }}
                   className="cursor-pointer bg-red-500 hover:bg-red-700 font-semibold text-white text-nowrap text-xs py-1 px-3 rounded-md"

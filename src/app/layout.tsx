@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "next-themes";
-import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +17,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Mealicious",
-  description: "An application where you can save recipes, meals, and recipes"
+  description: "An application where you can save recipes, meals, and recipes",
+  openGraph: {
+    type: "website",
+    images: "https://shawntapp.com/mealicious-logo.jpg"
+  }
 };
 
 export default function RootLayout({

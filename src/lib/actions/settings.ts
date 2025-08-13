@@ -12,19 +12,16 @@ import {
   ChangePasswordFormSchema,
   ChangeUsernameFormSchema
 } from "@/lib/zod/settings";
-import { z } from "zod";
 import { ActionError } from "@/lib/types";
 import bcrypt from "bcryptjs";
 import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
 import axios from "axios";
+import { UrlSchema } from "@/lib/zod";
+import z from "zod/v4";
 
 export const updateProfilePicture = authActionClient
-  .schema(z.object({
-    imageURL: z.string({
-      required_error: "An image URL is required."
-    }).nonempty({
-      message: "Image URL cannot be empty."
-    })
+  .inputSchema(z.object({
+    imageURL: UrlSchema
   }))
   .action(async ({
     parsedInput: { imageURL },
@@ -61,7 +58,7 @@ export const updateProfilePicture = authActionClient
   });
 
 export const updateUsername = authActionClient
-  .schema(ChangeUsernameFormSchema)
+  .inputSchema(ChangeUsernameFormSchema)
   .action(async ({
     parsedInput: { username },
     ctx: {
@@ -79,7 +76,7 @@ export const updateUsername = authActionClient
   });
 
 export const updateEmail = authActionClient
-  .schema(ChangeEmailFormSchema)
+  .inputSchema(ChangeEmailFormSchema)
   .action(async ({
     parsedInput: { email },
     ctx: { user }
@@ -112,7 +109,7 @@ export const updateEmail = authActionClient
   });
 
 export const updatePassword = authActionClient
-  .schema(ChangePasswordFormSchema)
+  .inputSchema(ChangePasswordFormSchema)
   .action(async ({
     ctx: { user },
     parsedInput: { 
@@ -149,7 +146,7 @@ export const updatePassword = authActionClient
   });
 
 export const updateCuisinePreferences = authActionClient
-  .schema(ChangeCuisinePreferencesFormSchema)
+  .inputSchema(ChangeCuisinePreferencesFormSchema)
   .action(async ({
     parsedInput: { preferences },
     ctx: { user }
@@ -173,7 +170,7 @@ export const updateCuisinePreferences = authActionClient
   });
 
 export const updateDietPreferences = authActionClient
-  .schema(ChangeDietPreferencesFormSchema)
+  .inputSchema(ChangeDietPreferencesFormSchema)
   .action(async ({
     parsedInput: { preferences },
     ctx: { user }
@@ -198,7 +195,7 @@ export const updateDietPreferences = authActionClient
   });
 
 export const updateDishTypePreferences = authActionClient
-  .schema(ChangeDishTypePreferencesFormSchema)
+  .inputSchema(ChangeDishTypePreferencesFormSchema)
   .action(async ({
     parsedInput: { preferences },
     ctx: { user }

@@ -16,26 +16,22 @@ import { useRouter } from "next/navigation";
 export default function SignInForm() {
   const { replace } = useRouter();
   const [loading, setLoading] = useState(false);
+  
   const {
     register, 
     handleSubmit,
-    formState: { 
-      errors
-    }
-  } = useForm<SignInForm>({ 
+    formState: { errors }
+  } = useForm({ 
     resolver: zodResolver(SignInFormSchema),
     mode: "onSubmit",
-    reValidateMode: "onSubmit",
-    defaultValues: {
-      email: "",
-      password: ""
-    }
+    reValidateMode: "onSubmit"
   });
-  const { executeAsync } = useAction(signInWithCredentials, {
+
+  const { execute } = useAction(signInWithCredentials, {
     onExecute: () => setLoading(true),
     onSuccess: ({ data }) => {
       if (!data) return;
-      replace(data.redirectUrl);
+      replace(data.redirectPathname);
     },
     onError: ({ error: { serverError } }) => {
       toast.error(serverError || "There was an internal error while signing in.");
@@ -43,19 +39,15 @@ export default function SignInForm() {
     }
   });
   
-  const onSubmit = handleSubmit(async (data) => {
-    await executeAsync(data);
-  });
-  
   return (
-    <form onSubmit={onSubmit} className="grid gap-4">
+    <form onSubmit={handleSubmit(execute)} className="grid gap-4">
       <div className="flex flex-col gap-2">
         <div className="flex flex-col gap-1 lg:flex-row md:justify-between">
           <Label
             htmlFor="email"
             className="text-foreground required-field"
           >
-            E-Mail
+            Email
           </Label>
           {
             errors.email?.message && (
@@ -68,9 +60,9 @@ export default function SignInForm() {
         <Input
           id="email"
           type="email"
-          autoComplete="username"
           {...register("email")}
-          placeholder="E-Mail"
+          placeholder="Email"
+          autoComplete="username"
           className="shadow-none rounded-sm"
         />
       </div>

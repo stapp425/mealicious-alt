@@ -10,10 +10,11 @@ import { authActionClient } from "@/safe-action";
 import { getTime } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { UTCDate } from "@date-fns/utc";
-import z from "zod";
+import z from "zod/v4";
+import { CountSchema } from "../zod";
 
 export const createPlan = authActionClient
-  .schema(CreatePlanFormSchema)
+  .inputSchema(CreatePlanFormSchema)
   .action(async ({
     ctx: { user },
     parsedInput: createdPlan
@@ -46,7 +47,7 @@ export const createPlan = authActionClient
   });
 
 export const updatePlan = authActionClient
-  .schema(EditPlanFormSchema)
+  .inputSchema(EditPlanFormSchema)
   .action(async ({
     parsedInput: editedPlan,
     ctx: { user }
@@ -94,11 +95,13 @@ export const updatePlan = authActionClient
   });
 
 export const deletePlan = authActionClient
-  .schema(z.object({
+  .inputSchema(z.object({
     planId: z.string({
-      required_error: "A plan ID is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A plan id is required."
+        : "Expected a string, but received an invalid type."
     }).nonempty({
-        message: "Plan ID must not be empty."
+        error: "Plan ID must not be empty."
       })
   }))
   .action(async ({
@@ -221,17 +224,23 @@ export async function getPreviewPlansInTimeFrame({ userId, startDate, endDate }:
     timeToLive: 120,
     schema: z.array(z.object({
       id: z.string({
-        required_error: "A plan ID is required."
+        error: (issue) => typeof issue.input === "undefined"
+          ? "A plan id is required."
+          : "Expected a string, but received an invalid type."
       }).nonempty({
-        message: "Plan ID cannot be empty."
+        error: "Plan ID cannot be empty."
       }),
       title: z.string({
-        required_error: "A plan title is required."
+        error: (issue) => typeof issue.input === "undefined"
+          ? "A plan title is required."
+          : "Expected a string, but received an invalid type."
       }).nonempty({
-        message: "Plan title cannot be empty."
+        error: "Plan title cannot be empty."
       }),
       date: z.coerce.date({
-        required_error: "A plan date is required."
+        error: (issue) => typeof issue.input === "undefined"
+          ? "A plan date is required."
+          : "Expected a date, but received an invalid type."
       })
     }))
   });
@@ -258,18 +267,7 @@ export async function getPlansInTimeFrameCount({ userId, startDate, endDate, que
   return await getCachedData({
     cacheKey: `user_${userId}_plans_count${startDate ? `_${getTime(startDate)}` : ""}${endDate ? `_to_${getTime(endDate)}` : ""}${query ? `_query_${query}` : ""}`,
     call: () => plansQuery,
-    schema: z.array(z.object({
-      count: z.number({
-        required_error: "A count amount is required.",
-        invalid_type_error: "Expected a number from count."
-      }).int({
-        message: "Count must be an integer."
-      }).nonnegative({
-        message: "Count cannot be negative."
-      })
-    })).length(1, {
-      message: "Count array must only have 1 element."
-    }),
+    schema: CountSchema,
     timeToLive: 120
   });
 }

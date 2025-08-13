@@ -7,12 +7,12 @@ import { authActionClient } from "@/safe-action";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { PasswordSchema } from "@/lib/zod/auth";
-import z from "zod";
 import bcrypt from "bcryptjs";
+import z from "zod/v4";
 
 export const editProfileAbout = authActionClient
-  .schema(z.object({
-    newAbout: z.nullable(z.string())
+  .inputSchema(z.object({
+    newAbout: z.nullable(z.string("Expected a string, but received an invalid type."))
   }))
   .action(async ({
     parsedInput: { newAbout },
@@ -32,7 +32,7 @@ export const editProfileAbout = authActionClient
   });
 
 export const changePassword = authActionClient
-  .schema(PasswordSchema)
+  .inputSchema(PasswordSchema)
   .action(async ({
     ctx: { user },
     parsedInput: password

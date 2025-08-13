@@ -11,11 +11,11 @@ import { revalidatePath } from "next/cache";
 import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
 import { getRatingKey } from "@/lib/utils";
 import axios from "axios";
-import z from "zod";
 import { removeCacheKeys } from "@/lib/actions/redis";
+import z from "zod/v4";
 
 export const createRecipe = authActionClient
-  .schema(CreateRecipeFormSchema.omit({ image: true }))
+  .inputSchema(CreateRecipeFormSchema.omit({ image: true }))
   .action(async ({ 
     ctx: { user },
     parsedInput: createdRecipe
@@ -117,7 +117,7 @@ export const createRecipe = authActionClient
   });
 
 export const updateRecipe = authActionClient
-  .schema(EditRecipeFormSchema.omit({ image: true }))
+  .inputSchema(EditRecipeFormSchema.omit({ image: true }))
   .action(async ({ 
     ctx: { user },
     parsedInput: editedRecipe
@@ -246,7 +246,7 @@ export const updateRecipe = authActionClient
   });
 
 export const deleteRecipe = authActionClient
-  .schema(z.object({
+  .inputSchema(z.object({
     recipeId: z.string()
       .nonempty({
         message: "Recipe ID must not be empty."
@@ -281,13 +281,18 @@ export const deleteRecipe = authActionClient
   });
 
 export const updateRecipeImage = authActionClient
-  .schema(z.object({
-    recipeId: z.string()
-      .nonempty({
-        message: "Recipe ID must not be empty."
+  .inputSchema(z.object({
+    recipeId: z.string({
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A recipe id is required."
+        : "Expected a string, but received an invalid type."
+    }).nonempty({
+        error: "Recipe id must not be empty."
       }),
     imageName: z.string({
-      required_error: "An image name is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "An image name is required."
+        : "Expected a string, but received an invalid type."
     })
   }))
   .action(async ({ parsedInput: { recipeId, imageName }}) => {
@@ -302,7 +307,7 @@ export const updateRecipeImage = authActionClient
   });
 
 export const toggleRecipeFavorite = authActionClient
-  .schema(z.object({
+  .inputSchema(z.object({
     recipeId: z.string().nonempty({
       message: "Recipe ID cannot be empty."
     })
@@ -357,11 +362,13 @@ export const toggleRecipeFavorite = authActionClient
   });
 
 export const toggleSavedListRecipe = authActionClient
-  .schema(z.object({
+  .inputSchema(z.object({
     recipeId: z.string({
-      required_error: "A recipe ID is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A recipe id is required."
+        : "Expected a string, but received an invalid type."
     }).nonempty({
-      message: "Recipe ID cannot be empty."
+      error: "Recipe id cannot be empty."
     })
   }))
   .action(async ({ ctx: { user }, parsedInput: { recipeId } }) => {
@@ -414,9 +421,13 @@ export const toggleSavedListRecipe = authActionClient
   });
 
 export const createReview = authActionClient
-  .schema(z.object({
-    recipeId: z.string().nonempty({
-      message: "Recipe ID cannot be empty."
+  .inputSchema(z.object({
+    recipeId: z.string({
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A recipe id is required."
+        : "Expected a string, but received an invalid type."
+    }).nonempty({
+      error: "Recipe ID cannot be empty."
     }),
     review: CreateReviewFormSchema
   }))
@@ -460,9 +471,13 @@ export const createReview = authActionClient
   });
 
 export const deleteReview = authActionClient
-  .schema(z.object({
-    reviewId: z.string().nonempty({
-      message: "Review ID cannot be empty."
+  .inputSchema(z.object({
+    reviewId: z.string({
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A review id is required."
+        : "Expected a string, but received an invalid type."
+    }).nonempty({
+      error: "Review id cannot be empty."
     })
   }))
   .action(async ({ parsedInput: { reviewId } }) => {
@@ -506,9 +521,13 @@ export const deleteReview = authActionClient
   });
 
 export const toggleReviewLike = authActionClient
-  .schema(z.object({
-    reviewId: z.string().nonempty({
-      message: "Review ID cannot be empty."
+  .inputSchema(z.object({
+    reviewId: z.string({
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A review id is required."
+        : "Expected a string, but received an invalid type."
+    }).nonempty({
+      error: "Review id cannot be empty."
     })
   }))
   .action(async ({ ctx: { user }, parsedInput: { reviewId } }) => {    

@@ -7,13 +7,12 @@ import { db } from "@/db";
 import bcrypt from "bcryptjs";
 import { account, emailVerification, session } from "@/db/schema/auth";
 import { NextResponse } from "next/server";
-import { v4 as uuid } from "uuid";
-import { encode } from "next-auth/jwt";
-import { getUserAgent } from "universal-user-agent";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { user } from "@/db/schema";
-import { compareEmailVerificationOTPValues, generateEmailVerification } from "@/lib/functions/verification";
-import { eq } from "drizzle-orm";
+import { compareEmailVerificationOTPValues } from "@/lib/functions/verification";
+import { eq, sql } from "drizzle-orm";
+import { v4 as uuid } from "uuid";
+import { encode } from "next-auth/jwt";
 
 const CredentialsProvider = Credentials({
   credentials: {
@@ -24,8 +23,9 @@ const CredentialsProvider = Credentials({
     const validateSignInCredentials = SignInFormSchema.safeParse(credentials);
     if (validateSignInCredentials.success) {
       const { email, password } = validateSignInCredentials.data;
+      const lowercaseEmail = email.toLowerCase();
       const foundUser = await db.query.user.findFirst({
-        where: (user, { eq }) => eq(user.email, email),
+        where: (user, { eq, sql }) => eq(sql`lower(${user.email})`, lowercaseEmail),
         columns: {
           id: true,
           email: true,
@@ -46,8 +46,9 @@ const CredentialsProvider = Credentials({
     const validateEmailVerificationCredentials = EmailVerificationFormSchema.safeParse(credentials);
     if (validateEmailVerificationCredentials.success) {
       const { email, code } = validateEmailVerificationCredentials.data;
+      const lowercaseEmail = email.toLowerCase();
       const foundUser = await db.query.user.findFirst({
-        where: (user, { eq }) => eq(user.email, email),
+        where: (user, { eq, sql }) => eq(sql`lower(${user.email})`, lowercaseEmail),
         columns: {
           id: true,
           email: true,
@@ -64,11 +65,11 @@ const CredentialsProvider = Credentials({
       // code was correct, mark the user as verified
       const updateUserQuery = db.update(user)
         .set({ emailVerified: new Date() })
-        .where(eq(user.email, email));
+        .where(eq(sql`lower(${user.email})`, lowercaseEmail));
 
       // verification entry is no longer needed
       const deleteVerificationQuery = db.delete(emailVerification)
-        .where(eq(emailVerification.email, email));
+        .where(eq(sql`lower(${emailVerification.email})`, lowercaseEmail));
 
       await Promise.all([updateUserQuery, deleteVerificationQuery]);
       return foundUser;
@@ -104,14 +105,15 @@ export const config = {
   },
   providers: [Google, GitHub, CredentialsProvider],
   pages: {
-    signIn: "/login",
+    signIn: "/login"
+  },
+  session: {
+    strategy: "database"
   },
   callbacks: {
     authorized: ({ 
       auth, 
-      request: { 
-        nextUrl
-      }
+      request: { nextUrl }
     }) => {
       const { pathname } = nextUrl;
       
@@ -132,49 +134,45 @@ export const config = {
       return NextResponse.next();
     },
     signIn: async ({ credentials, user }) => {
-      if (!credentials) return true; // OAuth users do not need verification
+      if (!credentials) return true; // OAuth users do not need additional verification
       if (!user.email) return false;
 
+      const userEmail = user.email.toLowerCase();
       const foundUnverifiedUser = await db.query.user.findFirst({
-        where: (userTable, { and, or, eq, isNull, exists, sql }) => and(
-          eq(userTable.email, sql`lower(${user.email})`),
+        where: (userTable, { and, or, eq, isNull, exists }) => and(
+          eq(sql`lower(${userTable.email})`, userEmail),
           or(
             isNull(userTable.emailVerified),
             exists(
               db.select()
                 .from(emailVerification)
-                .where(eq(userTable.email, sql`lower(${user.email})`))
+                .where(eq(userTable.email, userEmail))
             )
           )
         )
       });
 
+      // unverified users should not be able to log in
       if (foundUnverifiedUser) return `/verify?id=${foundUnverifiedUser.id}`;
       return true;
     },
-    jwt: async ({ token, account }) => {
+    jwt: async ({ token, account,  }) => {
       if (account?.provider === "credentials") token.isUsingCredentials = true;
       return token;
-    },
-    session: async ({ session, user }) => {
-      session.user.id = user.id;
-      return session;
     }
   },
   jwt: {
     encode: async (params) => {
-      const sessionToken = uuid();
-      
       if (!params.token?.isUsingCredentials) return encode(params);
       if (!params.token?.sub) throw new Error("Could not generate a user token since a user ID was not found!");
 
+      const sessionToken = uuid();
       const [createdSession] = await db
         .insert(session)
         .values({
           expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // 30-day expiration
           userId: params.token.sub,
-          sessionToken: sessionToken,
-          userAgent: getUserAgent()
+          sessionToken: sessionToken
         }).returning();
 
       if (!createdSession) throw new Error("A session was not able to be created!");

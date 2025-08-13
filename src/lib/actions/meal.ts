@@ -2,15 +2,15 @@
 
 import { authActionClient } from "@/safe-action";
 import { CreateMealFormSchema, EditMealFormSchema } from "@/lib/zod/meal";
-import z from "zod";
 import { db } from "@/db";
 import { meal, mealToRecipe, recipe, savedRecipe } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { and, count, desc, eq, exists, ilike, sql } from "drizzle-orm";
 import { ActionError } from "@/lib/types";
+import z from "zod/v4";
 
 export const createMeal = authActionClient
-  .schema(CreateMealFormSchema)
+  .inputSchema(CreateMealFormSchema)
   .action(async ({
     ctx: { user },
     parsedInput: createdMeal
@@ -88,11 +88,13 @@ export const updateMeal = authActionClient
   });
 
 export const deleteMeal = authActionClient
-  .schema(z.object({
+  .inputSchema(z.object({
     mealId: z.string({
-      required_error: "A meal ID is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A meal id is required."
+        : "Expected a string, but received an invalid type."
     }).nonempty({
-      message: "Meal ID cannot be empty."
+      error: "Meal ID cannot be empty."
     })
   }))
   .action(async ({ 

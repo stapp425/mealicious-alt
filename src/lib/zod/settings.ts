@@ -1,7 +1,7 @@
-import z from "zod";
+import z from "zod/v4";
 import { EmailSchema, PasswordSchema, UsernameSchema } from "@/lib/zod/auth";
 import { getMatchingEmail, getMatchingName } from "@/lib/functions/auth";
-import { IdSchema, UnitSchema } from "@/lib/zod";
+import { IdSchema, UrlSchema } from "@/lib/zod";
 
 export const maxFileSize = {
   amount: 1024 * 1024,
@@ -13,45 +13,22 @@ export const MAX_DIET_SCORE = 5;
 export const MAX_DISH_TYPE_SCORE = 5;
 export const MAX_CUISINE_SCORE = 5;
 
-export const ImageSchema = z.custom<File>((val) => val instanceof File, {
-  message: "A file is required."
-}).superRefine((val, ctx) => {
-  if (!/^.*\.(jpeg|jpg|png|webp)$/.test(val.name)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      fatal: true,
-      message: "File extension must be in a valid image extension."
-    });
-
-    return z.NEVER;
-  }
-
-  if (val.size <= 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.too_small,
-      fatal: true,
-      type: "number",
-      inclusive: true,
-      minimum: 1,
-      message: "File must not be empty."
-    });
-
-    return z.NEVER;
-  }
-
-  if (val.size > maxFileSize.amount) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.too_big,
-      fatal: true,
-      type: "number",
-      inclusive: false,
-      maximum: maxFileSize.amount,
-      message: `File size cannot exceed ${maxFileSize.label}.`
-    });
-
-    return z.NEVER;
-  }
-});
+export const ImageSchema = z.file({
+  error: (issue) => typeof issue.input === "undefined"
+    ? "A file is required."
+    : "Expected a file, but received an invalid type."
+}).mime(["image/jpeg", "image/png", "image/webp"], {
+    abort: true,
+    error: "File must be in a static image format."
+  })
+  .min(1, {
+    abort: true,
+    error: "File must not be empty."
+  })
+  .max(maxFileSize.amount, {
+    abort: true,
+    error: `File size must not exceed ${maxFileSize.label}.`
+  });
 
 export const ChangeProfilePictureFormSchema = z.object({
   image: ImageSchema
@@ -60,17 +37,15 @@ export const ChangeProfilePictureFormSchema = z.object({
 export type ChangeProfilePictureForm = z.infer<typeof ChangeProfilePictureFormSchema>;
 
 export const ChangeUsernameFormSchema = z.object({
-  username: UsernameSchema.superRefine(async (val, ctx) => {
-    const foundName = await getMatchingName(val);
+  username: UsernameSchema.check(async (ctx) => {
+    const foundName = await getMatchingName(ctx.value);
 
     if (foundName) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        fatal: true,
+      ctx.issues.push({
+        code: "custom",
+        input: ctx.value,
         message: "Username is already being used."
       });
-
-      return z.NEVER;
     }
   })
 });
@@ -78,17 +53,15 @@ export const ChangeUsernameFormSchema = z.object({
 export type ChangeUsernameForm = z.infer<typeof ChangeUsernameFormSchema>;
 
 export const ChangeEmailFormSchema = z.object({
-  email: EmailSchema.superRefine(async (val, ctx) => {
-    const foundEmail = await getMatchingEmail(val);
+  email: EmailSchema.check(async (ctx) => {
+    const foundEmail = await getMatchingEmail(ctx.value);
 
     if (foundEmail) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        fatal: true,
+      ctx.issues.push({
+        code: "custom",
+        input: ctx.value,
         message: "Email is already being used."
       });
-
-      return z.NEVER;
     }
   })
 });
@@ -97,20 +70,26 @@ export type ChangeEmailForm = z.infer<typeof ChangeEmailFormSchema>;
 
 export const ChangePasswordFormSchema = z.object({
   currentPassword: z.string({
-    required_error: "A current password input is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A current password input is required."
+      : "Expected a string, but received an invalid type."
   }).nonempty({
-    message: "Current password input cannot be empty."
+    error: "Current password input cannot be empty."
   }),
   newPassword: PasswordSchema,
   confirmPassword: z.string({
-    required_error: "A confirm password input is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A confirm password input is required."
+      : "Expected a string, but received an invalid type."
   }).nonempty({
     message: "Confirm password input cannot be empty."
   })
-}).superRefine(async (val, ctx) => {
-  if (val.currentPassword === val.newPassword) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+}).check(async (ctx) => {
+  const { currentPassword, newPassword, confirmPassword } = ctx.value;
+  if (currentPassword === newPassword) {
+    ctx.issues.push({
+      code: "custom",
+      input: confirmPassword,
       fatal: true,
       message: "New password cannot be the same as the entered current password.",
       path: ["newPassword"]
@@ -119,9 +98,10 @@ export const ChangePasswordFormSchema = z.object({
     return z.NEVER;
   }
   
-  if (val.newPassword !== val.confirmPassword) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+  if (newPassword !== confirmPassword) {
+    ctx.issues.push({
+      code: "custom",
+      input: confirmPassword,
       fatal: true,
       message: "Passwords do not match.",
       path: ["confirmPassword"]
@@ -133,56 +113,36 @@ export const ChangePasswordFormSchema = z.object({
 
 export type ChangePasswordForm = z.infer<typeof ChangePasswordFormSchema>;
 
-export const ChangeNutritionPreferencesFormSchema = z.object({
-  preferences: z.array(z.object({
-    id: IdSchema,
-    description: z.string({
-      required_error: "A description is required."
-    }).nonempty({
-      message: "Description cannot be empty."
-    }),
-    name: z.string({
-      required_error: "A nutrition name is required."
-    }).nonempty({
-      message: "Nutrition name cannot be empty."
-    }),
-    unit: UnitSchema,
-    allowedUnits: z.array(UnitSchema),
-    amountLimit: z.number({
-      required_error: "An amount limit is required."
-    }).int({
-      message: "Amount must be an integer."
-    }).nonnegative({
-      message: "Amount limit cannot be negative."
-    }).max(MAX_NUTRITION_AMOUNT_LIMIT, {
-      message: `Amount limit cannot be more than ${MAX_NUTRITION_AMOUNT_LIMIT.toLocaleString()}.`
-    })
-  }))
-});
-
-export type ChangeNutritionPreferencesForm = z.infer<typeof ChangeNutritionPreferencesFormSchema>;
-
 export const ChangeDietPreferencesFormSchema = z.object({
   preferences: z.array(z.object({
     id: IdSchema,
     name: z.string({
-      required_error: "A diet name is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A diet name is required."
+        : "Expected a string, but received an invalid type."
     }).nonempty({
-      message: "Diet name cannot be empty."
+      error: "Diet name cannot be empty."
     }),
     description: z.string({
-      required_error: "A description is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A description is required."
+        : "Expected a string, but received an invalid type."
     }).nonempty({
-      message: "Description cannot be empty."
+      error: "Description cannot be empty."
     }),
     score: z.number({
-      required_error: "A diet score is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A diet score is required."
+        : "Expected a number, but received an invalid type."
     }).int({
-      message: "Diet score must be an integer."
+      abort: true,
+      error: "Diet score must be an integer."
     }).nonnegative({
-      message: "Diet score cannot be negative."
+      abort: true,
+      error: "Diet score cannot be negative."
     }).max(MAX_DIET_SCORE, {
-      message: `Diet score cannot be more than ${MAX_DIET_SCORE.toLocaleString()}.`
+      abort: true,
+      error: `Diet score cannot be more than ${MAX_DIET_SCORE.toLocaleString()}.`
     })
   }))
 });
@@ -193,23 +153,32 @@ export const ChangeDishTypePreferencesFormSchema = z.object({
   preferences: z.array(z.object({
     id: IdSchema,
     name: z.string({
-      required_error: "A diet name is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A dish type name is required."
+        : "Expected a string, but received an invalid type."
     }).nonempty({
-      message: "Diet name cannot be empty."
+      error: "Diet name cannot be empty."
     }),
     description: z.string({
-      required_error: "A description is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A description is required."
+        : "Expected a string, but received an invalid type."
     }).nonempty({
-      message: "Description cannot be empty."
+      error: "Description cannot be empty."
     }),
     score: z.number({
-      required_error: "A diet score is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A diet score is required."
+        : "Expected a number, but received an invalid type."
     }).int({
-      message: "Diet score must be an integer."
+      abort: true,
+      error: "Diet score must be an integer."
     }).nonnegative({
-      message: "Dish type score cannot be negative."
+      abort: true,
+      error: "Dish type score cannot be negative."
     }).max(MAX_DISH_TYPE_SCORE, {
-      message: `Diet score cannot be more than ${MAX_DISH_TYPE_SCORE.toLocaleString()}.`
+      abort: true,
+      error: `Diet score cannot be more than ${MAX_DISH_TYPE_SCORE.toLocaleString()}.`
     })
   }))
 });
@@ -219,29 +188,32 @@ export type ChangeDishTypePreferencesForm = z.infer<typeof ChangeDishTypePrefere
 export const ChangeCuisinePreferencesFormSchema = z.object({
   preferences: z.array(z.object({
     id: IdSchema,
-    icon: z.string({
-      required_error: "A cuisine icon is required."
-    }).url({
-      message: "Cuisine icon URL must be in a valid URL format."
-    }),
+    icon: UrlSchema,
     adjective: z.string({
-      required_error: "A cuisine adjective is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A cuisine adjective is required."
+        : "Expected a string, but received an invalid type."
     }).nonempty({
-      message: "Adjective cannot be empty."
+      error: "Adjective cannot be empty."
     }),
     description: z.string({
-      required_error: "A description is required."
+      error: "A description is required."
     }).nonempty({
-      message: "Description cannot be empty."
+      error: "Description cannot be empty."
     }),
     score: z.number({
-      required_error: "A cuisine score is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A cuisine score is required."
+        : "Expected a number, but received an invalid type."
     }).int({
-      message: "Cuisine score must be an integer."
+      abort: true,
+      error: "Cuisine score must be an integer."
     }).min(1, {
-      message: "Cuisine score must be at least 1."
+      abort: true,
+      error: "Cuisine score must be at least 1."
     }).max(MAX_CUISINE_SCORE, {
-      message: `Cuisine score cannot be more than ${MAX_CUISINE_SCORE.toLocaleString()}.`
+      abort: true,
+      error: `Cuisine score cannot be more than ${MAX_CUISINE_SCORE.toLocaleString()}.`
     })
   }))
 });

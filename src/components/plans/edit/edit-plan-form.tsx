@@ -1,6 +1,6 @@
 "use client";
 
-import { DetailedPlan, type EditPlanForm, EditPlanFormSchema } from "@/lib/zod/plan";
+import { DetailedPlan, EditPlanFormSchema } from "@/lib/zod/plan";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -9,7 +9,7 @@ import PlanTags from "@/components/plans/edit/plan-tags";
 import PlanTitle from "@/components/plans/edit/plan-title";
 import PlanDescription from "@/components/plans/edit/plan-description";
 import { Loader2 } from "lucide-react";
-import PlanMealSearch from "./plan-meals";
+import PlanMealSearch from "@/components/plans/edit/plan-meals";
 import { useMediaQuery } from "usehooks-ts";
 import { useAction } from "next-safe-action/hooks";
 import { updatePlan } from "@/lib/actions/plan";
@@ -24,7 +24,7 @@ export default function EditPlanForm() {
   const { replace } = useRouter();
   const [mounted, setMounted] = useState<boolean>(false);
   const matches = useMediaQuery("(min-width: 80rem)");
-  const editPlanForm = useForm<EditPlanForm>({
+  const editPlanForm = useForm({
     resolver: zodResolver(EditPlanFormSchema),
     defaultValues: {
       id: planToEdit.id,

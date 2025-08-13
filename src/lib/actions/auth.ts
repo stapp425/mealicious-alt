@@ -2,6 +2,7 @@
 
 import { 
   EmailVerificationFormSchema,
+  ReCaptchaResultSchema,
   ResetPasswordFormSchema,
   SignInFormSchema,
   SignUpFormSchema
@@ -12,13 +13,14 @@ import bcrypt from "bcryptjs";
 import { signIn as authSignIn, signOut as authSignOut } from "@/auth";
 import { AuthError, CredentialsSignin } from "next-auth";
 import { actionClient } from "@/safe-action";
-import z from "zod";
-import { generateEmailVerification } from "@/lib/functions/verification";
 import { eq } from "drizzle-orm";
 import { ActionError } from "@/lib/types";
+import z from "zod/v4";
+import axios from "axios";
+import { UrlSchema } from "@/lib/zod";
 
 export const verifyEmail = actionClient
-  .schema(EmailVerificationFormSchema)
+  .inputSchema(EmailVerificationFormSchema)
   .action(async ({ 
     parsedInput: { 
       email,
@@ -44,29 +46,13 @@ export const verifyEmail = actionClient
   });
 
 export const resetPassword = actionClient
-  .schema(ResetPasswordFormSchema)
+  .inputSchema(ResetPasswordFormSchema)
   .action(async ({
     parsedInput: {
       email,
       password
     }
   }) => {
-    const foundUser = await db.query.user.findFirst({
-      where: (user, { eq }) => eq(user.email, email),
-      columns: {
-        id: true,
-        email: true,
-        password: true
-      }
-    });
-
-    if (!foundUser) throw new ActionError("User was not found.");
-    if (!foundUser.password) throw new Error("This user is ineligible for a password change.");
-
-    // check if the new password is the same as the old one
-    const compareResult = await bcrypt.compare(password, foundUser.password);
-    if (compareResult) throw new ActionError("New password matches the old password.");
-    
     const hashedPassword = await bcrypt.hash(password, 10);
     const updatePasswordOperation = db.update(user)
       .set({ password: hashedPassword })
@@ -84,7 +70,7 @@ export const resetPassword = actionClient
   });
 
 export const signUp = actionClient
-  .schema(SignUpFormSchema)
+  .inputSchema(SignUpFormSchema)
   .action(async ({ 
     parsedInput: { 
       email,
@@ -104,8 +90,6 @@ export const signUp = actionClient
         userId: user.id
       });
     
-    await generateEmailVerification({ email });
-    
     return {
       success: true,
       message: "User successfully created!",
@@ -114,7 +98,7 @@ export const signUp = actionClient
   });
 
 export const signInWithCredentials = actionClient
-  .schema(SignInFormSchema)
+  .inputSchema(SignInFormSchema)
   .action(async ({ 
     parsedInput: {
       email,
@@ -122,20 +106,50 @@ export const signInWithCredentials = actionClient
     }
   }) => {
     try {
-      const redirectUrl = await authSignIn("credentials", { 
+      const redirectUrl = UrlSchema.parse(await authSignIn("credentials", { 
         email,
         password,
         redirect: false
-      });
+      }));
+      
+      const url = new URL(redirectUrl);
+      const callbackUrl = new URL(UrlSchema.parse(url.searchParams.get("callbackUrl") ?? `${url.origin}/dashboard`));
 
       return {
         success: true as const,
-        redirectUrl: z.string().parse(redirectUrl)
+        redirectPathname: callbackUrl.pathname.startsWith("/login") ? "/dashboard" : callbackUrl.pathname
       };
     } catch (err) {
       if (err instanceof AuthError && err.type === "CredentialsSignin") throw new ActionError("Invalid username or password.");
       throw err;
     }
+  });
+
+export const verifyCaptcha = actionClient
+  .inputSchema(
+    z.string({
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A token is required."
+        : "Expected a string, but received an invalid type."
+    }).nonempty({
+      error: "Token cannot be left empty."
+    })
+  )
+  .action(async ({ parsedInput: token }) => {
+    const url = new URL("https://www.google.com/recaptcha/api/siteverify");
+    url.searchParams.append("secret", process.env.RECAPTCHA_SITE_KEY_SECRET!);
+    url.searchParams.append("response", token);
+
+    const axiosResponse = await axios.post(url.toString());
+    const verifyResponse = ReCaptchaResultSchema.parse(axiosResponse);
+
+    if (!verifyResponse.success) throw new ActionError("There was an error while captcha was verifying a user action.");
+    if (verifyResponse.score < 0.7) throw new ActionError("reCaptcha verification test failed, please try again later.");
+
+    return {
+      success: true as const,
+      message: "Verification successful!"
+    };
   });
 
 export async function signOut() {

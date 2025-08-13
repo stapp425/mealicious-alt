@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { emailVerification, passwordReset } from "@/db/schema";
 import { resend } from "@/lib/resend";
 import bcrypt from "bcryptjs";
-import { isAfter } from "date-fns";
+import { addMilliseconds, getTime, isAfter } from "date-fns";
 import { getDateDifference } from "@/lib/utils";
 import { CreateEmailOptions } from "resend";
 
@@ -26,6 +26,18 @@ export async function compareValues(str: string, hashedStr: string) {
   return await bcrypt.compare(str, hashedStr);
 }
 
+export async function getMatchingUserInfo(email: string) {
+  return db.query.user.findFirst({
+    where: (user, { eq, sql }) => eq(sql`lower(${user.email})`, email.toLowerCase()),
+    columns: {
+      id: true,
+      email: true,
+      password: true,
+      emailVerified: true
+    }
+  });
+}
+
 export async function generateEmailVerification({ 
   email,
   codeLength = 6,
@@ -35,9 +47,10 @@ export async function generateEmailVerification({
   codeLength?: number;
   expireTime?: number;
 }) {
+  const now = new Date();
   const code = String(Math.floor(Math.random() * 10 ** Math.max(0, codeLength))).padStart(codeLength, "0");
   const hashedCode = await bcrypt.hash(code, 10);
-  const expirationDate = new Date(Date.now() + 1000 * expireTime);
+  const expirationDate = new Date(getTime(addMilliseconds(now, 1000 * expireTime)));
   await db.insert(emailVerification)
     .values({
       email,
@@ -56,7 +69,7 @@ export async function generateEmailVerification({
     from: "Mealicious <no-reply@mealicious.shawntapp.com>",
     to: [email],
     subject: "Mealicious Verification Code",
-    html: `<p>Welcome to Mealicious! Your verification code is <b>${code}</b>. This code will expire in ${getDateDifference({ earlierDate: new Date(), laterDate: expirationDate })}.</p>`
+    html: `<p>Welcome to Mealicious! Your verification code is <b>${code}</b>. This code will expire in ${getDateDifference({ earlierDate: now, laterDate: expirationDate })}.</p>`
   });
 
   return {
@@ -96,40 +109,10 @@ export async function generatePasswordResetPrompt({
   codeLength?: number;
   expireTime?: number;
 }) {
-  const foundUser = await db.query.user.findFirst({
-    where: (user, { eq }) => eq(user.email, email),
-    columns: {
-      id: true,
-      email: true,
-      emailVerified: true,
-      password: true
-    }
-  });
-
-  if (!foundUser) {
-    return {
-      success: false as const,
-      error: "User does not exist."
-    };
-  }
-
-  if (!foundUser.password) {
-    return {
-      success: false as const,
-      error: "This user is ineligible for a password reset."
-    };
-  }
-  
-  if (!foundUser.emailVerified) {
-    return {
-      success: false as const,
-      error: "This user is not verified yet."
-    };
-  };
-
-  const expirationDate = new Date(Date.now() + expireTime * 1000);
+  const now = new Date();
   const code = String(Math.floor(Math.random() * 10 ** Math.max(0, codeLength))).padStart(codeLength, "0");
   const hashedCode = await bcrypt.hash(code, 10);
+  const expirationDate = new Date(getTime(addMilliseconds(now, 1000 * expireTime)));
 
   await db.insert(passwordReset).values({
     email,
@@ -147,13 +130,8 @@ export async function generatePasswordResetPrompt({
     from: "Mealicious <no-reply@mealicious.shawntapp.com>",
     to: [email],
     subject: "Mealicious Password Reset",
-    html: `<p>You recently requested for a password reset! Your verification code is <b>${code}</b>. This code will expire in ${getDateDifference({ earlierDate: new Date(), laterDate: expirationDate })}.</p>`
+    html: `<p>You recently requested for a password reset! Your verification code is <b>${code}</b>. This code will expire in ${getDateDifference({ earlierDate: now, laterDate: expirationDate })}.</p>`
   });
-  
-  return {
-    success: true as const,
-    message: "Password reset prompt successfully created!"
-  };
 }
 
 export async function comparePasswordResetOTPValues({ 

@@ -1,6 +1,6 @@
 "use client";
 
-import { type CreatePlanForm, CreatePlanFormSchema } from "@/lib/zod/plan";
+import { CreatePlanFormSchema } from "@/lib/zod/plan";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -22,7 +22,7 @@ export default function CreatePlanForm() {
   const { replace } = useRouter();
   const [mounted, setMounted] = useState<boolean>(false);
   const matches = useMediaQuery("(min-width: 80rem)");
-  const createPlanForm = useForm<CreatePlanForm>({
+  const createPlanForm = useForm({
     resolver: zodResolver(CreatePlanFormSchema),
     defaultValues: {
       title: "",

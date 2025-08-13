@@ -140,7 +140,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
     formState: {
       isSubmitting
     }
-  } = useForm<EditRecipeForm>({
+  } = useForm({
     resolver: zodResolver(EditRecipeFormSchema),
     mode: "onSubmit",
     reValidateMode: "onSubmit",
@@ -227,9 +227,10 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
     replace(`/recipes/${data.id}`);
   });
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(
+    () => setMounted(true),
+    [setMounted]
+  );
 
   return (
     <EditRecipeFormContext.Provider value={{ control, register, setValue }}>
@@ -240,7 +241,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
         <h1 className="text-4xl font-bold mb-6">Edit Recipe</h1>
         <div className="flex flex-col xl:flex-row gap-3 sm:gap-6">
           <div className="flex-1 shrink-0 flex flex-col gap-3">
-            <RecipeImageUploader recipeImageUrl={recipe.image}/>
+            <RecipeImageUploader recipeImageURL={recipe.image}/>
             {mounted && !matches && <RecipeTitle />}
             {mounted && !matches && <RecipeDescription />}
             <RecipeCuisine cuisines={cuisines}/>

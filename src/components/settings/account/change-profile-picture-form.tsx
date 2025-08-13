@@ -85,7 +85,7 @@ export default function ChangeProfilePictureForm({ id, avatarImageUrl }: ChangeA
     const url = URL.createObjectURL(currentImage);
     setImageURL(url);
     return () => URL.revokeObjectURL(url);
-  }, [currentImage]);
+  }, [currentImage, setImageURL]);
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-1.5">
@@ -102,7 +102,7 @@ export default function ChangeProfilePictureForm({ id, avatarImageUrl }: ChangeA
 
             const validateFile = ImageSchema.safeParse(addedFile);
             if (!validateFile.success) {
-              toast.error(validateFile.error.errors[0].message);
+              toast.error(validateFile.error.message);
               e.target.value = "";
               return;
             }

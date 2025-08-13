@@ -3,7 +3,7 @@
 import { redis } from "@/lib/redis";
 import { UTCDate } from "@date-fns/utc";
 import { differenceInSeconds } from "date-fns";
-import { ZodType } from "zod";
+import { ZodType } from "zod/v4";
 
 export async function getDataFromKey<T>({ key, schema }: { key: string; schema: ZodType<T>; }) {
   const result = await redis.get(key);

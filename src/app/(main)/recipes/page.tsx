@@ -20,11 +20,16 @@ import { recipe, recipeFavorite, savedRecipe } from "@/db/schema";
 import { MAX_LIST_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import SearchResultsSkeleton from "@/components/recipes/saved/search-results-skeleton";
+import { SearchResultsSkeleton } from "@/components/recipes/saved/search-results";
 import { nanoid } from "nanoid";
 
 type AllRecipesPageProps = {
   searchParams: Promise<SearchParams>;
+};
+
+export const metadata: Metadata = {
+  title: "Saved Recipes | Mealicious",
+  description: "View all your saved mealicious recipes here!"
 };
 
 const loadSearchParams = createLoader({
@@ -33,11 +38,6 @@ const loadSearchParams = createLoader({
   filters: parseAsArrayOf(parseAsStringLiteral(filters)).withDefault([]),
   page: parseAsIndex.withDefault(0)
 });
-
-export const metadata: Metadata = {
-  title: "Saved Recipes | Mealicious",
-  description: "View all your saved mealicious recipes here!"
-};
 
 export default async function Page({ searchParams }: AllRecipesPageProps) {
   const { filters, query, page, sort } = await loadSearchParams(searchParams);

@@ -64,7 +64,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
     formState: {
       isSubmitting
     }
-  } = useForm<CreateRecipeForm>({
+  } = useForm({
     resolver: zodResolver(CreateRecipeFormSchema),
     mode: "onSubmit",
     reValidateMode: "onSubmit",
@@ -103,7 +103,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
     const handleUnload = (e: BeforeUnloadEvent) => e.preventDefault();
     window.addEventListener("beforeunload", handleUnload);
     return () => window.removeEventListener("beforeunload", handleUnload);
-  }, []);
+  }, [setMounted]);
 
   const onSubmit = handleSubmit(async (formData) => {
     try {

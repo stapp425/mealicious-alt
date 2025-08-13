@@ -5,18 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type SignUpForm, SignUpFormSchema } from "@/lib/zod/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signUp } from "@/lib/actions/auth";
+import { signUp, verifyCaptcha } from "@/lib/actions/auth";
 import PasswordInput from "@/components/auth/password-input";
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
-import { useState } from "react";
+import { HTMLInputAutoCompleteAttribute, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 type SignUpField = {
   id: keyof SignUpForm,
   label: string,
   placeholder: string,
+  autoComplete?: HTMLInputAutoCompleteAttribute;
   type: "text" | "email" | "password"
 };
 
@@ -29,14 +31,16 @@ const signUpFieldValues: SignUpField[] = [
   },
   {
     id: "email",
-    label: "E-Mail",
-    placeholder: "E-Mail",
+    label: "Email",
+    placeholder: "Email",
+    autoComplete: "username",
     type: "email"
   },
   {
     id: "password",
     label: "Password",
     placeholder: "Password",
+    autoComplete: "new-password",
     type: "password"
   },
   {
@@ -50,26 +54,24 @@ const signUpFieldValues: SignUpField[] = [
 export default function SignUpForm() {
   const { replace } = useRouter();
   const [loading, setLoading] = useState(false);
+  const { executeRecaptcha: executeReCaptcha } = useGoogleReCaptcha();
+  
   const { 
     register, 
     handleSubmit,
     formState: { 
       isValidating,
+      isSubmitting,
       errors
     }
-  } = useForm<SignUpForm>({
+  } = useForm({
     resolver: zodResolver(SignUpFormSchema),
     mode: "onSubmit",
     reValidateMode: "onSubmit",
-    delayError: 150,
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: ""
-    }
+    delayError: 150
   });
-  const { executeAsync } = useAction(signUp, {
+
+  const { executeAsync: executeSignUp } = useAction(signUp, {
     onExecute: () => setLoading(true),
     onSuccess: ({ data }) => {
       if (!data) return;
@@ -77,13 +79,28 @@ export default function SignUpForm() {
     },
     onError: ({ error: { serverError } }) => {
       setLoading(false);
-      toast.error(serverError)
+      toast.error(serverError);
     }
   });
 
-  const onSubmit = handleSubmit(async (data) => {
-    await executeAsync(data);
-  });
+  const isSigningUp = loading || isValidating || isSubmitting;
+
+  const onSubmit = useMemo(() => handleSubmit(async (data) => {
+    if (!executeReCaptcha) {
+      toast.error("reCaptcha is not available. Please try again later.");
+      return;
+    }
+
+    const token = await executeReCaptcha();
+    const reCaptchaVerificationResult = await verifyCaptcha(token);
+
+    if (!reCaptchaVerificationResult?.data) {
+      toast.error(reCaptchaVerificationResult.serverError);
+      return;
+    }
+
+    await executeSignUp(data);
+  }), [handleSubmit, executeReCaptcha, executeSignUp]);
 
   return (
     <form onSubmit={onSubmit} className="size-full flex flex-col gap-4">
@@ -113,15 +130,17 @@ export default function SignUpForm() {
                 <PasswordInput
                   id={field.id}
                   {...register(field.id)}
+                  placeholder={field.placeholder}
+                  autoComplete={field.autoComplete}
                   className="shadow-none rounded-sm"
                 />
               ) : (
                 <Input
                   id={field.id}
                   type={field.type}
-                  autoComplete="off"
                   {...register(field.id)}
                   placeholder={field.placeholder}
+                  autoComplete={field.autoComplete}
                   className="shadow-none rounded-sm"
                 />
               )
@@ -131,10 +150,10 @@ export default function SignUpForm() {
       }
       <button
         type="submit"
-        disabled={loading || isValidating}
+        disabled={isSigningUp}
         className="mealicious-button flex justify-center items-center font-bold mt-2.5 p-2 rounded-md"
       >
-        {loading || isValidating ? <LoaderCircle className="animate-spin"/> : "Sign Up"}
+        {isSigningUp ? <LoaderCircle className="animate-spin"/> : "Sign Up"}
       </button>
     </form>
   );

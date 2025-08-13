@@ -68,7 +68,6 @@ export const session = pgTable("session", (t) => ({
     .references(() => user.id, {
       onDelete: "cascade"
     }),
-  userAgent: t.text("user_agent"),
   expires: t.timestamp("session_expires", { mode: "date" }).notNull(),
 }));
 

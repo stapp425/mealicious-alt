@@ -1,6 +1,6 @@
 import { MealType, mealTypes } from "@/lib/types";
-import { IdSchema } from "@/lib/zod";
-import z from "zod";
+import { IdSchema, UrlSchema } from "@/lib/zod";
+import z from "zod/v4";
 
 export const MAX_MEAL_TITLE_LENGTH = 100;
 export const MAX_MEAL_DESCRIPTION_LENGTH = 250;
@@ -8,57 +8,80 @@ export const MAX_MEAL_RECIPES = 5;
 export const MAX_MEAL_SEARCH_CALORIES = 10000;
 
 export const MealTypeSchema = z.custom<MealType>((val) => val && typeof val === "string", {
-  message: "Value must be a valid meal type."
+  error: "Value must be a valid meal type."
 }).refine((val) => mealTypes.includes(val));
 
 const MealFormSchema = z.object({
-  title: z.string().nonempty({
-    message: "Meal title cannot be empty."
+  title: z.string({
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A meal title is required."
+      : "Expected a string, but received an invalid type."
+  }).nonempty({
+    abort: true,
+    error: "Meal title cannot be empty."
   }).max(MAX_MEAL_TITLE_LENGTH, {
-    message: `Meal title cannot have more than ${MAX_MEAL_TITLE_LENGTH.toLocaleString()} characters.`
+    error: `Meal title cannot have more than ${MAX_MEAL_TITLE_LENGTH.toLocaleString()} characters.`
   }),
-  description: z.optional(z.string().max(MAX_MEAL_DESCRIPTION_LENGTH, {
-    message: `Meal description cannot have more than ${MAX_MEAL_DESCRIPTION_LENGTH} characters.`
-  })),
-  tags: z.array(z.string().nonempty({
-    message: "Tag cannot be empty."
-  })),
-  recipes: z.array(z.object({
-    id: IdSchema,
-    title: z.string().nonempty({
-      message: "Recipe title cannot be empty."
+  description: z.optional(
+    z.string("Expected a string, but received an invalid type.")
+      .max(MAX_MEAL_DESCRIPTION_LENGTH, {
+        error: `Meal description cannot have more than ${MAX_MEAL_DESCRIPTION_LENGTH} characters.`
+      })
+  ),
+  tags: z.array(
+    z.string("Expected a string, but received an invalid type.")
+      .nonempty({
+        error: "Meal tag cannot be left empty."
+      }),
+    "Expected an array, but received an invalid type."
+  ),
+  recipes: z.array(
+    z.object({
+      id: IdSchema,
+      title: z.string({
+        error: (issue) => typeof issue.input === "undefined"
+          ? "A recipe title is required."
+          : "Expected a string, but received an invalid type."
+      }).nonempty({
+        error: "Recipe title cannot be left empty."
+      }),
+      description: z.nullable(
+        z.string("Expected a string, but received an invalid type.")
+          .nonempty({
+            error: "Recipe description cannot be left empty."
+          })
+      ),
+      image: UrlSchema
     }),
-    description: z.nullable(z.string()),
-    image: z.string().nonempty({
-      message: "Recipe image cannot be empty."
-    })
-  })).min(1, {
-    message: "A meal should have at least 1 recipe included."
+    "Expected an array, but received an invalid type."
+  ).min(1, {
+    error: "A meal should have at least 1 recipe included."
   }).max(MAX_MEAL_RECIPES, {
-    message: `A meal can have at most ${MAX_MEAL_RECIPES.toLocaleString()} recipes`
+    error: `A meal can have at most ${MAX_MEAL_RECIPES.toLocaleString()} recipes`
   })
 });
 
 export const CreateMealFormSchema = MealFormSchema
-export const EditMealFormSchema = MealFormSchema.extend({
-  id: IdSchema.nonempty({
-    message: "Meal ID cannot be empty."
-  })
-});
+export const EditMealFormSchema = MealFormSchema.extend({ id: IdSchema });
 
 export type CreateMealForm = z.infer<typeof CreateMealFormSchema>;
 export type EditMealForm = z.infer<typeof EditMealFormSchema>;
 
 export const MealSearchSchema = z.object({
-  query: z.string(),
+  query: z.optional(z.string("Expected a string, but received an invalid type.")),
   mealType: z.optional(MealTypeSchema),
-  maxCalories: z.number()
-    .int({
-      message: "Amount must be an integer."
+  maxCalories: z.number({
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A max calories amount is required."
+      : "Expected a number, but received an invalid type."
+  }).int({
+      abort: true,
+      error: "Amount must be an integer."
     }).nonnegative({
-      message: "Amount must be not negative."
+      abort: true,
+      error: "Amount must be not negative."
     }).max(MAX_MEAL_SEARCH_CALORIES, {
-      message: `Amount must be at most ${MAX_MEAL_SEARCH_CALORIES}`
+      error: `Amount must be at most ${MAX_MEAL_SEARCH_CALORIES}`
     })
 });
 

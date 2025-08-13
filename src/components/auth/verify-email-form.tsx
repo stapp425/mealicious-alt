@@ -49,16 +49,15 @@ export default function VerifyEmailForm({ email, codeLength = 6 }: VerifyEmailPr
       setLoading(false);
     }
   });
-
-  const onSubmit = handleSubmit(async (data) => {
-    await executeAsync({ email, code: data.input });
-  });
   
   return (
-    <form onSubmit={onSubmit} className="grid gap-3.5">
-      <h1 className="font-bold text-2xl">Almost There!</h1>
-      <h2 className="font-semibold text-muted-foreground">
-        Before signing up, we just need to confirm that this email is real. A verification code is sent to <b className="font-semibold text-accent-foreground">{email}</b>.
+    <form 
+      onSubmit={handleSubmit(async (data) => await executeAsync({ email, code: data.input }))}
+      className="grid gap-3"
+    >
+      <h1 className="font-bold text-2xl mb-1.5">Almost There!</h1>
+      <h2 className="font-semibold text-muted-foreground text-sm">
+        Before accessing site features, we just need to confirm that you have access to this email. A verification code is sent to <b className="font-semibold text-accent-foreground">{email}</b>.
       </h2>
       <InputOTP
         value={input}
@@ -80,7 +79,7 @@ export default function VerifyEmailForm({ email, codeLength = 6 }: VerifyEmailPr
         </InputOTPGroup>
       </InputOTP>
       <div className="h-[30px] text-muted-foreground flex items-center gap-2.5">
-        <span className="font-semibold">Didn&apos;t get a code?</span>
+        <span className="font-semibold text-sm">Didn&apos;t get a code?</span>
         <Separator orientation="vertical"/>
         <Button
           type="button"
@@ -99,7 +98,7 @@ export default function VerifyEmailForm({ email, codeLength = 6 }: VerifyEmailPr
       </div>
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || resendLoading}
         className="mealicious-button flex justify-center items-center font-bold p-2 rounded-md"
       >
         {loading ? <LoaderCircle className="animate-spin"/> : "Verify"}

@@ -1,33 +1,112 @@
-import z from "zod";
+import z from "zod/v4";
 import { IdSchema, UrlSchema } from "@/lib/zod";
 import { MealTypeSchema } from "@/lib/zod/meal";
 
 export const UpcomingPlanSchema = z.object({
   id: IdSchema,
-  date: z.coerce.date(),
-  title: z.string(),
-  tags: z.array(z.string()),
-  description: z.nullable(z.string()),
+  date: z.coerce.date({
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A plan date is required."
+      : "Expected a date, but received an invalid type."
+  }),
+  title: z.string({
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A plan title is required."
+      : "Expected a string, but received an invalid type."
+  }).nonempty({
+    error: "Plan title cannot be left empty."
+  }),
+  tags: z.array(
+    z.string({
+      error: (issue) => typeof issue.input === "undefined"
+        ? "Plan tag cannot be undefined."
+        : "Expected a string, but received an invalid type."
+    }).nonempty({
+      error: "Plan tag cannot be left empty."
+    }),
+    "Expected an array, but received an invalid type."
+  ),
+  description: z.nullable(
+    z.string("Expected a string, but received an invalid type.")
+      .nonempty({
+        error: "Plan description cannot be left empty."
+      })),
   meals: z.array(z.object({
     id: IdSchema,
-    title: z.string(),
+    title: z.string({
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A meal title is required."
+        : "Expected a string, but received an invalid type."
+    }),
     type: MealTypeSchema,
-    tags: z.array(z.string()),
-    description: z.nullable(z.string()),
-    recipes: z.array(z.object({
-      id: IdSchema,
-      title: z.string(),
-      image: UrlSchema,
-      tags: z.array(z.string()),
-      description: z.nullable(z.string()),
-      prepTime: z.number(),
-      calories: z.number(),
-      diets: z.array(z.object({
+    tags: z.array(
+      z.string({
+        error: (issue) => typeof issue.input === "undefined"
+          ? "Plan tag cannot be undefined."
+          : "Expected a string, but received an invalid type."
+      }),
+      "Expected an array, but received an invalid type."
+    ),
+    description: z.nullable(
+      z.string("Expected a string, but received an invalid type.").nonempty({
+        error: "Meal description cannot be left empty."
+      })),
+    recipes: z.array(
+      z.object({
         id: IdSchema,
-        name: z.string(),
-        description: z.string()
-      }))
-    }))
+        title: z.string({
+          error: (issue) => typeof issue.input === "undefined"
+            ? "A recipe title is required."
+            : "Expected a string, but received an invalid type."
+        }),
+        image: UrlSchema,
+        tags: z.array(
+          z.string({
+            error: (issue) => typeof issue.input === "undefined"
+              ? "Recipe tag cannot be undefined."
+              : "Expected a string, but received an invalid type."
+          }),
+          "Expected an array, but received an invalid type."
+        ),
+        description: z.nullable(
+          z.string("Expected a string, but received an invalid type.")
+            .nonempty({
+              error: "Recipe description cannot be left empty."
+            })
+        ),
+        prepTime: z.number({
+          error: (issue) => typeof issue.input === "undefined"
+            ? "Recipe prep time is required."
+            : "Expected a number, but received an invalid type."
+        }).nonnegative({
+          error: "Prep time cannot be negative."
+        }),
+        calories: z.number({
+          error: (issue) => typeof issue.input === "undefined"
+            ? "Recipe calories is required."
+            : "Expected a number, but received an invalid type."
+        }).nonnegative({
+          error: "Calories cannot be negative."
+        }),
+        diets: z.array(
+          z.object({
+            id: IdSchema,
+            name: z.string({
+              error: (issue) => typeof issue.input === "undefined"
+                ? "A diet name is required."
+                : "Expected a string, but received an invalid type."
+            }).nonempty({
+              error: "Diet name cannot be left empty."
+            }),
+            description: z.string({
+
+            })
+          }),
+          "Expected an array, but received an invalid type."
+        )
+      }),
+      "Expected an array, but received an invalid type."
+  )
   }))
 });
 
@@ -36,43 +115,62 @@ export type UpcomingPlan = z.infer<typeof UpcomingPlanSchema>;
 export const PopularRecipeSchema = z.object({
   id: IdSchema,
   title: z.string({
-    required_error: "A title is required."
+    error: "A title is required."
   }),
-  description: z.nullable(z.string()),
+  description: z.nullable(
+    z.string("Expected a string, but received an invalid type.")
+      .nonempty({
+        error: "Recipe description cannot be left empty."
+      })
+  ),
   saveCount: z.number({
-    required_error: "A save count is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A save count is required."
+      : "Expected a number, but received an invalid type."
+  }).int({
+    abort: true,
+    error: "Save count must be an integer."
   }).nonnegative({
-    message: "Message cannot be negative."
+    error: "Message cannot be negative."
   }),
   image: UrlSchema,
   prepTime: z.coerce.number({
-    required_error: "A prep time is required.",
-    invalid_type_error: "Expected a number, but received an invalid type."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A prep time is required."
+      : "Expected a number, but received an invalid type."
   }).nonnegative({
-    message: "Prep time cannot be negative."
+    error: "Prep time cannot be negative."
   }),
-  diets: z.array(z.object({
-    id: IdSchema,
-    name: z.string({
-      required_error: "A diet name is required."
-    }).nonempty({
-      message: "Diet name cannot be empty."
-    })
-  })),
+  diets: z.array(
+    z.object({
+      id: IdSchema,
+      name: z.string({
+        error: (issue) => typeof issue.input === "undefined"
+          ? "A diet name is required."
+          : "Expected a string, but received an invalid type."
+      }).nonempty({
+        error: "Diet name cannot be left empty."
+      })
+    }),
+    "Expected an array, but received an invalid type."
+  ),
   cuisine: z.nullable(z.object({ 
     id: IdSchema,
     icon: UrlSchema,
     adjective: z.string({
-      required_error: "A cuisine adjective is required."
+      error: (issue) => typeof issue.input === "undefined"
+        ? "A cuisine adjective is required."
+        : "Expected a string, but received an invalid type."
     }).nonempty({
-      message: "Cuisine adjective cannot be empty."
+      error: "Cuisine adjective cannot be empty."
     })
   })),
   calories: z.coerce.number({
-    required_error: "Calories is required.",
-    invalid_type_error: "Expected a number, but received an invalid type."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "Calories are required."
+      : "Expected a number, but received an invalid type."
   }).nonnegative({
-    message: "Calories cannot be negative."
+    error: "Calories cannot be negative."
   })
 });
 
@@ -81,20 +179,33 @@ export type PopularRecipe = z.infer<typeof PopularRecipeSchema>;
 export const MostRecentSavedRecipeSchema = z.object({
   id: IdSchema,
   title: z.string({
-    required_error: "A title is required."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A title is required."
+      : "Expected a string, but received an invalid type."
   }).nonempty({
-    message: "Title cannot be empty."
+    error: "Title cannot be empty."
   }),
   image: UrlSchema,
-  description: z.nullable(z.string()),
+  description: z.nullable(
+    z.string("Expected a string, but received an invalid type.")
+      .nonempty({
+        error: "Recipe description cannot be left empty."
+      })
+  ),
   prepTime: z.coerce.number({
-    invalid_type_error: "Expected a number, but received an invalid type."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A recipe prep time is required."
+      : "Expected a number, but received an invalid type."
   }),
   calories: z.coerce.number({
-    invalid_type_error: "Expected a number, but received an invalid type."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "Calories are required."
+      : "Expected a number, but received an invalid type."
   }),
   saveDate: z.coerce.date({
-    invalid_type_error: "Expected a date, but received an invalid type."
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A recipe save date is required."
+      : "Expected a date, but received an invalid type."
   })
 });
 

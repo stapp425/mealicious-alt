@@ -15,7 +15,7 @@ export function GitHubButton() {
   useEffect(() => {
     if (!error) return;
     if (error === "OAuthAccountNotLinked") {
-      toast.error("There already exists an account with that e-mail.");
+      toast.error("There already exists an account with that email.");
       return;
     }
     
@@ -49,7 +49,7 @@ export function GoogleButton() {
   useEffect(() => {
     if (!error) return;
     if (error === "OAuthAccountNotLinked") {
-      toast.error("There already exists an account with that e-mail.");
+      toast.error("There already exists an account with that email.");
       return;
     }
     
