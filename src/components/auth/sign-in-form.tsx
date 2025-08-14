@@ -31,7 +31,7 @@ export default function SignInForm() {
     onExecute: () => setLoading(true),
     onSuccess: ({ data }) => {
       if (!data) return;
-      replace(data.redirectPathname);
+      replace(data.redirectUrl);
     },
     onError: ({ error: { serverError } }) => {
       toast.error(serverError || "There was an internal error while signing in.");

@@ -8,6 +8,7 @@ import spaghettiBanner from "@/img/banner/spaghetti.jpg";
 import Link from "next/link";
 import VerifyEmailForm from "@/components/auth/verify-email-form";
 import { generateEmailVerification } from "@/lib/functions/verification";
+import { emailVerification } from "@/db/schema";
 
 type PageProps = {
   searchParams: Promise<SearchParams>;
@@ -27,10 +28,17 @@ export default async function Page({ searchParams }: PageProps) {
   if (!id) redirect("/login");
   
   const foundUser = await db.query.user.findFirst({
-    where: (user, { and, eq, isNotNull, isNull }) => and(
+    where: (user, { and, or, eq, isNotNull, isNull, exists, sql }) => and(
       eq(user.id, id),
       isNotNull(user.password),
-      isNull(user.emailVerified)
+      or(
+        isNull(user.emailVerified),
+        exists(
+          db.select({ email: emailVerification.email })
+            .from(emailVerification)
+            .where(eq(sql`lower(${emailVerification.email})`, sql`lower(${user.email})`))
+        )
+      )
     ),
     columns: {
       id: true,

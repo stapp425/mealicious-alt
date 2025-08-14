@@ -144,7 +144,7 @@ export const config = {
           or(
             isNull(userTable.emailVerified),
             exists(
-              db.select()
+              db.select({ email: emailVerification.email })
                 .from(emailVerification)
                 .where(eq(userTable.email, userEmail))
             )

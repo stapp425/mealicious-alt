@@ -113,11 +113,16 @@ export const signInWithCredentials = actionClient
       }));
       
       const url = new URL(redirectUrl);
-      const callbackUrl = new URL(UrlSchema.parse(url.searchParams.get("callbackUrl") ?? `${url.origin}/dashboard`));
+      
+      const callbackUrl = new URL(UrlSchema.parse(
+        url.pathname.startsWith("/verify")
+          ? url.href // unverified users must immediately be redirected for verification
+          : url.searchParams.get("callbackUrl") ?? `${url.origin}/dashboard`
+      ));
 
       return {
         success: true as const,
-        redirectPathname: callbackUrl.pathname.startsWith("/login") ? "/dashboard" : callbackUrl.pathname
+        redirectUrl: callbackUrl.href
       };
     } catch (err) {
       if (err instanceof AuthError && err.type === "CredentialsSignin") throw new ActionError("Invalid username or password.");
