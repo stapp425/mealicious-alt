@@ -93,9 +93,8 @@ export default function ForgotPassword() {
   });
 
   const { executeAsync } = useAction(resetPassword, {
-    onSuccess: ({ data }) => {
+    onSuccess: () => {
       setOpen(false);
-      if (!data) return;
       toast.success("Password successfully reset!");
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)

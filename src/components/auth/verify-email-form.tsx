@@ -40,9 +40,9 @@ export default function VerifyEmailForm({ email, codeLength = 6 }: VerifyEmailPr
   const input = useWatch({ control, name: "input" });
   const { executeAsync } = useAction(verifyEmail, {
     onExecute: () => setLoading(true),
-    onSuccess: () => {
+    onSuccess: ({ data }) => {
+      toast.success(data.message);
       replace("/dashboard");
-      toast.success("Email successfully verified!");
     },
     onError: () => {
       toast.error("Verification failed. Try entering the code again or resend another code.");

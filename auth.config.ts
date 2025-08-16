@@ -156,9 +156,13 @@ export const config = {
       if (foundUnverifiedUser) return `/verify?id=${foundUnverifiedUser.id}`;
       return true;
     },
-    jwt: async ({ token, account,  }) => {
+    jwt: async ({ token, account }) => {
       if (account?.provider === "credentials") token.isUsingCredentials = true;
       return token;
+    },
+    session: async ({ session, user }) => {
+      session.user.id = user.id;
+      return session;
     }
   },
   jwt: {

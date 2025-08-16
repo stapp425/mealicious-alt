@@ -73,10 +73,7 @@ export default function SignUpForm() {
 
   const { executeAsync: executeSignUp } = useAction(signUp, {
     onExecute: () => setLoading(true),
-    onSuccess: ({ data }) => {
-      if (!data) return;
-      replace(`/verify?id=${data.verifyId}`);
-    },
+    onSuccess: ({ data }) => replace(`/verify?id=${data.verifyId}`),
     onError: ({ error: { serverError } }) => {
       setLoading(false);
       toast.error(serverError);

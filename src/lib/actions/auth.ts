@@ -41,7 +41,7 @@ export const verifyEmail = actionClient
     
     return {
       success: true as const,
-      message: "User's email successfully verified!"
+      message: "Email successfully verified!"
     };
   });
 

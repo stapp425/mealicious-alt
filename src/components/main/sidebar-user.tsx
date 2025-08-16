@@ -70,9 +70,9 @@ export default function SidebarUser() {
                   className="object-cover object-center bg-slate-100"
                 />
               </div>
-              <div className="flex flex-col truncate">
-                <span className="font-bold">{name}</span>
-                <span>{email}</span>
+              <div className="flex flex-col max-w-36">
+                <span className="font-bold truncate ">{name}</span>
+                <span className="truncate">{email}</span>
               </div>
               <ChevronsUpDown className="ml-auto"/>
             </SidebarMenuButton>

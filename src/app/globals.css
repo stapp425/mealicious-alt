@@ -7,6 +7,7 @@
   --color-mealicious-primary: oklch(70.5% 0.213 47.604);
   --color-mealicious-primary-hover: oklch(55.3% 0.195 38.402);
   --color-mealicious-primary-muted: oklch(83.7% 0.128 66.29);
+  --color-mealicious-primary-border: oklch(70.5% 0.213 47.604);
   --spacing-navbar-width: 325px;
   --spacing-header-height: 100px;
 }
@@ -122,6 +123,7 @@
   --color-mealicious-primary: oklch(47% 0.157 37.304);
   --color-mealicious-primary-muted: oklch(83.7% 0.128 66.29);
   --color-mealicious-primary-hover: oklch(40.8% 0.123 38.172);
+  --color-mealicious-primary-border: oklch(64.6% 0.222 41.116);
 }
 
 @layer base {

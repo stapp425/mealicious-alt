@@ -338,10 +338,12 @@ export const RecipeSearchIndexSchema = z.object({
         error: "Search index title cannot be empty."
       })
     }))
-  }))
-});
+  })).length(1, {
+    error: "Result object must only have one element."
+  })
+}).transform((val) => val.results[0].hits);
 
-export type RecipeSearchIndex = z.infer<typeof RecipeSearchIndexSchema>;
+export type RecipeSearchIndex = z.infer<typeof RecipeSearchIndexSchema>[number];
 
 export const RecipeSearchIndexInsertionSchema = z.object({
   objectID: z.string({
@@ -357,7 +359,7 @@ export const RecipeSearchIndexInsertionSchema = z.object({
       : "Expected a string, but received an invalid type."
   }).nonempty({
     error: "Search index title cannot be empty."
-  }),
+  })
 });
 
 export const RecipeSearchIndexDeletionSchema = RecipeSearchIndexInsertionSchema.omit({
@@ -366,6 +368,28 @@ export const RecipeSearchIndexDeletionSchema = RecipeSearchIndexInsertionSchema.
 
 export type RecipeSearchIndexInsertion = z.infer<typeof RecipeSearchIndexInsertionSchema>;
 export type RecipeSearchIndexDeletion = z.infer<typeof RecipeSearchIndexDeletionSchema>;
+
+export const RecentRecipeSearch = z.array(
+  z.object({
+    id: IdSchema,
+    label: z.string({
+      error: (issue) => issue.input === undefined
+        ? "A label is required."
+        : "Expected a string, but received an invalid type."
+    }).nonempty({
+      error: "Label cannot be left empty."
+    }),
+    category: z.optional(
+      z.string("Expected a string, but received an invalid type")
+        .nonempty({
+          error: "Category cannot be left empty."
+        })
+    )
+  }),
+  "Expected an array, but received an invalid type."
+);
+
+export type RecentRecipeSearch = z.infer<typeof RecentRecipeSearch>[number];
 
 export const CreateReviewFormSchema = z.object({
   rating: z.number({

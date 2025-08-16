@@ -6,7 +6,6 @@ import {
   RecipeSearchIndexInsertionSchema,
   RecipeSearchIndexSchema
 } from "@/lib/zod/recipe";
-import { recentSearchesPluginData } from "@/lib/functions/algolia";
 
 export async function searchForRecipesQueryIndices(query: string) {
   const response = await searchClient.search({
@@ -17,19 +16,8 @@ export async function searchForRecipesQueryIndices(query: string) {
     }]
   });
 
-  const { results } = RecipeSearchIndexSchema.parse(response);
-  return results[0].hits;
-}
-
-export async function getRecentSearchesData() {
-  const recentSearchesData = await recentSearchesPluginData?.getAll();
-  if (!recentSearchesData) return [];
-
-  return recentSearchesData.map((data) => ({
-    id: data.id,
-    label: data.label,
-    category: data.category
-  }));
+  const searchResults = RecipeSearchIndexSchema.parse(response);
+  return searchResults;
 }
 
 export async function insertRecipeQueryIndex(props: { id: string; title: string; }) {

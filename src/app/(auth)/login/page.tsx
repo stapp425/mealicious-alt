@@ -5,11 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import SignInForm from "@/components/auth/sign-in-form";
 import ramenBanner from "@/img/banner/ramen-bowl.jpg";
-import { GitHubButton, GoogleButton } from "@/components/auth/provider-buttons";
+import ProviderButton from "@/components/auth/provider-button";
 import { Separator } from "@/components/ui/separator";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import ForgotPassword from "@/components/auth/forgot-password";
+import { signIn } from "@/auth";
+import githubLogo from "@/img/logo/github-logo.svg";
+import googleLogo from "@/img/logo/google-logo.svg";
 
 export const metadata: Metadata = {
   title: "Login | Mealicious",
@@ -30,8 +33,23 @@ export default function Page() {
           <h1 className="text-sm text-muted-foreground font-semibold text-nowrap md:text-wrap">Log in with these providers</h1>
           <Suspense fallback={<AuthButtonsSkeleton />}>
             <div className="flex justify-center items-center gap-3">
-              <GoogleButton />
-              <GitHubButton />
+              <ProviderButton 
+                providerImage={googleLogo}
+                providerName="Google"
+                signIn={async () => {
+                  "use server";
+                  await signIn("google");
+                }}
+              />
+              <ProviderButton 
+                imageClassName="dark:invert transition-colors"
+                providerImage={githubLogo}
+                providerName="GitHub"
+                signIn={async () => {
+                  "use server";
+                  await signIn("github");
+                }}
+              />
             </div>
           </Suspense>
         </div>

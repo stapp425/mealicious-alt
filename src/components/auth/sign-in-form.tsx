@@ -29,10 +29,7 @@ export default function SignInForm() {
 
   const { execute } = useAction(signInWithCredentials, {
     onExecute: () => setLoading(true),
-    onSuccess: ({ data }) => {
-      if (!data) return;
-      replace(data.redirectUrl);
-    },
+    onSuccess: ({ data }) => replace(data.redirectUrl),
     onError: ({ error: { serverError } }) => {
       toast.error(serverError || "There was an internal error while signing in.");
       setLoading(false);
