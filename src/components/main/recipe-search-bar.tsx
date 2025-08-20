@@ -71,13 +71,14 @@ export default function RecipeSearchBar() {
           <div
             onClick={(e) => open && e.preventDefault()}
             tabIndex={-1}
-            className="border border-input w-[40vw] max-w-[500px] h-9 text-muted-foreground flex justify-between items-center gap-2 p-2 rounded-sm"
+            className="border border-input w-[40vw] max-w-125 h-9 text-muted-foreground flex justify-between items-center gap-2 p-2 rounded-sm"
           >
             <Search size={16}/>
             <Input
               ref={searchInput}
               value={query}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setOpen(true)}
               placeholder="Search Recipe"
               className="border-none bg-transparent! focus-visible:ring-0 p-0 shadow-none"
             />
@@ -85,7 +86,7 @@ export default function RecipeSearchBar() {
         </PopoverTrigger>
         <PopoverContent 
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className="bg-background w-[40vw] max-w-[500px] p-0 gap-0 overflow-hidden"
+          className="bg-background w-[40vw] max-w-125 p-0 gap-0 overflow-hidden"
         >
           <RecipeSearchBody 
             query={query}
@@ -218,10 +219,10 @@ const RecipeSearchBody = memo(({
             title: query,
             isQuery: true
           })}
-          className="cursor-pointer flex items-center gap-3 hover:underline"
+          className="cursor-pointer flex items-start gap-3 hover:underline [&>svg]:shrink-0"
         >
           <Search size={14}/>
-          <h1 className="font-semibold text-sm">Search for &quot;{query}&quot;</h1>
+          <h1 className="font-semibold text-sm text-left -mt-1 line-clamp-3">Search for &quot;{query}&quot;</h1>
         </button>
       </div>
     );
@@ -292,13 +293,15 @@ const RecipeSearchResults = memo(({
 
 RecipeSearchResults.displayName = "RecipeSearchResults";
 
-type RecentRecipeSearchesProps = {
+const RecentRecipeSearches = memo(({
+  recentSearches,
+  onRecentSearchClick,
+  removeRecentSearchData
+}: {
   recentSearches: RecentRecipeSearch[];
   onRecentSearchClick?: (recentSearch: RecentRecipeSearch) => void;
   removeRecentSearchData: (objectID: string) => void;
-};
-
-const RecentRecipeSearches = memo(({ recentSearches, onRecentSearchClick, removeRecentSearchData }: RecentRecipeSearchesProps) => {
+}) => {
   return (
     <ul className="flex flex-col gap-3">
       {

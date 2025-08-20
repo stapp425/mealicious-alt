@@ -4,8 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Info } from "lucide-react";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 import { useFormState } from "react-hook-form";
+import { ComponentProps } from "react";
+import { cn } from "@/lib/utils";
 
-export default function RecipeSource() {
+export default function RecipeSource({ className, ...props }: Omit<ComponentProps<"section">, "children">) {
   const { control, register } = useCreateRecipeFormContext();
   const { 
     errors: {
@@ -14,43 +16,39 @@ export default function RecipeSource() {
   } = useFormState({ control, name: ["source.name", "source.url"] });
   
   return (
-    <div className="flex flex-col gap-3">
+    <section 
+      {...props}
+      className={cn(
+        "flex flex-col gap-2",
+        className
+      )}
+    >
       <h1 className="text-2xl font-bold">Source</h1>
-      <p className="text-muted-foreground font-semibold">
+      <p className="text-muted-foreground font-semibold text-sm">
         Add a source name and URL if this recipe comes from an external source. (optional)
       </p>
-      {
-        sourceError?.name?.message && (
-          <div className="error-text">
-            <Info size={14}/>
-            {sourceError.name.message}
-          </div>
-        )
-      }
+      <div className="error-text has-[>span:empty]:hidden">
+        <Info size={14}/>
+        <span>{sourceError?.name?.message}</span>
+      </div>
       <Input 
         {...register("source.name")}
         placeholder="Source Name (optional)"
+        className="rounded-sm shadow-none"
       />
-      {
-        sourceError?.url?.message && (
-          <div className="error-text">
-            <Info size={14}/>
-            {sourceError.url.message}
-          </div>
-        )
-      }
+      <div className="error-text has-[>span:empty]:hidden">
+        <Info size={14}/>
+        <span>{sourceError?.url?.message}</span>
+      </div>
       <Input 
         {...register("source.url")}
         placeholder="Source URL (optional)"
+        className="rounded-sm shadow-none"
       />
-      {
-        sourceError?.message && (
-          <div className="error-text">
-            <Info size={14}/>
-            {sourceError.message}
-          </div>
-        )
-      }
-    </div>
+      <div className="error-text has-[>span:empty]:hidden">
+        <Info size={14}/>
+        <span>{sourceError?.message}</span>
+      </div>
+    </section>
   );
 }

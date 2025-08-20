@@ -17,8 +17,7 @@ import RecipeInstructions from "@/components/recipes/edit/recipe-instructions";
 import { useRouter } from "next/navigation";
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
-import { createContext, useContext, useEffect, useState } from "react";
-import { useMediaQuery } from "usehooks-ts";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import RecipeTitle from "@/components/recipes/edit/recipe-title";
 import RecipeCuisine from "@/components/recipes/edit/recipe-cuisine";
 import RecipeSource from "@/components/recipes/edit/recipe-source";
@@ -26,6 +25,9 @@ import RecipeDescription from "@/components/recipes/edit/recipe-description";
 import RecipeNutrition from "@/components/recipes/edit/recipe-nutrition";
 import { updateRecipe, updateRecipeImage } from "@/lib/actions/recipe";
 import { generatePresignedUrlForImageDelete, generatePresignedUrlForImageUpload } from "@/lib/actions/r2";
+import { useContainerQuery } from "@/hooks/use-container-query";
+
+const CONTAINER_4XL_BREAKPOINT = 896;
 
 type EditRecipeFormProps = {
   readonly cuisines: {
@@ -109,10 +111,18 @@ export function useEditRecipeFormContext() {
   return context;
 }
 
-export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nutrition }: EditRecipeFormProps) {  
+export default function EditRecipeForm({
+  cuisines,
+  diets,
+  dishTypes,
+  recipe,
+  nutrition
+}: EditRecipeFormProps) {  
   const { replace } = useRouter();
   const [mounted, setMounted] = useState<boolean>(false);
-  const matches = useMediaQuery("(min-width: 80rem)");
+  const [ref, matches] = useContainerQuery<HTMLFormElement>({
+    condition: ({ width }) => width > CONTAINER_4XL_BREAKPOINT
+  });
   // combine both recipe's nutrients and database nutrients together
   const updatedNutrition = nutrition.map((n) => {
     const matchingRecipeNutrition = recipe.nutritionalFacts.find(({ nutrition }) => nutrition.id === n.id);
@@ -138,12 +148,15 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
     handleSubmit,
     reset,
     formState: {
-      isSubmitting
+      isSubmitting,
+      isValidating,
+      isDirty
     }
   } = useForm({
     resolver: zodResolver(EditRecipeFormSchema),
     mode: "onSubmit",
     reValidateMode: "onSubmit",
+    delayError: 250,
     defaultValues: {
       id: recipe.id,
       image: null,
@@ -155,30 +168,30 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
         url: recipe.sourceUrl || undefined
       },
       cuisine: recipe.cuisine || undefined,
-      cookTime: Number(recipe.cookTime),
-      prepTime: Number(recipe.prepTime),
-      readyTime: Number(recipe.readyTime),
+      cookTime: recipe.cookTime,
+      prepTime: recipe.prepTime,
+      readyTime: recipe.readyTime,
       diets: recipe.diets.map(({ diet }) => diet),
       dishTypes: recipe.dishTypes.map(({ dishType }) => dishType),
       tags: recipe.tags,
       ingredients: recipe.ingredients.map((i) => ({
         ...i,
         note: i.note || undefined,
-        amount: Number(i.amount)
+        amount: i.amount
       })),
       servingSize: {
-        amount: Number(recipe.servingSizeAmount),
+        amount: recipe.servingSizeAmount,
         unit: recipe.servingSizeUnit
       },
       nutrition: updatedNutrition,
       instructions: recipe.instructions.map((i) => ({
         ...i,
-        time: Number(i.time)
+        time: i.time
       }))
     }
   });
 
-  const onSubmit = handleSubmit(async (data) => {
+  const onSubmit = useMemo(() => handleSubmit(async (data) => {
     try {
       const { image, ...formDataRest } = data;
       const recipeEditionResult = await updateRecipe(formDataRest);
@@ -191,7 +204,7 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
         const { url: deleteImageUrl } = await generatePresignedUrlForImageDelete(recipe.image);
         await axios.delete(deleteImageUrl);
 
-        const bucketImageName = `${data.id}/${image.name}`
+        const bucketImageName = `recipes/${data.id}/images/main/${image.name}`;
         const { url: insertImageUrl } = await generatePresignedUrlForImageUpload({
           name: bucketImageName,
           size: image.size,
@@ -212,6 +225,10 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
         if (!updateRecipeImageResult?.data)
           throw new Error("Failed to add image to the recipe.");
       }
+
+      reset(data);
+      toast.success("Recipe successfully edited!");
+      replace(`/recipes/${data.id}`);
     } catch (err) {
       if (err instanceof AxiosError) {
         toast.error("Failed to upload the recipe image.");
@@ -221,26 +238,40 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
         return;
       }
     }
+  }), [handleSubmit, reset, replace]);
 
-    toast.success("Recipe successfully edited!");
-    reset(data);
-    replace(`/recipes/${data.id}`);
-  });
+  const providerProps = useMemo(
+    () => ({ 
+      control,
+      register,
+      setValue
+    }),
+    [control, register, setValue]
+  );
 
   useEffect(
     () => setMounted(true),
     [setMounted]
   );
 
+  useEffect(() => {
+    if (!isDirty) return;
+    
+    const handleUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [isDirty]);
+
   return (
-    <EditRecipeFormContext.Provider value={{ control, register, setValue }}>
+    <EditRecipeFormContext value={providerProps}>
       <form 
+        ref={ref}
         onSubmit={onSubmit} 
-        className="max-w-[750px] xl:max-w-[1250px] w-full bg-background mx-auto p-4"
+        className="@container/edit-recipe max-w-188 @min-4xl/main:max-w-324 w-full bg-background mx-auto p-4"
       >
         <h1 className="text-4xl font-bold mb-6">Edit Recipe</h1>
-        <div className="flex flex-col xl:flex-row gap-3 sm:gap-6">
-          <div className="flex-1 shrink-0 flex flex-col gap-3">
+        <div className="flex flex-col @min-4xl/edit-recipe:flex-row gap-6">
+          <div className="w-full @min-4xl/edit-recipe:w-9/20 flex flex-col gap-6">
             <RecipeImageUploader recipeImageURL={recipe.image}/>
             {mounted && !matches && <RecipeTitle />}
             {mounted && !matches && <RecipeDescription />}
@@ -251,14 +282,14 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
             <RecipeSource />
             {mounted && !matches && <RecipeTimes />}
             <button
-              disabled={isSubmitting}
+              disabled={isSubmitting || isValidating || !isDirty}
               type="submit" 
-              className="hidden xl:flex mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
+              className="hidden @min-4xl/edit-recipe:flex mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
             >
-              {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
+              {isSubmitting || isValidating ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
             </button>
           </div>
-          <div className="xl:w-3/5 flex flex-col gap-3">
+          <div className="w-full @min-4xl/edit-recipe:w-11/20 flex flex-col gap-6">
             {mounted && matches && <RecipeTitle />}
             {mounted && matches && <RecipeTimes />}
             {mounted && matches && <RecipeDescription />}
@@ -266,15 +297,15 @@ export default function EditRecipeForm({ cuisines, diets, dishTypes, recipe, nut
             <RecipeInstructions />
             <RecipeNutrition />
             <button
-              disabled={isSubmitting}
+              disabled={isSubmitting || isValidating || !isDirty}
               type="submit" 
-              className="flex xl:hidden mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
+              className="flex @min-4xl/edit-recipe:hidden mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
             >
-              {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
+              {isSubmitting || isValidating ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
             </button>
           </div>
         </div>
       </form>
-    </EditRecipeFormContext.Provider>
+    </EditRecipeFormContext>
   );
 }

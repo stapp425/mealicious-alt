@@ -6,8 +6,12 @@ import { MAX_RECIPE_DESCRIPTION_LENGTH } from "@/lib/zod/recipe";
 import { Info } from "lucide-react";
 import { useFormState, useWatch } from "react-hook-form";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
+import { ComponentProps } from "react";
 
-export default function RecipeDescription() {
+export default function RecipeDescription({ 
+  className,
+  ...props
+}: Omit<ComponentProps<"section">, "children">) {
   const { register, control } = useCreateRecipeFormContext();
   const currentDescription = useWatch({ control, name: "description" });
   const { 
@@ -17,30 +21,34 @@ export default function RecipeDescription() {
   } = useFormState({ control, name: "description" });
   
   return (
-    <div className="flex flex-col gap-3">
+    <section 
+      {...props}
+      className={cn(
+        "flex flex-col gap-1.5",
+        className
+      )}
+    >
       <h1 className="text-2xl font-bold">Description</h1>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
-        <p className="text-muted-foreground font-semibold">
-          Add a brief description about your recipe here. (optional)
-        </p>
-        <span className={cn(currentDescription && currentDescription.length > MAX_RECIPE_DESCRIPTION_LENGTH && "text-red-500", "shrink-0")}>
-          <b className="text-xl">{currentDescription?.length || 0}</b> / {MAX_RECIPE_DESCRIPTION_LENGTH}
-        </span>
+      <p className="text-muted-foreground text-sm font-semibold">
+        Add a brief description about your recipe here. (optional)
+      </p>
+      <div className="error-text text-xs mb-1 has-[>span:empty]:hidden">
+        <Info size={16}/>
+        <span>{descriptionError?.message}</span>
       </div>
       <Textarea
         {...register("description")}
         spellCheck={false}
-        placeholder="Enter a recipe description here..."
+        placeholder="Description"
         autoComplete="off"
-        className="min-h-[100px] hyphens-auto flex-1 flex rounded-md"
+        className="max-h-32 resize-none hyphens-auto rounded-sm shadow-none"
       />
-      {
-        descriptionError?.message &&
-        <div className="error-text text-sm">
-          <Info size={16}/>
-          {descriptionError?.message}
-        </div> 
-      }
-    </div>
+      <span className={cn(
+        "text-sm",
+        currentDescription && currentDescription.length > MAX_RECIPE_DESCRIPTION_LENGTH && "text-red-500"
+      )}>
+        <b className="text-base">{currentDescription?.length || 0}</b> / {MAX_RECIPE_DESCRIPTION_LENGTH}
+      </span>
+    </section>
   );
 }

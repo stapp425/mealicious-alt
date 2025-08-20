@@ -3,6 +3,7 @@ import z from "zod/v4";
 
 export const MAX_RECIPE_TITLE_LENGTH = 100;
 export const MAX_RECIPE_DESCRIPTION_LENGTH = 1000;
+export const MAX_RECIPE_TAG_LENGTH = 20;
 export const MAX_RECIPE_TAGS_LENGTH = 10;
 export const MAX_RECIPE_SOURCE_NAME_LENGTH = 256;
 export const MAX_RECIPE_SOURCE_URL_LENGTH = 2048;
@@ -40,7 +41,6 @@ export const ImageSchema = z.file({
     error: "File must not be empty."
   })
   .max(maxFileSize.amount, {
-    abort: true,
     error: `File size must not exceed ${maxFileSize.label}.`
   });
 
@@ -62,10 +62,19 @@ const RecipeFormSchema = z.object({
       })
   ),
   tags: z.array(
-    z.string("Expected a string, but received an invalid type."),
+    z.string("Expected a string, but received an invalid type.")
+      .nonempty({
+        error: "Tag cannot be left empty."
+      })
+      .max(MAX_RECIPE_TAG_LENGTH, {
+        error: `Tag cannot have more than ${MAX_RECIPE_TAG_LENGTH.toLocaleString()} characters.`
+      }),
     "Expected an array, but received an invalid type."
   ).max(MAX_RECIPE_TAGS_LENGTH, {
+    abort: true,
     error: `A maximum of ${MAX_RECIPE_TAGS_LENGTH} tags is allowed.`
+  }).refine((val) => [...new Set(val.map((str) => str.toLowerCase()))].length === val.length, {
+    error: "Each tag must be unique."
   }),
   source: z.optional(z.object({
     name: z.string("Expected a string, but received an invalid type.")
@@ -80,7 +89,7 @@ const RecipeFormSchema = z.object({
       z.literal("")
     ])
   }).refine((val) => !!val.name === !!val.url, {
-    error: "Both source name and url must be either filled or empty."
+    error: "Both source name and URL must be either filled or empty."
   })),
   cookTime: z.number({
     error: (issue) => typeof issue.input === "undefined"
@@ -91,7 +100,7 @@ const RecipeFormSchema = z.object({
     error: "Cook time cannot be negative."
   }).max(MAX_RECIPE_COOK_TIME_AMOUNT, {
     error: `Cook time cannot exceed ${MAX_RECIPE_COOK_TIME_AMOUNT.toLocaleString()}.`
-  }),
+  }).transform(Math.round),
   prepTime: z.number({
     error: (issue) => typeof issue.input === "undefined"
       ? "A recipe prep time amount is required."
@@ -101,7 +110,7 @@ const RecipeFormSchema = z.object({
     error: "Prep time cannot be negative."
   }).max(MAX_RECIPE_PREP_TIME_AMOUNT, {
     error: `Prep time cannot exceed ${MAX_RECIPE_PREP_TIME_AMOUNT.toLocaleString()}.`
-  }),
+  }).transform(Math.round),
   readyTime: z.number({
     error: (issue) => typeof issue.input === "undefined"
       ? "A recipe ready time amount is required."
@@ -111,18 +120,18 @@ const RecipeFormSchema = z.object({
     error: "Ready time cannot be negative."
   }).max(MAX_RECIPE_READY_TIME_AMOUNT, {
     error: `Ready time cannot exceed ${MAX_RECIPE_READY_TIME_AMOUNT.toLocaleString()}.`
-  }),
+  }).transform(Math.round),
   servingSize: z.object({
     amount: z.number({
       error: (issue) => typeof issue.input === "undefined"
         ? "A recipe serving size is required."
-        : "Expected a string, but received an invalid type."
+        : "Expected a number, but received an invalid type."
     }).positive({
       abort: true,
       error: "Serving size amount must be positive."
     }).max(MAX_RECIPE_SERVING_SIZE_AMOUNT, {
       error: `Serving size cannot exceed ${MAX_RECIPE_SERVING_SIZE_AMOUNT.toLocaleString()}.`
-    }),
+    }).transform((val) => Number(val.toFixed(2))), // if a floating number, only store up to 2 most significant digits
     unit: UnitSchema
   }),
   nutrition: z.array(z.object({
@@ -144,13 +153,13 @@ const RecipeFormSchema = z.object({
       error: "Number cannot be negative."
     }).max(MAX_RECIPE_NUTRITION_AMOUNT, {
       error: `Amount cannot exceed ${MAX_RECIPE_NUTRITION_AMOUNT}.`
-    }),
+    }).transform((val) => Number(val.toFixed(2))),
     allowedUnits: z.array(UnitSchema, "Expected an array, but received an invalid type."),
-  })).min(1, {
+  })).nonempty({
     abort: true,
     error: "A recipe must have at least one listed nutrition value."
   }).refine((arr) => {
-    const nutritionIdList = arr.map((a) => a.id);
+    const nutritionIdList = arr.map(({ id }) => id);
     return [...new Set(nutritionIdList)].length === nutritionIdList.length;
   }, {
     error: "All nutrition names must be unique."
@@ -169,7 +178,7 @@ const RecipeFormSchema = z.object({
     "Expected an array, but received an invalid type."
   ).max(MAX_RECIPE_DIETS_LENGTH, {
     abort: true,
-    error: `Recipe cannot have more than ${MAX_RECIPE_DIETS_LENGTH.toLocaleString()} elements.`
+    error: `Recipe cannot have more than ${MAX_RECIPE_DIETS_LENGTH.toLocaleString()} diets.`
   }).refine((arr) => [...new Set(arr)].length === arr.length, {
     error: "Each element of diets must be unique."
   }),
@@ -181,49 +190,44 @@ const RecipeFormSchema = z.object({
           ? "A dish type name is required."
           : "Expected a string, but received an invalid type."
       }).nonempty({
-        error: "Dish type cannot be left empty."
+        error: "Dish type name cannot be left empty."
       })
     }),
     "Expected an array, but received an invalid type."
   ).max(MAX_RECIPE_DISH_TYPES_LENGTH, {
     abort: true,
     error: `Recipe cannot have more than ${MAX_RECIPE_DISH_TYPES_LENGTH.toLocaleString()} dish types.`
-  }).refine((arr) => [...new Set(arr)].length === arr.length, {
+  }).refine((arr) => [...new Set(arr.map(({ id }) => id))].length === arr.length, {
     error: "Each element of dish types must be unique."
   }),
-  ingredients: z.array(
-    z.object({
-      name: z.string({
-        error: (issue) => typeof issue.input === "undefined"
-          ? "An ingredient name is required."
-          : "Expected a string, but received an invalid type."
-      }).nonempty({
-        error: "Ingredient name cannot be left empty."
-      }),
-      isAllergen: z.boolean("Expected a boolean, but received an invalid type."),
-      unit: UnitSchema,
-      amount: z.number({
-        error: (issue) => typeof issue.input === "undefined"
-          ? "An ingredient amount is required."
-          : "Expected a number, but received an invalid type."
-      }).positive({
-        abort: true,
-        error: "Amount must be positive."
-      }).max(MAX_RECIPE_INGREDIENT_AMOUNT, {
-        error: `Amount cannot be more than ${MAX_RECIPE_INGREDIENT_AMOUNT.toLocaleString()}.`
-      }),
-      note: z.optional(
-        z.string("Expected a string, but received an invalid type.")
-          .nonempty({
-            error: "Ingredient note cannot be left empty."
-          })
-      )
-    })
-  ).min(1, {
+  ingredients: z.array(z.object({
+    name: z.string({
+      error: (issue) => typeof issue.input === "undefined"
+        ? "An ingredient name is required."
+        : "Expected a string, but received an invalid type."
+    }).nonempty({
+      abort: true,
+      error: "Name cannot be empty."
+    }).max(MAX_RECIPE_INGREDIENT_NAME_LENGTH, {
+      error: `Name cannot have more than ${MAX_RECIPE_INGREDIENT_NAME_LENGTH.toLocaleString()} characters.`
+    }),
+    amount: z.number({
+      error: (issue) => typeof issue.input === "undefined"
+        ? "An ingredient amount is required."
+        : "Expected a number, but received an invalid type."
+    }).positive({
+      abort: true,
+      error: "Amount must be positive."
+    }).max(MAX_RECIPE_INGREDIENT_AMOUNT, {
+      error: `Amount must be at most ${MAX_RECIPE_INGREDIENT_AMOUNT.toLocaleString()}.`
+    }).transform((val) => Number(val.toFixed(2))),
+    unit: UnitSchema,
+    isAllergen: z.boolean("Expected a boolean, but received an invalid type."),
+    note: z.optional(z.string("Expected a string, but received an invalid type."))
+  })).nonempty({
     abort: true,
     error: "Recipe must contain at least 1 ingredient."
   }).max(MAX_RECIPE_INGREDIENTS_LENGTH, {
-    abort: true,
     error: `Recipe cannot contain more than ${MAX_RECIPE_INGREDIENTS_LENGTH.toLocaleString()} instructions.`
   }),
   cuisine: z.optional(z.object({
@@ -232,36 +236,43 @@ const RecipeFormSchema = z.object({
       error: (issue) => typeof issue.input === "undefined"
         ? "A cuisine adjective is required."
         : "Expected a string, but received an invalid type."
+    }).nonempty({
+      error: "Cuisine adjective cannot be left empty."
     }),
     icon: UrlSchema
   })),
   instructions: z.array(z.object({
-    title: z.string({
-      error: (issue) => typeof issue.input === "undefined"
-        ? "An instruction title is required."
-        : "Expected a string, but received an invalid type."
+  title: z.string({
+    error: (issue) => typeof issue.input === "undefined"
+      ? "An instruction title is required."
+      : "Expected a string, but received an invalid type."
     }).nonempty({
+      abort: true,
       error: "Instruction title cannot be empty."
+    }).max(MAX_RECIPE_INSTRUCTION_TITLE_LENGTH, {
+      abort: true,
+      error: `Instruction title length cannot exceed ${MAX_RECIPE_INSTRUCTION_TITLE_LENGTH.toLocaleString()} characters.`
     }),
     time: z.number({
       error: (issue) => typeof issue.input === "undefined"
         ? "An instruction time is required."
-        : "Expected a string, but received an invalid type."
+        : "Expected a number, but received an invalid type."
     }).positive({
-      abort: true,
       error: "Instruction time must be positive."
+    }).int({
+      error: "Instruction time must be an integer."
     }).max(MAX_RECIPE_INSTRUCTION_TIME_AMOUNT, {
       error: `Instruction time cannot exceed ${MAX_RECIPE_INSTRUCTION_TIME_AMOUNT.toLocaleString()}.`
     }),
     description: z.string({
       error: (issue) => typeof issue.input === "undefined"
-        ? "Instruction content is required."
+        ? "An instruction content is required."
         : "Expected a string, but received an invalid type."
     }).nonempty({
       abort: true,
-      error: "Description cannot be empty."
+      error: "Instruction content cannot be empty."
     }).max(MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH, {
-      error: `Instruction content cannot exceeed ${MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH.toLocaleString()} characters.`
+      error: `Instruction content must have at most ${MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH.toLocaleString()} characters.`
     })
   })).nonempty({
     abort: true,
@@ -276,16 +287,17 @@ export const CreateRecipeFormSchema = RecipeFormSchema.extend({
   image: ImageSchema,
 });
 
+export type CreateRecipeForm = z.infer<typeof CreateRecipeFormSchema>;
+
 export const EditRecipeFormSchema = RecipeFormSchema.extend({
   id: IdSchema,
   image: z.nullable(ImageSchema),
 });
 
-export type CreateRecipeForm = z.infer<typeof CreateRecipeFormSchema>;
 export type EditRecipeForm = z.infer<typeof EditRecipeFormSchema>;
 
 export const RecipeSearchSchema = z.object({
-  query: z.string(),
+  query: z.string("Expected a string, but received an invalid type."),
   cuisine: z.optional(z.object({
     id: IdSchema,
     adjective: z.string({

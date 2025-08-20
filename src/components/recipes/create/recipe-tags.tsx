@@ -1,83 +1,121 @@
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { MAX_RECIPE_TAGS_LENGTH } from "@/lib/zod/recipe";
+import { CreateRecipeFormSchema, MAX_RECIPE_TAGS_LENGTH } from "@/lib/zod/recipe";
 import { Info } from "lucide-react";
-import { useState } from "react";
+import { ComponentProps, useCallback, useState } from "react";
 import { useFormState, useWatch } from "react-hook-form";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
+import { Separator } from "@/components/ui/separator";
 
-export default function RecipeTags() {
+const TagsSchema = CreateRecipeFormSchema.shape.tags;
+
+export default function RecipeTags({ className, ...props }: Omit<ComponentProps<"section">, "children">) {
+  const [touched, setTouched] = useState(false);
+  const [tag, setTag] = useState<string>("");
+
   const { control, setValue } = useCreateRecipeFormContext();
   const { 
     errors: {
       tags: tagsError
     }
   } = useFormState({ control, name: "tags" });
-  const tags = useWatch({ control, name: "tags" });
-  const [tag, setTag] = useState<string>("");
+  const formTags = useWatch({ control, name: "tags" });
+
+  const tagListValidation = TagsSchema.safeParse([...formTags, tag]); // include current tag input
+  const errors = tagListValidation.error ? tagListValidation.error.issues : [];
+
+  const setTagInput = useCallback((input: string) => {
+    setTag(input);
+    setTouched(!!input);
+  }, [setTag, setTouched]);
   
   return (
-    <div className="flex flex-col gap-3">
+    <section 
+      {...props}
+      className={cn(
+        "flex flex-col gap-1.5",
+        className
+      )}
+    >
       <h1 className="text-2xl font-bold">Tags</h1>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
-        <p className="font-semibold text-muted-foreground">
-          Add extra tags to your recipe here. (optional)
-        </p>
-        <span className={cn(tags.length > MAX_RECIPE_TAGS_LENGTH && "text-red-500")}>
-          <b className="text-xl">{tags.length}</b> / {MAX_RECIPE_TAGS_LENGTH}
-        </span>
+      <div className="error-text text-sm has-[>span:empty]:hidden">
+        <Info size={16}/>
+        <span>{tagsError?.message}</span>
       </div>
-      {
-        tagsError?.message && (
-          <div className="error-text text-sm">
-            <Info size={16}/>
-            {tagsError.message}
-          </div>
-        )
-      }
       <div className="flex justify-between items-stretch gap-3">
         <Input 
           value={tag}
           placeholder="Tag"
-          onChange={(e) => setTag(e.target.value)}
+          onChange={(e) => setTagInput(e.target.value)}
+          className="h-9 rounded-sm shadow-none"
         />
         <button
-          disabled={!tag || tags.includes(tag) || tags.length >= MAX_RECIPE_TAGS_LENGTH}
+          disabled={!touched || errors.length > 0}
           onClick={() => {
-            setValue("tags", [...tags, tag]);
-            setTag("");
+            setValue(
+              "tags",
+              [...formTags, tag],
+              { shouldDirty: true }
+            );
+            setTagInput("");
           }}
-          className="h-full mealicious-button font-semibold px-6 py-1.5 rounded-md"
+          className="mealicious-button h-9 font-semibold text-sm px-6 py-1.5 rounded-sm"
         >
           Add
         </button>
       </div>
-      {
-        tags.length > 0 && (
-          <>
-          <Separator />
-          <div className="flex items-center gap-2 text-sm">
-            <Info size={16}/>
-            You can remove a tag by clicking on it.
-          </div>
-          <div className="flex flex-wrap gap-x-1 gap-y-2">
-            {
-              tags.map((t) => (
+      <div className="error-label flex flex-col gap-2 has-[>ul:empty]:hidden">
+        <div className="flex items-center gap-2">
+          <Info size={14}/>
+          <span className="font-bold text-sm">Errors</span>
+        </div>
+        <Separator className="bg-primary/33 dark:bg-border"/>
+        <ul className="flex flex-col gap-1">
+          {
+            touched && errors.map((i) => (
+              <li key={i.path.join("-")} className="text-xs list-inside list-disc">
+                {i.message}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div className="flex flex-col gap-1.5 has-[>ul:empty]:hidden">
+        <div className="flex items-center gap-2 text-sm">
+          <Info size={16}/>
+          You can remove a tag by clicking on it.
+        </div>
+        <ul className="flex flex-wrap gap-x-1 gap-y-2">
+          {
+            formTags.map((t) => (
+              <li key={t}>
                 <button
                   type="button"
-                  key={t}
-                  onClick={() => setValue("tags", [...tags.filter((ft) => ft !== t)])}
-                  className="mealicious-button text-white text-xs font-semibold min-w-[50px] hover:bg-red-500 hover:text-white px-3 py-1 rounded-full transition-colors"
+                  onClick={() => setValue(
+                    "tags",
+                    [...formTags.filter((ft) => ft !== t)],
+                    { shouldDirty: true }
+                  )}
+                  className="mealicious-button text-white text-xs font-semibold min-w-12 hover:bg-red-500 hover:text-white px-3 py-1 rounded-full transition-colors"
                 >
                   {t}
                 </button>
-              ))
-            }
-          </div>
-          </>
-        )
-      }
-    </div>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div className="flex flex-col items-start">
+        <p className="font-semibold text-muted-foreground text-sm">
+          Add extra tags to your recipe here. (optional)
+        </p>
+        <span className={cn(
+          "shrink-0 text-sm",
+          formTags.length > MAX_RECIPE_TAGS_LENGTH && "text-red-500"
+        )}>
+          <b className="text-base">{formTags.length}</b> / {MAX_RECIPE_TAGS_LENGTH}
+        </span>
+      </div>
+    </section>
   );
 }

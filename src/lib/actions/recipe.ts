@@ -28,9 +28,9 @@ export const createRecipe = authActionClient
         sourceName: createdRecipe.source?.name || undefined,
         sourceUrl: createdRecipe.source?.url || undefined,
         cookTime: createdRecipe.cookTime,
-        prepTime: Number(createdRecipe.prepTime.toFixed(2)),
-        readyTime: Number(createdRecipe.readyTime.toFixed(2)),
-        servingSizeAmount: Number(createdRecipe.servingSize.amount.toFixed(2)),
+        prepTime: createdRecipe.prepTime,
+        readyTime: createdRecipe.readyTime,
+        servingSizeAmount: createdRecipe.servingSize.amount,
         servingSizeUnit: createdRecipe.servingSize.unit,
         createdBy: user.id,
         cuisineId: createdRecipe.cuisine?.id || undefined,
@@ -48,7 +48,7 @@ export const createRecipe = authActionClient
     const insertSavedRecipeQuery = db.insert(savedRecipe)
       .values({
         recipeId,
-        userId: user.id!
+        userId: user.id
       });
     
     const insertNutritionQuery = createdRecipe.nutrition.length > 0 ? db.insert(recipeToNutrition)
@@ -143,11 +143,11 @@ export const updateRecipe = authActionClient
         cuisineId: editedRecipe.cuisine?.id || null,
         sourceName: editedRecipe.source?.name || null,
         sourceUrl: editedRecipe.source?.url || null,
-        servingSizeAmount: Number(editedRecipe.servingSize.amount.toFixed(2)),
+        servingSizeAmount: editedRecipe.servingSize.amount,
         servingSizeUnit: editedRecipe.servingSize.unit,
-        cookTime: Number(editedRecipe.cookTime.toFixed(2)),
-        prepTime: Number(editedRecipe.prepTime.toFixed(2)),
-        readyTime: Number(editedRecipe.readyTime.toFixed(2)),
+        cookTime: editedRecipe.cookTime,
+        prepTime: editedRecipe.prepTime,
+        readyTime: editedRecipe.readyTime,
         tags: editedRecipe.tags,
         updatedAt: new Date(),
       })
@@ -160,7 +160,7 @@ export const updateRecipe = authActionClient
       .values(editedRecipe.nutrition.map((n) => ({
         recipeId: foundRecipe.id,
         nutritionId: n.id,
-        amount: Number(n.amount.toFixed(2)),
+        amount: n.amount,
         unit: n.unit
       }))) : undefined;
 
@@ -171,7 +171,7 @@ export const updateRecipe = authActionClient
       .values(editedRecipe.ingredients.map((i) => ({
         recipeId: foundRecipe.id,
         name: i.name,
-        amount: Number(i.amount.toFixed(2)),
+        amount: i.amount,
         unit: i.unit,
         isAllergen: i.isAllergen,
         note: i.note
@@ -204,7 +204,7 @@ export const updateRecipe = authActionClient
         title: inst.title,
         description: inst.description,
         index: i + 1,
-        time: Number(inst.time.toFixed(2))
+        time: inst.time
       }))) : undefined;
 
     await Promise.all([

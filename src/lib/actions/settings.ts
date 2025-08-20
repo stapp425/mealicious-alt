@@ -16,15 +16,16 @@ import { ActionError } from "@/lib/types";
 import bcrypt from "bcryptjs";
 import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
 import axios from "axios";
-import { UrlSchema } from "@/lib/zod";
 import z from "zod/v4";
 
 export const updateProfilePicture = authActionClient
-  .inputSchema(z.object({
-    imageURL: UrlSchema
+  .inputSchema(z.string({
+    error: (issue) => typeof issue.input === undefined
+      ? "An image path name is required."
+      : "Expected a string, but received an invalid type."
   }))
   .action(async ({
-    parsedInput: { imageURL },
+    parsedInput: imagePathname,
     ctx: { user }
   }) => {
     const foundImage = await db.query.user.findFirst({
@@ -38,13 +39,13 @@ export const updateProfilePicture = authActionClient
     if (!foundImage) throw new ActionError("User does not exist.");
     
     // if the user has an image that is stored in the image bucket
-    if (foundImage.image?.startsWith(process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL!) && !foundImage.image.includes(imageURL)) {
+    if (foundImage.image?.startsWith(process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL!) && !foundImage.image.includes(imagePathname)) {
       const { url: deleteUrl } = await generatePresignedUrlForImageDelete(foundImage.image);
       await axios.delete(deleteUrl);
     }
     
     const [{ updatedImageURL }] = await db.update(userTable)
-      .set({ image: `${process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL}/${imageURL}` })
+      .set({ image: `${process.env.NEXT_PUBLIC_IMAGE_BUCKET_URL}/${imagePathname}` })
       .where(eq(userTable.id, user.id))
       .returning({
         updatedImageURL: userTable.image

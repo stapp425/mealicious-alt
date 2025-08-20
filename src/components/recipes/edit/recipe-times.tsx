@@ -5,6 +5,9 @@ import { Clock, Info, Microwave, Clipboard } from "lucide-react";
 import { useEditRecipeFormContext } from "./edit-recipe-form";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useFormState } from "react-hook-form";
+import { ComponentProps } from "react";
+import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 const recipeTimesDetails = [
   {
@@ -27,7 +30,7 @@ const recipeTimesDetails = [
   }
 ];
 
-export default function RecipeTimes() {
+export default function RecipeTimes({ className, ...props }: Omit<ComponentProps<"section">, "children">) {
   const { control, register } = useEditRecipeFormContext();
   const {
     errors: {
@@ -37,13 +40,20 @@ export default function RecipeTimes() {
     }
   } = useFormState({ control, name: ["prepTime", "cookTime", "readyTime"] });
   
+
   return (
-    <div className="flex flex-col justify-between gap-3">
+    <section 
+      {...props}
+      className={cn(
+        "@container flex flex-col justify-between gap-1.5",
+        className
+      )}
+    >
       <h1 className="font-bold text-2xl required-field">Times</h1>
-      <p className="text-muted-foreground font-semibold">
+      <p className="text-muted-foreground font-semibold text-sm">
         Add preparation times for this recipe.
       </p>
-      <div className="flex flex-col sm:flex-row justify-between gap-3 xl:gap-2">        
+      <div className="flex flex-col @min-xl:flex-row justify-between gap-3">        
         {
           recipeTimesDetails.map((rt, i) => (
             <div
@@ -67,10 +77,10 @@ export default function RecipeTimes() {
                   type="number"
                   min={0}
                   max={9999.99}
-                  step="any"
+                  step={1}
                   autoComplete="off"
-                  className="w-[75px] h-[30px] bg-transparent focus:bg-white focus:text-black"
-                  {...register(rt.field)}
+                  className="w-20 h-8 bg-transparent focus:bg-white focus:text-black rounded-sm shadow-none"
+                  {...register(rt.field, { setValueAs: Number })}
                 />
                 <span className="font-semibold">mins</span>
               </div>
@@ -78,30 +88,24 @@ export default function RecipeTimes() {
           ))
         }
       </div>
-      {
-        prepTimeError?.message && (
-          <div className="error-text text-sm">
-            <Info size={16}/>
-            {prepTimeError.message}
-          </div>
-        )
-      }
-      {
-        cookTimeError?.message && (
-          <div className="error-text text-sm">
-            <Info size={16}/>
-            {cookTimeError.message}
-          </div>
-        )
-      }
-      {
-        readyTimeError?.message && (
-          <div className="error-text text-sm">
-            <Info size={16}/>
-            {readyTimeError.message}
-          </div>
-        )
-      }
-    </div>
+      <div className="error-label hidden has-[li:not(:empty)]:flex flex-col gap-2 ">
+        <div className="flex items-center gap-2">
+          <Info size={14}/>
+          <span className="font-bold text-sm">Recipe Time Errors</span>
+        </div>
+        <Separator className="bg-primary/33 dark:bg-border"/>
+        <ul className="flex flex-col gap-1">
+          <li className="text-xs list-inside list-disc empty:hidden">
+            {prepTimeError?.message}
+          </li>
+          <li className="text-xs list-inside list-disc empty:hidden">
+            {cookTimeError?.message}
+          </li>
+          <li className="text-xs list-inside list-disc empty:hidden">
+            {readyTimeError?.message}
+          </li>
+        </ul>
+      </div>
+    </section>
   );
 }

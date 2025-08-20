@@ -59,7 +59,7 @@ export default function ChangeProfilePictureForm({ id, avatarImageUrl }: ChangeA
         }
       });
 
-      const updateProfilePictureResult = await updateProfilePicture({ imageURL: bucketImageName });
+      const updateProfilePictureResult = await updateProfilePicture(bucketImageName);
       if (!updateProfilePictureResult?.data?.success) throw new Error("Failed to update profile picture.");
 
       toast.success(updateProfilePictureResult.data.message);

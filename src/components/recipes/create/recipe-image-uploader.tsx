@@ -3,20 +3,25 @@
 import { Input } from "@/components/ui/input";
 import { Info, Plus } from "lucide-react";
 import { 
+  ChangeEvent,
+  ComponentProps,
+  useCallback,
   useEffect, 
   useRef, 
   useState
 } from "react";
 import Image from "next/image";
-import defaultRecipeImage from "@/img/default/default-background.jpg";
 import { useFormState, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
 import { ImageSchema } from "@/lib/zod/recipe";
+import { cn } from "@/lib/utils";
 
-export default function RecipeImageUploader() {
+export default function RecipeImageUploader({ className, ...props }: Omit<ComponentProps<"section">, "children">) {
+  const errorFocusButton = useRef<HTMLButtonElement>(null);
   const { control, setValue } = useCreateRecipeFormContext();
-  const { 
+  const {
+    isSubmitSuccessful,
     errors: {
       image: imageError
     }
@@ -24,6 +29,27 @@ export default function RecipeImageUploader() {
   const image = useWatch({ control, name: "image" });
   const [imageURL, setImageURL] = useState<string | null>(null);
   const addImageButton = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return;
+    const addedImage = e.target.files[0];
+    
+    const imageValidation = ImageSchema.safeParse(addedImage);
+    if (!imageValidation.success) {
+      const errors = imageValidation.error.issues.map(({ message }) => message);
+      toast.error(errors, {
+        duration: 10000
+      });
+      e.target.value = "";
+      return;
+    }
+
+    setValue(
+      "image",
+      addedImage,
+      { shouldDirty: true }
+    );
+  }, [setValue]);
   
   useEffect(() => {
     if (!image) {
@@ -36,35 +62,32 @@ export default function RecipeImageUploader() {
     setImageURL(url);
     return () => URL.revokeObjectURL(url);
   }, [image, setImageURL]);
+
+  useEffect(() => {
+    if (imageError && !isSubmitSuccessful && document.activeElement?.tagName === "BODY")
+      errorFocusButton.current?.focus();
+  }, [imageError, isSubmitSuccessful]);
   
   return (
-    <div className="bg-sidebar border border-border h-[425px] flex flex-col overflow-hidden relative group rounded-md">
+    <section 
+      {...props}
+      className={cn(
+        "bg-sidebar border border-border h-108 flex flex-col overflow-hidden relative group rounded-md",
+        className
+      )}
+    >
       <Input
         ref={addImageButton}
         type="file"
         accept="image/jpg,image/jpeg,image/png,image/webp"
-        onChange={(e) => {
-          const addedImage = e.target.files?.[0];
-          
-          if (!addedImage)
-            return;
-          
-          const validateImage = ImageSchema.safeParse(addedImage);
-          if (!validateImage.success) {
-            toast.error(validateImage.error.message);
-            e.target.value = "";
-            return;
-          }
-
-          setValue("image", addedImage);
-        }}
+        onChange={handleImageUpload}
         className="hidden"
       />
       {
-        image ? (
+        image && imageURL ? (
           <>
           <Image
-            src={imageURL || defaultRecipeImage}
+            src={imageURL}
             alt="Added Image"
             fill
             className="size-full object-cover"
@@ -85,6 +108,7 @@ export default function RecipeImageUploader() {
             <div className="flex flex-col justify-center text-muted-foreground items-center gap-4 flex-1 relative top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
               <Plus size={64}/>
               <button
+                ref={errorFocusButton}
                 type="button"
                 onClick={() => addImageButton.current?.click()}
                 className="font-semibold mealicious-button text-base px-5 py-2.5 rounded-md"
@@ -92,17 +116,13 @@ export default function RecipeImageUploader() {
                 Add an Image
               </button>
             </div>
-            {
-              imageError?.message && (
-                <div className="error-label">
-                  <Info />
-                  {imageError.message}
-                </div>
-              )
-            }
+            <div className="error-label text-sm flex items-center gap-2 has-[>span:empty]:hidden">
+              <Info size={16}/>
+              <span>{imageError?.message}</span>
+            </div>
           </div>
         )
       }
-    </div>
+    </section>
   );
 }

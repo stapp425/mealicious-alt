@@ -5,52 +5,30 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { 
-  MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH,
   MAX_RECIPE_INSTRUCTION_TIME_AMOUNT,
-  MAX_RECIPE_INSTRUCTION_TITLE_LENGTH,
-  MAX_RECIPE_INSTRUCTIONS_LENGTH
+  MAX_RECIPE_INSTRUCTIONS_LENGTH,
+  CreateRecipeFormSchema
 } from "@/lib/zod/recipe";
 import { ArrowDown, ArrowUp, Clock, Info, Pencil, Plus, Trash2 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ComponentProps, memo, useCallback, useEffect, useRef, useState } from "react";
 import { useFieldArray, useFormState } from "react-hook-form";
-import z from "zod";
 import { useCreateRecipeFormContext } from "@/components/recipes/create/create-recipe-form";
+import z from "zod/v4";
 
+const InstructionInputSchema = CreateRecipeFormSchema.shape.instructions.element;
 type Instruction = z.infer<typeof InstructionInputSchema>;
 
-const InstructionInputSchema = z.object({
-  title: z.string({
-    required_error: "An instruction title is required."
-  }).nonempty({
-    message: "Instruction title cannot be empty."
-  }).max(MAX_RECIPE_INSTRUCTION_TITLE_LENGTH, {
-    message: `Instruction title length cannot exceed ${MAX_RECIPE_INSTRUCTION_TITLE_LENGTH.toLocaleString()} characters.`
-  }),
-  time: z.coerce.number({
-    required_error: "An instruction time is required."
-  }).positive({
-    message: "Instruction time must be positive."
-  }).max(MAX_RECIPE_INSTRUCTION_TIME_AMOUNT, {
-    message: `Instruction time cannot exceed ${MAX_RECIPE_INSTRUCTION_TIME_AMOUNT.toLocaleString()}.`
-  }),
-  description: z.string({
-    required_error: "A description is required."
-  }).nonempty({
-    message: "Description cannot be empty."
-  }).max(MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH, {
-    message: `A maximum of ${MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH.toLocaleString()} characters are allowed.`
-  })
-});
-
-export default function RecipeInstructions() {
+export default function RecipeInstructions({ className, ...props }: Omit<ComponentProps<"section">, "children">) {
   const { control } = useCreateRecipeFormContext();
   const { append, remove, update, swap, fields: formInstructionValues } = useFieldArray({ control, name: "instructions" });
   const [touched, setTouched] = useState<boolean>(false);
-  const { 
+  const {
+    isSubmitSuccessful,
     errors: {
       instructions: instructionsError
     }
   } = useFormState({ control, name: "instructions" });
+  const errorFocusInput = useRef<HTMLInputElement>(null);
 
   const [instruction, setInstruction] = useState<Instruction>({
     title: "",
@@ -58,139 +36,155 @@ export default function RecipeInstructions() {
     description: "",
   });
 
-  const parsedInstruction = InstructionInputSchema.safeParse(instruction);
-  const error = parsedInstruction.error?.errors[0]?.message;
+  const { error: instructionInputError } = InstructionInputSchema.safeParse(instruction);
 
-  const deleteInstruction = useCallback((index: number) => remove(index), []);
+  const deleteInstruction = useCallback(
+    (index: number) => remove(index),
+    [remove]
+  );
+
+  const resetInstructionInput = useCallback(() => {
+    setInstruction({
+      title: "",
+      time: 0,
+      description: ""
+    });
+    setTouched(false);
+  }, [setInstruction, setTouched]);
+
+  useEffect(() => {
+    if (instructionsError && !isSubmitSuccessful && document.activeElement?.tagName === "BODY")
+      errorFocusInput.current?.focus();
+  }, [instructionsError, isSubmitSuccessful]);
   
   return (
-    <div className="flex flex-col gap-3">
+    <section 
+      {...props}
+      className={cn(
+        "@container flex flex-col gap-2",
+        className
+      )}
+    >
       <h1 className="text-2xl font-bold required-field">Instructions</h1>
-      <div className="flex flex-col sm:flex-row justify-between items-start md:items-end">
-        <p className="font-semibold text-muted-foreground">
-          Add instructions to your recipe here.
-        </p>
-        <span className={cn(instruction.description.length > MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH && "text-red-500")}>
-          <b className="text-xl">{instruction.description.length}</b> / {MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH}
-        </span>
+      <p className="font-semibold text-muted-foreground text-sm">
+        Add instructions to your recipe here.
+      </p>
+      <div className="error-text text-xs has-[>span:empty]:hidden">
+        <Info size={16}/>
+        <span>{instructionsError?.message}</span>
       </div>
-      {
-        (touched && error) && (
-          <div className="error-text">
-            <Info size={14}/>
-            {error}
-          </div>
-        )
-      }
       <div className="flex justify-between items-end gap-2">
         <Input 
+          ref={errorFocusInput}
           value={instruction.title}
-          placeholder="Add a title here..."
+          placeholder="Title"
           onChange={(e) => {
-            const { value } = e.target;
-            if (!touched) setTouched(true);
+            setTouched(true);
             setInstruction((i) => ({
               ...i,
-              title: value
+              title: e.target.value
             }));
           }}
+          className="rounded-sm shadow-none"
         />
         <Input 
-          value={instruction.time}
           type="number"
+          value={instruction.time}
           min={0}
           max={MAX_RECIPE_INSTRUCTION_TIME_AMOUNT}
+          step={1}
           onChange={(e) => {
-            const { value } = e.target;
-            if (!touched) setTouched(true);
+            setTouched(true);
             setInstruction((i) => ({
               ...i,
-              time: Number(value)
+              time: Number(e.target.value)
             }));
           }}
-          className="w-[100px]"
+          className="w-24 rounded-sm shadow-none"
         />
         <span className="font-semibold">min</span>
       </div>
       <Textarea
         value={instruction.description}
-        placeholder="Add an instruction here..."
+        placeholder="Instruction"
         autoComplete="off"
         onChange={(e) => {
-          if (!touched) setTouched(true);
+          setTouched(true);
           setInstruction((i) => ({
             ...i,
             description: e.target.value
           }));
         }}
-        className="resize-y hyphens-auto"
+        className="max-h-32 resize-none hyphens-auto rounded-sm shadow-none"
       />
-      <button
-        type="button"
-        disabled={!parsedInstruction.success}
-        onClick={() => {
-          append(instruction);
-          setInstruction({
-            title: "",
-            time: 0,
-            description: ""
-          });
-          setTouched(false);
-        }}
-        className="mealicious-button font-semibold flex justify-center items-center gap-3 py-2 rounded-md"
-      >
-        Add Instruction
-        <Plus size={18}/>
-      </button>
-      {
-        formInstructionValues.length > 0 && (
-          <>
-          <div className="flex items-center gap-2 text-sm">
-            <Info size={16}/>
-            <span className={cn(formInstructionValues.length > MAX_RECIPE_INSTRUCTIONS_LENGTH && "text-red-500")}>
-              Instruction count: <b>{formInstructionValues.length}</b> / {MAX_RECIPE_INSTRUCTIONS_LENGTH}
-            </span>
-          </div>
-          <div className="flex-1 flex flex-col gap-3">
-            { 
-              formInstructionValues.map((i, index) => (
-                <RecipeInstruction 
-                  key={i.id}
-                  currentInstructionContent={i}
-                  currentInstructionIndex={index}
-                  deleteInstruction={deleteInstruction}
-                  isFirst={index === 0}
-                  isLast={index === formInstructionValues.length - 1}
-                  swapInstructionIndex={swap}
-                  setInstructionContent={update}
-                />
-              ))
-            }
-          </div>
-          </>
-        )
-      }
-      { 
-        instructionsError?.message && (
-          <div className="error-text text-sm">
-            <Info size={16}/>
-            {instructionsError.message}
-          </div> 
-        )
-      }
-    </div>
+      <div className="error-label flex flex-col gap-2 has-[>ul:empty]:hidden">
+        <div className="flex items-center gap-2">
+          <Info size={14}/>
+          <span className="font-bold text-sm">Input Errors</span>
+        </div>
+        <Separator className="bg-primary/33 dark:bg-border"/>
+        <ul className="flex flex-col gap-1">
+          {
+            touched && instructionInputError?.issues.map((i) => (
+              <li key={i.message} className="text-xs list-inside list-disc">
+                {i.message}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={!!instructionInputError || formInstructionValues.length > MAX_RECIPE_INSTRUCTIONS_LENGTH}
+          onClick={() => {
+            append(instruction);
+            resetInstructionInput();
+          }}
+          className="mealicious-button font-semibold text-sm flex justify-center items-center gap-2 py-2 px-6 rounded-sm"
+        >
+          Add Instruction
+          <Plus size={18}/>
+        </button>
+        <button
+          type="button"
+          onClick={resetInstructionInput}
+          className={cn(
+            "cursor-pointer font-semibold text-white text-nowrap text-sm py-2 px-6 rounded-sm transition-colors",
+            "bg-red-500 hover:bg-red-700",
+            !touched && "hidden"
+          )}
+        >
+          Cancel
+        </button>
+      </div>
+      <div className="flex flex-col gap-2 has-[>ul:empty]:hidden">
+        <div className="flex items-center gap-2 text-sm">
+          <Info size={16}/>
+          <span className={cn(formInstructionValues.length > MAX_RECIPE_INSTRUCTIONS_LENGTH && "text-red-500")}>
+            Instruction count: <b>{formInstructionValues.length}</b> / {MAX_RECIPE_INSTRUCTIONS_LENGTH}
+          </span>
+        </div>
+        <ul className="flex-1 flex flex-col gap-3">
+          { 
+            formInstructionValues.map((i, index) => (
+              <RecipeInstruction 
+                key={i.id}
+                currentInstructionContent={i}
+                currentInstructionIndex={index}
+                deleteInstruction={deleteInstruction}
+                isFirst={index === 0}
+                isLast={index === formInstructionValues.length - 1}
+                swapInstructionIndex={swap}
+                setInstructionContent={update}
+              />
+            ))
+          }
+        </ul>
+      </div>
+    </section>
   );
 }
-
-type RecipeInstructionProps = {
-  currentInstructionIndex: number;
-  currentInstructionContent: Instruction;
-  isFirst: boolean;
-  isLast: boolean;
-  setInstructionContent: (index: number, instruction: Instruction) => void;
-  swapInstructionIndex: (index: number, otherIndex: number) => void;
-  deleteInstruction: (index: number) => void;
-};
 
 const RecipeInstruction = memo(({ 
   currentInstructionIndex,
@@ -199,176 +193,227 @@ const RecipeInstruction = memo(({
   isLast,
   setInstructionContent,
   swapInstructionIndex,
-  deleteInstruction
-}: RecipeInstructionProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  deleteInstruction,
+  className,
+  ...props
+}: Omit<ComponentProps<"li">, "children"> & {
+  currentInstructionIndex: number;
+  currentInstructionContent: Instruction;
+  isFirst: boolean;
+  isLast: boolean;
+  setInstructionContent: (index: number, instruction: Instruction) => void;
+  swapInstructionIndex: (index: number, otherIndex: number) => void;
+  deleteInstruction: (index: number) => void;
+}) => {
+  const containerRef = useRef<HTMLLIElement>(null);
   const [editMode, setEditMode] = useState(false);
+  const [touched, setTouched] = useState(false);
   const [instructionInput, setInstructionInput] = useState<Instruction>(currentInstructionContent);
 
-  const error = useMemo(
-    () => InstructionInputSchema.safeParse(instructionInput).error?.errors[0].message || (
-      instructionInput.title === currentInstructionContent.title &&
-      instructionInput.description === currentInstructionContent.description && 
-      instructionInput.time === currentInstructionContent.time
-    ) && "Content cannot be similar." as string || undefined,
-    [instructionInput, currentInstructionContent]
-  );
+  const { error: instructionInputError } = InstructionInputSchema.safeParse(instructionInput);
+  
+  const resetInstructionInput = useCallback(() => {
+    setEditMode(false);
+    setTouched(false);
+    setInstructionInput(currentInstructionContent);
+  }, [setEditMode, setTouched, setInstructionInput, currentInstructionContent]);
   
   useEffect(() => {
     if (!editMode) return;
     const handleOutsideClick = (e: MouseEvent) => {
       const element = containerRef.current;
       const targetElement = e.target instanceof Element ? e.target.closest(".instruction-content") : null;
-      if (element && targetElement && targetElement !== element) {
-        setEditMode(false);
-        setInstructionInput(currentInstructionContent);
-      }
+      if (element && targetElement && targetElement !== element) resetInstructionInput();
     };
 
     document.addEventListener("pointerup", handleOutsideClick);
     return () => document.removeEventListener("pointerup", handleOutsideClick);
   }, [editMode, currentInstructionContent]);
-
-  return (
-    <div ref={containerRef} className="instruction-content flex flex-col items-start gap-3 text-left overflow-hidden border border-border rounded-md p-2.5 sm:p-4">
-      {
-        editMode ? (
-          <>
-          <div className="w-full flex justify-between items-center gap-3">
-            <div className="bg-mealicious-primary text-white font-semibold size-10 shrink-0 flex justify-center items-center p-3 rounded-full">
-              {currentInstructionIndex + 1}
-            </div>
-            <Input 
-              value={instructionInput.title}
-              onChange={(e) => setInstructionInput((i) => ({
+  
+  if (editMode) {
+    return (
+      <li
+        ref={containerRef}
+        className={cn(
+          "instruction-content flex flex-col items-start gap-2 text-left overflow-hidden border border-border rounded-md p-2.5 @min-lg:p-4",
+          className
+        )}
+        {...props}
+      >
+        <div className="w-full flex justify-between items-center gap-3">
+          <div className="bg-mealicious-primary text-white font-semibold size-10 shrink-0 flex justify-center items-center p-3 rounded-full">
+            {currentInstructionIndex + 1}
+          </div>
+          <Input 
+            value={instructionInput.title}
+            onChange={(e) => {
+              setTouched(true);
+              setInstructionInput((i) => ({
                 ...i,
                 title: e.target.value
-              }))}
-              placeholder="Instruction Title"
-              className="font-bold"
-            />
-          </div>
-          <div className="text-sm text-nowrap flex items-center gap-2">
-            <Clock size={18} className="shrink-0 stroke-muted-foreground"/>
-            <Input 
-              type="number"
-              value={instructionInput.time}
-              onChange={(e) => setInstructionInput((i) => ({
+              }));
+            }}
+            placeholder="Instruction Title"
+            className="rounded-sm shadow-none"
+          />
+        </div>
+        <div className="text-sm text-nowrap flex items-center gap-2">
+          <Clock size={18} className="shrink-0 stroke-muted-foreground"/>
+          <Input 
+            type="number"
+            value={instructionInput.time}
+            min={0}
+            max={MAX_RECIPE_INSTRUCTION_TIME_AMOUNT}
+            step={1}
+            onChange={(e) => {
+              setTouched(true);
+              setInstructionInput((i) => ({
                 ...i,
                 time: Number(e.target.value)
-              }))}
-              placeholder="0"
-              className="w-18"
-            />
-            mins
-          </div>
-          <span className={cn(instructionInput.description.length > MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH && "text-red-500")}>
-            <b className="text-xl">{instructionInput.description.length}</b> / {MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH}
-          </span>
-          <Textarea 
-            value={instructionInput.description}
-            onChange={(e) => setInstructionInput((i) => ({
+              }));
+            }}
+            placeholder="0"
+            className="w-18 rounded-sm shadow-none"
+          />
+          mins
+        </div>
+        <Textarea 
+          value={instructionInput.description}
+          onChange={(e) => {
+            setTouched(true);
+            setInstructionInput((i) => ({
               ...i,
               description: e.target.value
-            }))}
-            placeholder="Instruction Description"
-          />
-          <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-6">
+            }));
+          }}
+          placeholder="Instruction Description"
+          className="max-h-32 resize-none rounded-sm shadow-none"
+        />
+        <div className="error-label w-full flex flex-col gap-1 has-[ul:empty]:hidden">
+          <div className="flex items-center gap-2">
+            <Info size={14}/>
+            <span className="font-bold text-sm">Input Errors</span>
+          </div>
+          <Separator className="bg-primary/33 dark:bg-border"/>
+          <ul className="flex flex-col gap-1">
             {
-              error && (
-                <div className="error-text text-xs mr-auto">
-                  <Info size={16}/>
-                  {error}
-                </div> 
-              )
+              touched && instructionInputError?.issues.map((i) => (
+                <li key={i.path.join("-")} className="text-xs">
+                  {i.message}
+                </li>
+              ))
             }
-            <div className="w-full sm:w-auto flex items-center gap-4 sm:gap-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditMode(false);
-                  setInstructionInput(currentInstructionContent);
-                }}
-                className="cursor-pointer underline text-xs font-semibold rounded-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!!error}
-                onClick={() => {
-                  setInstructionContent(currentInstructionIndex, instructionInput);
-                  setEditMode(false);
-                }}
-                className="mealicious-button text-xs font-semibold py-2 px-6 rounded-sm"
-              >
-                Edit
-              </button>
+          </ul>
+        </div>
+        <div className="w-full @min-2xl:w-auto flex items-center gap-4 @min-2xl:gap-6">
+          <button
+            type="button"
+            disabled={!touched || !!instructionInputError}
+            onClick={() => {
+              setInstructionContent(currentInstructionIndex, instructionInput);
+              setEditMode(false);
+              setTouched(false);
+            }}
+            className="mealicious-button text-xs font-semibold py-2 px-6 rounded-sm"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={resetInstructionInput}
+            className="cursor-pointer underline text-xs font-semibold rounded-sm"
+          >
+            Cancel
+          </button>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li 
+      ref={containerRef}
+      className={cn(
+        "instruction-content flex flex-col items-start gap-3 text-left overflow-hidden border border-border rounded-md p-2.5 @min-lg:p-4",
+        className
+      )}
+      {...props}
+    >
+      <div className="w-full flex justify-between items-start gap-4">
+        <div className="shrink-0 bg-mealicious-primary text-white font-semibold size-10 flex justify-center items-center p-3 rounded-full">
+          {currentInstructionIndex + 1}
+        </div>
+        <div className="w-full flex justify-between items-start gap-2">
+          <div className="grid gap-0.5">
+            <h2 className="font-bold text-lg hyphens-auto line-clamp-2 -mt-1">{currentInstructionContent.title}</h2>
+            <div className="font-semibold text-sm text-nowrap flex items-center gap-1.5 text-muted-foreground">
+              <Clock size={14}/>
+              {Math.floor(currentInstructionContent.time)} mins
             </div>
           </div>
-          </>
-        ) : (
-          <>
-          <div className="w-full flex justify-between items-start gap-4">
-            <div className="shrink-0 bg-mealicious-primary text-white font-semibold size-10 flex justify-center items-center p-3 rounded-full">
-              {currentInstructionIndex + 1}
-            </div>
-            <div className="flex-1 flex flex-col gap-0.5 items-start">
-              <div className="w-full flex justify-between items-start gap-2">
-                <div className="grid gap-0.5">
-                  <h2 className="font-bold text-lg hyphens-auto line-clamp-2 -mt-1">{currentInstructionContent.title}</h2>
-                  <div className="font-semibold text-sm text-nowrap flex items-center gap-1.5 text-muted-foreground">
-                    <Clock size={14}/>
-                    {Math.floor(currentInstructionContent.time)} mins
-                  </div>
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => setEditMode(true)}
-                  className="group cursor-pointer size-8 shrink-0 border border-foreground text-foreground hover:text-white hover:bg-mealicious-primary hover:border-mealicious-primary flex justify-center items-center rounded-full transition-colors"
-                >
-                  <Pencil size={16} className="shrink-0"/>
-                </button>
-              </div>
-              
-            </div>
-          </div>
-          <p className="flex-1 text-left break-all">{currentInstructionContent.description}</p>
-          <div className="w-full h-8 flex justify-between sm:justify-start items-center gap-3">
-            <button
-              type="button"
-              disabled={isFirst || editMode}
-              onClick={() => swapInstructionIndex(currentInstructionIndex, currentInstructionIndex - 1)}
-              className="flex-1 sm:flex-none shrink-0 mealicious-button font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 h-8 rounded-full"
-            >
-              <ArrowUp size={14}/>
-              Move Up
-            </button>
-            <button
-              type="button"
-              disabled={isLast || editMode}
-              onClick={() => swapInstructionIndex(currentInstructionIndex, currentInstructionIndex + 1)}
-              className="flex-1 sm:flex-none shrink-0 mealicious-button font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 h-8 rounded-full"
-            >
-              <ArrowDown size={14}/>
-              Move Down
-            </button>
-            <Separator orientation="vertical" className="grow-0"/>
-            <button
-              type="button"
-              disabled={editMode}
-              onClick={() => deleteInstruction(currentInstructionIndex)}
-              className="group flex-1 sm:flex-none shrink-0 cursor-pointer hover:bg-red-700 hover:text-white hover:border-red-700 border border-muted-foreground font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 h-8 rounded-full transition-colors"
-            >
-              <Trash2 size={14} className="stroke-muted-foreground group-hover:stroke-white"/>
-              Delete
-            </button>
-          </div>
-          </>
-        )
-      }
-    </div>
+          <button
+            type="button"
+            onClick={() => setEditMode(true)}
+            className={cn(
+              "group cursor-pointer size-8 shrink-0",
+              "border border-muted-foreground text-muted-foreground",
+              "hover:text-white hover:bg-mealicious-primary hover:border-mealicious-primary",
+              "flex justify-center items-center",
+              "rounded-full transition-colors"
+            )}
+          >
+            <Pencil size={16} className="shrink-0"/>
+          </button>
+        </div>
+      </div>
+      <p className="flex-1 text-left break-all">{currentInstructionContent.description}</p>
+      <div className="w-full h-8 flex justify-between @min-md:justify-start items-center gap-3">
+        <button
+          type="button"
+          disabled={isFirst || editMode}
+          onClick={() => swapInstructionIndex(currentInstructionIndex, currentInstructionIndex - 1)}
+          className={cn(
+            "flex-1 @min-md:flex-none shrink-0 h-8",
+            "mealicious-button font-semibold text-xs text-nowrap",
+            "flex justify-center items-center gap-1.5",
+            "py-2 px-3 rounded-full"
+          )}
+        >
+          <ArrowUp size={14}/>
+          Move Up
+        </button>
+        <button
+          type="button"
+          disabled={isLast || editMode}
+          onClick={() => swapInstructionIndex(currentInstructionIndex, currentInstructionIndex + 1)}
+          className={cn(
+            "flex-1 @min-md:flex-none shrink-0 h-8",
+            "mealicious-button font-semibold text-xs text-nowrap",
+            "flex justify-center items-center gap-1.5",
+            "py-2 px-3 rounded-full"
+          )}
+        >
+          <ArrowDown size={14}/>
+          Move Down
+        </button>
+        <Separator orientation="vertical" className="grow-0"/>
+        <button
+          type="button"
+          disabled={editMode}
+          onClick={() => deleteInstruction(currentInstructionIndex)}
+          className={cn(
+            "group flex-1 @min-md:flex-none shrink-0 cursor-pointer h-8",
+            "border border-muted-foreground hover:border-red-700 hover:bg-red-700",
+            "font-semibold text-xs text-nowrap text-muted-foreground hover:text-white",
+            "flex justify-center items-center gap-1.5",
+            "py-2 px-3 rounded-full transition-colors"
+          )}
+        >
+          <Trash2 size={14} className="stroke-muted-foreground group-hover:stroke-white"/>
+          Delete
+        </button>
+      </div>
+    </li>
   );
 });
 

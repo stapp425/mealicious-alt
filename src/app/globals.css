@@ -156,7 +156,7 @@
   }
 
   .error-label {
-    @apply flex items-center gap-2 border bg-red-200 border-red-700 dark:text-black dark:bg-red-400 p-3 rounded-sm mt-2
+    @apply border bg-red-200 border-red-700 text-secondary-foreground dark:bg-red-700/15 p-3 rounded-sm
   }
 
   .error-text {

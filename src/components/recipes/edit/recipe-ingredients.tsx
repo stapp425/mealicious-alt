@@ -13,60 +13,31 @@ import { Separator } from "@/components/ui/separator";
 import { Unit, unitAbbreviations } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
+  EditRecipeFormSchema,
   MAX_RECIPE_INGREDIENT_AMOUNT,
-  MAX_RECIPE_INGREDIENT_NAME_LENGTH,
   MAX_RECIPE_INGREDIENTS_LENGTH
 } from "@/lib/zod/recipe";
-import { UnitSchema } from "@/lib/zod";
 import { Info, Pencil, Plus, Trash2 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ComponentProps, memo, useCallback, useEffect, useRef, useState } from "react";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
 import { useFieldArray, useFormState } from "react-hook-form";
 import z from "zod/v4";
 
-type Ingredient = {
-  name: string;
-  amount: number;
-  unit: Unit["abbreviation"];
-  isAllergen: boolean;
-  note?: string;
-};
+const IngredientInputSchema = EditRecipeFormSchema.shape.ingredients.element;
+type Ingredient = z.infer<typeof IngredientInputSchema>;
 
-const IngredientInputSchema = z.object({
-  name: z.string({
-    error: (issue) => typeof issue.input === "undefined"
-      ? "An ingredient name is required."
-      : "Expected a string, but received an invalid type."
-  }).nonempty({
-    abort: true,
-    error: "Name cannot be empty."
-  }).max(MAX_RECIPE_INGREDIENT_NAME_LENGTH, {
-    error: `Name cannot have more than ${MAX_RECIPE_INGREDIENT_NAME_LENGTH.toLocaleString()} characters.`
-  }),
-  amount: z.number({
-    error: (issue) => typeof issue.input === "undefined"
-      ? "An ingredient amount is required."
-      : "Expected a number, but received an invalid type."
-  }).positive({
-    abort: true,
-    error: "Amount must be positive."
-  }).max(MAX_RECIPE_INGREDIENT_AMOUNT, {
-    error: `Amount must be at most ${MAX_RECIPE_INGREDIENT_AMOUNT.toLocaleString()}.`
-  }),
-  unit: UnitSchema,
-  isAllergen: z.boolean("Expected a boolean, but received an invalid type."),
-  note: z.optional(z.string("Expected a string, but received an invalid type."))
-});
-
-export default function RecipeIngredients() {
+export default function RecipeIngredients({ className, ...props }: Omit<ComponentProps<"section">, "children">) {
   const { control } = useEditRecipeFormContext();
   const { append, remove, update, fields: formIngredientValues } = useFieldArray({ control, name: "ingredients" });
   const { 
+    isSubmitSuccessful,
     errors: {
       ingredients: ingredientsError
     }
   } = useFormState({ control, name: "ingredients" });
   const [touched, setTouched] = useState<boolean>(false);
+  const errorFocusInput = useRef<HTMLInputElement>(null);
+
   const [ingredient, setIngredient] = useState<Ingredient>({
     name: "",
     amount: 0,
@@ -75,49 +46,72 @@ export default function RecipeIngredients() {
     note: ""
   });
 
-  const deleteIngredient = useCallback((index: number) => remove(index), []);
-  const setIngredientContent = useCallback((index: number, ingredient: Ingredient) => update(index, ingredient), []);
+  const deleteIngredient = useCallback(
+    (index: number) => remove(index),
+    [remove]
+  );
 
-  const parsedIngredient = IngredientInputSchema.safeParse(ingredient);
-  const error = parsedIngredient.error?.message;
+  const setIngredientContent = useCallback(
+    (index: number, ingredient: Ingredient) => update(index, { ...ingredient, note: ingredient.note || undefined }),
+    [update]
+  );
+
+  const resetIngredientInput = useCallback(() => {
+    setIngredient({
+      name: "",
+      amount: 0,
+      unit: "g",
+      isAllergen: false,
+      note: ""
+    });
+    setTouched(false);
+  }, [setIngredient, setTouched]);
+
+  const { error: ingredientInputError } = IngredientInputSchema.safeParse(ingredient);
+
+  useEffect(() => {
+    if (ingredientsError && !isSubmitSuccessful && document.activeElement?.tagName === "BODY")
+      errorFocusInput.current?.focus();
+  }, [ingredientsError, isSubmitSuccessful]);
   
   return (
-    <div className="flex flex-col gap-3">
+    <section 
+      {...props}
+      className={cn(
+        "@container flex flex-col gap-2",
+        className
+      )}
+    >
       <h1 className="text-2xl font-bold required-field">Ingredients</h1>
-      <div className="flex flex-col sm:flex-row justify-between items-start md:items-end gap-2">
-        <p className="font-semibold text-muted-foreground">Add ingredients to your recipe here.</p>
-        {
-          (touched && error) && (
-            <div className="error-text">
-              <Info size={14}/>
-              {error}
-            </div>
-          )
-        }
+      <p className="font-semibold text-muted-foreground text-sm">Add ingredients to your recipe here.</p>
+      <div className="error-text text-xs has-[>span:empty]:hidden">
+        <Info size={16}/>
+        <span>{ingredientsError?.message}</span>
       </div>
-      <div className="flex flex-col sm:flex-row justify-between gap-3">
-        <div className="flex sm:justify-between gap-3">
+      <div className="flex flex-col @min-2xl:flex-row justify-between gap-2">
+        <div className="flex @min-2xl:justify-between gap-2">
           <Input
+            ref={errorFocusInput}
             type="number"
+            value={ingredient.amount}
             min={0}
             max={MAX_RECIPE_INGREDIENT_AMOUNT}
             step="any"
-            value={ingredient.amount}
             placeholder="Amount"
             onChange={(e) => {
-              if (!touched) setTouched(true);
+              setTouched(true);
               setIngredient((i) => ({ 
                 ...i,
                 amount: Number(e.target.value)
               }));
             }}
-            className="w-[100px]"
+            className="w-24 rounded-sm shadow-none"
           />
           <Select value={ingredient.unit} onValueChange={(val) => {
-            if (!touched) setTouched(true);
+            setTouched(true);
             setIngredient((i) => ({ ...i, unit: val as Unit["abbreviation"] }));
           }}>
-            <SelectTrigger className="w-[100px]">
+            <SelectTrigger className="w-24 shadow-none rounded-sm">
               <SelectValue placeholder="unit"/>
             </SelectTrigger>
             <SelectContent>
@@ -137,25 +131,26 @@ export default function RecipeIngredients() {
           placeholder="Name"
           autoCorrect="off"
           onChange={(e) => {
-            if (!touched) setTouched(true);
+            setTouched(true);
             setIngredient((i) => ({
               ...i,
               name: e.target.value
             }));
           }}
+          className="shadow-none rounded-sm"
         />
       </div>
       <Input 
         value={ingredient.note}
         placeholder="Note (optional)"
         onChange={(e) => {
-          if (!touched) setTouched(true);
-          
+          setTouched(true);
           setIngredient((i) => ({
             ...i,
             note: e.target.value
           }));
         }}
+        className="rounded-sm shadow-none"
       />
       <div className="flex items-center gap-2">
         <Checkbox
@@ -165,6 +160,7 @@ export default function RecipeIngredients() {
             ...i,
             isAllergen: val === true
           }))}
+          className="rounded-xs shadow-none"
         />
         <label
           htmlFor="isAllergen"
@@ -173,253 +169,305 @@ export default function RecipeIngredients() {
           Is Allergen
         </label>
       </div>
-      <button
-        type="button"
-        disabled={!!error || formIngredientValues.length >= MAX_RECIPE_INGREDIENT_AMOUNT}
-        onClick={() => {
-          append(ingredient);
-          setIngredient({
-            name: "",
-            amount: 0,
-            unit: "g",
-            isAllergen: false,
-            note: ""
-          });
-          setTouched(false);
-        }}
-        className="mealicious-button font-semibold flex justify-center items-center gap-3 py-2 rounded-md"
-      >
-        Add Ingredient
-        <Plus size={18}/>
-      </button>
-      {
-        formIngredientValues.length > 0 && (
-          <>
-          <Separator />
-          <div className="flex items-center gap-2 text-sm">
-            <Info size={16}/>
-            <span className={cn(formIngredientValues.length > MAX_RECIPE_INGREDIENTS_LENGTH && "text-red-500")}>
-              Ingredient count: <b>{formIngredientValues.length}</b> / {MAX_RECIPE_INGREDIENTS_LENGTH}
-            </span>
-          </div>
-          <div className="flex flex-col gap-3">
-            {
-              formIngredientValues.map((i, index) => (
-                <RecipeIngredient 
-                  key={i.id}
-                  currentIngredientContent={i}
-                  currentIngredientIndex={index}
-                  deleteIngredient={deleteIngredient}
-                  setIngredientContent={setIngredientContent}
-                />
-              ))
-            }
-          </div>
-          </>
-        )
-      }
-      { 
-        ingredientsError?.message && (
-          <div className="error-text text-sm">
-            <Info size={16}/>
-            {ingredientsError.message}
-          </div>
-        )
-      }
-    </div>
+      <div className="error-label flex flex-col gap-2 has-[>ul:empty]:hidden">
+        <div className="flex items-center gap-2">
+          <Info size={14}/>
+          <span className="font-bold text-sm">Input Errors</span>
+        </div>
+        <Separator className="bg-primary/33 dark:bg-border"/>
+        <ul className="flex flex-col gap-1">
+          {
+            touched && ingredientInputError?.issues.map((i) => (
+              <li key={i.message} className="text-xs list-inside list-disc">
+                {i.message}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={!!ingredientInputError || formIngredientValues.length >= MAX_RECIPE_INGREDIENT_AMOUNT}
+          onClick={() => {
+            append({ ...ingredient, note: ingredient.note || undefined });
+            resetIngredientInput();
+          }}
+          className="mealicious-button font-semibold text-sm flex justify-center items-center gap-2 py-2 px-6 rounded-sm"
+        >
+          Add Ingredient
+          <Plus size={18}/>
+        </button>
+        <button
+          type="button"
+          onClick={resetIngredientInput}
+          className={cn(
+            "cursor-pointer font-semibold text-white text-nowrap text-sm py-2 px-6 rounded-sm transition-colors",
+            "bg-red-500 hover:bg-red-700",
+            !touched && "hidden"
+          )}
+        >
+          Cancel
+        </button>
+      </div>
+      <div className="flex flex-col gap-1.5 has-[>ul:empty]:hidden">
+        <div className="flex items-center gap-2 text-sm">
+          <Info size={16}/>
+          <span className={cn(formIngredientValues.length > MAX_RECIPE_INGREDIENTS_LENGTH && "text-red-500")}>
+            Ingredient count: <b>{formIngredientValues.length}</b> / {MAX_RECIPE_INGREDIENTS_LENGTH}
+          </span>
+        </div>
+        <ul className="grid @min-2xl:grid-cols-2 gap-3 items-start">
+          {
+            formIngredientValues.map((i, index) => (
+              <RecipeIngredient 
+                key={i.id}
+                currentIngredientContent={i}
+                currentIngredientIndex={index}
+                deleteIngredient={deleteIngredient}
+                setIngredientContent={setIngredientContent}
+                className="@min-2xl:odd:last:col-span-2"
+              />
+            ))
+          }
+        </ul>
+      </div>
+    </section>
   );
 }
-
-type RecipeIngredientProps = {
-  currentIngredientIndex: number;
-  currentIngredientContent: Ingredient;
-  setIngredientContent: (index: number, ingredient: Ingredient) => void;
-  deleteIngredient: (index: number) => void;
-};
 
 const RecipeIngredient = memo(({ 
   currentIngredientIndex,
   currentIngredientContent,
   setIngredientContent,
-  deleteIngredient
-}: RecipeIngredientProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  deleteIngredient,
+  className,
+  ...props
+}: Omit<ComponentProps<"li">, "children"> & {
+  currentIngredientIndex: number;
+  currentIngredientContent: Ingredient;
+  setIngredientContent: (index: number, ingredient: Ingredient) => void;
+  deleteIngredient: (index: number) => void;
+}) => {
+  const containerRef = useRef<HTMLLIElement>(null);
   const [editMode, setEditMode] = useState(false);
-  const [ingredientInput, setIngredientInput] = useState<Ingredient>(currentIngredientContent);
+  const [touched, setTouched] = useState(false);
+  const [ingredientInput, setIngredientInput] = useState<Ingredient>({ ...currentIngredientContent, note: currentIngredientContent.note || "" });
+  
+  const { error: ingredientInputError } = IngredientInputSchema.safeParse(ingredientInput);
 
-  const error = useMemo(
-    () => IngredientInputSchema.safeParse(ingredientInput).error?.message || (
-      ingredientInput.name === currentIngredientContent.name &&
-      ingredientInput.amount === currentIngredientContent.amount &&
-      ingredientInput.unit === currentIngredientContent.unit &&
-      ingredientInput.isAllergen === currentIngredientContent.isAllergen && 
-      ingredientInput.note === currentIngredientContent.note 
-    ) && "Content cannot be similar." as string || undefined,
-    [ingredientInput, currentIngredientContent]
-  );
+  const resetIngredientInput = useCallback(() => {
+    setEditMode(false);
+    setTouched(false);
+    setIngredientInput({ ...currentIngredientContent, note: currentIngredientContent.note || "" });
+  }, [setEditMode, setTouched, setIngredientInput, currentIngredientContent]);
 
   useEffect(() => {
     if (!editMode) return;
     const handleOutsideClick = (e: MouseEvent) => {
       const element = containerRef.current;
       const targetElement = e.target instanceof Element ? e.target.closest(".ingredient-content") : null;
-      if (element && targetElement && targetElement !== element) {
-        setEditMode(false);
-        setIngredientInput(currentIngredientContent);
-      }
+      if (element && targetElement && targetElement !== element) resetIngredientInput();
     };
 
     document.addEventListener("pointerup", handleOutsideClick);
     return () => document.removeEventListener("pointerup", handleOutsideClick);
   }, [editMode, currentIngredientContent]);
-  
-  return (
-    <div ref={containerRef} className="ingredient-content text-left overflow-hidden items-center border border-border rounded-md transition-colors shadow-sm">
-      {
-        editMode ? (
-          <>
-          <div className="flex flex-col gap-3 p-3">
-            <div className="flex items-center gap-2">
-              <Input 
-                type="number"
-                value={ingredientInput.amount}
-                onChange={(e) => setIngredientInput((i) => ({
+
+  if (editMode) {
+    return (
+      <li
+        ref={containerRef}
+        className={cn(
+          "ingredient-content text-left overflow-hidden items-center border border-border rounded-md transition-colors",
+          className
+        )}
+        {...props}
+      >
+        <div className="flex flex-col gap-2 p-3">
+          <div className="flex items-end gap-2">
+            <Input 
+              type="number"
+              value={ingredientInput.amount}
+              min={0}
+              max={MAX_RECIPE_INGREDIENT_AMOUNT}
+              onChange={(e) => {
+                setTouched(true);
+                setIngredientInput((i) => ({
                   ...i,
                   amount: Number(e.target.value)
-                }))}
-                placeholder="0"
-                className="w-24"
-              />
-              <Select 
-                value={ingredientInput.unit}
-                onValueChange={(val) => setIngredientInput((i) => ({
+                }));
+              }}
+              placeholder="0"
+              className="w-24 rounded-sm shadow-none"
+            />
+            <Select 
+              value={ingredientInput.unit}
+              onValueChange={(val) => {
+                setTouched(true);
+                setIngredientInput((i) => ({
                   ...i,
                   unit: val as Unit["abbreviation"]
-                }))}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue placeholder="Unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {
-                    unitAbbreviations.map((u) => (
-                      <SelectItem key={u} value={u}>
-                        {u}
-                      </SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
-            </div>
-            <Input 
-              value={ingredientInput.name}
-              onChange={(e) => setIngredientInput((i) => ({
+                }));
+              }}
+            >
+              <SelectTrigger className="w-24 rounded-sm shadow-none">
+                <SelectValue placeholder="Unit" />
+              </SelectTrigger>
+              <SelectContent>
+                {
+                  unitAbbreviations.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u}
+                    </SelectItem>
+                  ))
+                }
+              </SelectContent>
+            </Select>
+          </div>
+          <Input 
+            value={ingredientInput.name}
+            onChange={(e) => {
+              setTouched(true);
+              setIngredientInput((i) => ({
                 ...i,
                 name: e.target.value
-              }))}
-              placeholder="Ingredient Name"
-            />
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id={`ingredient-${currentIngredientIndex}-isAllergen`}
-                checked={ingredientInput.isAllergen}
-                onCheckedChange={(val) => setIngredientInput((i) => ({
+              }));
+            }}
+            placeholder="Ingredient Name"
+            className="rounded-sm shadow-none"
+          />
+          <div className="flex items-center @min-3xl:items-start gap-2 mb-1">
+            <Checkbox
+              id={`ingredient-${currentIngredientIndex}-isAllergen`}
+              checked={ingredientInput.isAllergen}
+              onCheckedChange={(val) => {
+                setTouched(true);
+                setIngredientInput((i) => ({
                   ...i,
                   isAllergen: val === true
-                }))}
-              />
-              <label
-                htmlFor={`ingredient-${currentIngredientIndex}-isAllergen`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Is Allergen
-              </label>
-            </div>
-            <div className="w-full flex justify-end items-center gap-6">
-              {
-                error && (
-                  <div className="error-text text-sm mr-auto">
-                    <Info size={16}/>
-                    {error}
-                  </div> 
-                )
-              }
-              <button
-                type="button"
-                onClick={() => {
-                  setEditMode(false);
-                  setIngredientInput(currentIngredientContent);
-                }}
-                className="cursor-pointer underline text-xs font-semibold rounded-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!!error}
-                onClick={() => {
-                  setIngredientContent(currentIngredientIndex, ingredientInput);
-                  setEditMode(false);
-                }}
-                className="mealicious-button text-xs font-semibold py-2 px-6 rounded-sm"
-              >
-                Edit
-              </button>
-            </div>
+                }));
+              }}
+              className="rounded-xs shadow-none"
+            />
+            <label
+              htmlFor={`ingredient-${currentIngredientIndex}-isAllergen`}
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Is Allergen
+            </label>
           </div>
-          <Separator />
-          <div className="p-3">
-            <Input 
-              value={ingredientInput.note}
-              onChange={(e) => setIngredientInput((i) => ({
+          <div className="error-label flex flex-col gap-2 has-[ul:empty]:hidden">
+            <div className="flex items-center gap-2">
+              <Info size={14}/>
+              <span className="font-bold text-sm">Input Errors</span>
+            </div>
+            <Separator className="bg-primary/33 dark:bg-border"/>
+            <ul className="flex flex-col gap-1">
+              {
+                touched && ingredientInputError?.issues.map((i) => (
+                  <li key={i.path.join("-")} className="text-xs list-inside list-disc">
+                    {i.message}
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+          <div className="w-full @min-2xl:w-auto flex items-center gap-4 @min-2xl:gap-6">
+            <button
+              type="button"
+              disabled={!touched || !!ingredientInputError}
+              onClick={() => {
+                setIngredientContent(currentIngredientIndex, ingredientInput);
+                setEditMode(false);
+                setTouched(false);
+              }}
+              className="mealicious-button text-xs font-semibold py-2 px-6 rounded-sm"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={resetIngredientInput}
+              className="cursor-pointer underline text-xs font-semibold rounded-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+        <Separator />
+        <div className="p-3">
+          <Input 
+            value={ingredientInput.note}
+            onChange={(e) => {
+              setTouched(true);
+              setIngredientInput((i) => ({
                 ...i,
                 note: e.target.value
-              }))}
-              placeholder="Ingredient Note"
-            />
-          </div>
-          </>
-        ) : (
-          <>
-          <div className="flex flex-col gap-3 p-3">
-            <div className="flex justify-end items-center gap-2">
-              <h1 className="font-bold text-xl mr-auto">{currentIngredientContent.amount} {currentIngredientContent.unit}</h1>
-              <button
-                type="button"
-                onClick={() => setEditMode(true)}
-                className="size-8 group cursor-pointer border border-muted-foreground hover:bg-mealicious-primary hover:border-mealicious-primary hover:text-white font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 rounded-full transition-colors"
-              >
-                <Pencil size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
-              </button>
-              <button
-                type="button"
-                onClick={() => deleteIngredient(currentIngredientIndex)}
-                className="size-8 group cursor-pointer hover:bg-red-700 hover:text-white hover:border-red-700 border border-muted-foreground font-semibold text-xs text-nowrap flex justify-center items-center gap-1.5 py-2 px-3 rounded-full transition-colors"
-              >
-                <Trash2 size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
-              </button>
-            </div>
-            <div className="flex justify-between items-center gap-3">
-              <span className="w-full line-clamp-1 text-xl font-semibold text-muted-foreground">
-                {currentIngredientContent.name}
-              </span>
-              {currentIngredientContent.isAllergen && <span className="font-semibold text-muted-foreground">(Allergen)</span>}
-            </div>
-          </div>
-          {
-            currentIngredientContent.note && (
-              <>
-              <Separator />
-              <div className="p-3 break-all">
-                {currentIngredientContent.note}
-              </div>
-              </>
-            )
-          }
-          </>
-        )
-      }
-    </div>
+              }));
+            }}
+            placeholder="Ingredient Note"
+            className="rounded-sm shadow-none"
+          />
+        </div>
+      </li>
+    );
+  }
+  
+  return (
+    <li
+      ref={containerRef}
+      className={cn(
+        "ingredient-content text-left overflow-hidden items-center border border-border rounded-sm transition-colors",
+        className
+      )}
+      {...props}
+    >
+      <div className="flex flex-col gap-2 p-3">
+        <div className="flex justify-end items-center gap-2">
+          <h1 className="font-bold text-xl mr-auto">{currentIngredientContent.amount} {currentIngredientContent.unit}</h1>
+          <button
+            type="button"
+            onClick={() => setEditMode(true)}
+            className={cn(
+              "group size-8 cursor-pointer",
+              "border border-muted-foreground hover:border-mealicious-primary hover:bg-mealicious-primary",
+              "hover:text-white font-semibold text-xs text-nowrap",
+              "flex justify-center items-center gap-1.5",
+              "py-2 px-3 rounded-full transition-colors"
+            )}
+          >
+            <Pencil size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
+          </button>
+          <button
+            type="button"
+            onClick={() => deleteIngredient(currentIngredientIndex)}
+            className={cn(
+              "group size-8 cursor-pointer",
+              "border border-muted-foreground",
+              "hover:bg-red-700 hover:border-red-700",
+              "hover:text-white font-semibold text-xs text-nowrap",
+              "flex justify-center items-center gap-1.5",
+              "py-2 px-3 rounded-full transition-colors"
+            )}
+          >
+            <Trash2 size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
+          </button>
+        </div>
+        <div className="flex justify-between items-center gap-3">
+          <span className="w-full line-clamp-1 font-semibold text-muted-foreground max-w-48 truncate">
+            {currentIngredientContent.name}
+          </span>
+          {currentIngredientContent.isAllergen && <span className="font-semibold text-muted-foreground text-sm">(Allergen)</span>}
+        </div>
+      </div>
+      <div className="flex flex-col has-[div:nth-child(2):empty]:hidden">
+        <Separator />
+        <div className="hyphens-auto p-3">
+          {currentIngredientContent.note}
+        </div>
+      </div>
+    </li>
   );
 });
 

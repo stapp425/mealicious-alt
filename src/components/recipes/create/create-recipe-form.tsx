@@ -16,8 +16,7 @@ import RecipeInstructions from "@/components/recipes/create/recipe-instructions"
 import { createRecipe, updateRecipeImage } from "@/lib/actions/recipe";
 import { toast } from "sonner";
 import axios, { AxiosError } from "axios";
-import { createContext, useContext, useEffect, useState } from "react";
-import { useMediaQuery } from "usehooks-ts";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import RecipeTitle from "@/components/recipes/create/recipe-title";
 import RecipeCuisine from "@/components/recipes/create/recipe-cuisine";
@@ -25,6 +24,9 @@ import RecipeSource from "@/components/recipes/create/recipe-source";
 import RecipeDescription from "@/components/recipes/create/recipe-description";
 import RecipeNutrition from "@/components/recipes/create/recipe-nutrition";
 import { generatePresignedUrlForImageUpload } from "@/lib/actions/r2";
+import { useContainerQuery } from "@/hooks/use-container-query";
+
+const CONTAINER_4XL_BREAKPOINT = 896;
 
 type CreateRecipeFormProps = {
   readonly nutrition: Omit<InferSelectModel<typeof nutrition>, "description">[];
@@ -51,10 +53,17 @@ export function useCreateRecipeFormContext() {
   return context;
 }
 
-export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes }: CreateRecipeFormProps) {  
+export default function CreateRecipeForm({
+  nutrition,
+  cuisines,
+  diets,
+  dishTypes
+}: CreateRecipeFormProps) {  
   const { replace } = useRouter();
   const [mounted, setMounted] = useState<boolean>(false);
-  const matches = useMediaQuery("(min-width: 80rem)");
+  const [ref, matches] = useContainerQuery<HTMLFormElement>({
+    condition: ({ width }) => width > CONTAINER_4XL_BREAKPOINT
+  });
   const { 
     control,
     register,
@@ -62,7 +71,9 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
     setValue,
     handleSubmit,
     formState: {
-      isSubmitting
+      isSubmitting,
+      isValidating,
+      isDirty
     }
   } = useForm({
     resolver: zodResolver(CreateRecipeFormSchema),
@@ -80,11 +91,6 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
         amount: 0,
         unit: "g"
       },
-      cuisine: {
-        id: "",
-        adjective: "",
-        icon: ""
-      },
       diets: [],
       dishTypes: [],
       ingredients: [],
@@ -97,15 +103,8 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
       tags: []
     }
   });
-  
-  useEffect(() => {
-    setMounted(true);
-    const handleUnload = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener("beforeunload", handleUnload);
-    return () => window.removeEventListener("beforeunload", handleUnload);
-  }, [setMounted]);
 
-  const onSubmit = handleSubmit(async (formData) => {
+  const onSubmit = useMemo(() => handleSubmit(async (formData) => {
     try {
       const { image, ...formDataRest } = formData;
       const recipeCreationResult = await createRecipe(formDataRest);
@@ -114,7 +113,7 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
         throw new Error("Failed to create recipe.");
 
       const { data: { recipeId } } = recipeCreationResult;
-      const bucketImageName = `${recipeId}/${image.name}`;
+      const bucketImageName = `recipes/${recipeId}/images/main/${image.name}`;
 
       const { url } = await generatePresignedUrlForImageUpload({
         name: bucketImageName,
@@ -146,17 +145,39 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
         toast.error(err.message);
       }
     }
-  });
+  }), [handleSubmit, reset, replace]);
+
+  const providerProps = useMemo(
+    () => ({ 
+      control,
+      register,
+      setValue
+    }),
+    [control, register, setValue]
+  );
+  
+  useEffect(() => {
+    setMounted(true);
+  }, [setMounted]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    
+    const handleUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [isDirty]);
   
   return (
-    <CreateRecipeFormContext.Provider value={{ control, register, setValue }}>
+    <CreateRecipeFormContext value={providerProps}>
       <form 
+        ref={ref}
         onSubmit={onSubmit} 
-        className="max-w-[750px] xl:max-w-[1250px] w-full bg-background mx-auto p-4"
+        className="@container/create-recipe max-w-188 @min-4xl/main:max-w-324 w-full bg-background mx-auto p-4"
       >
         <h1 className="text-4xl font-bold mb-6">Create a Recipe</h1>
-        <div className="flex flex-col xl:flex-row gap-3 sm:gap-6">
-          <div className="flex-1 shrink-0 flex flex-col gap-3">
+        <div className="flex flex-col @min-4xl/create-recipe:flex-row gap-6">
+          <div className="w-full @min-4xl/create-recipe:w-9/20 flex flex-col gap-6">
             <RecipeImageUploader />
             {mounted && !matches && <RecipeTitle />}
             {mounted && !matches && <RecipeDescription />}
@@ -167,14 +188,14 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
             <RecipeSource />
             {mounted && !matches && <RecipeTimes />}
             <button
-              disabled={isSubmitting}
+              disabled={isSubmitting || isValidating}
               type="submit" 
-              className="hidden xl:flex mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
+              className="hidden @min-4xl/create-recipe:flex mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
             >
-              {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
+              {isSubmitting || isValidating ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
             </button>
           </div>
-          <div className="xl:w-3/5 flex flex-col gap-3">
+          <div className="w-full @min-4xl/create-recipe:w-11/20 flex flex-col gap-6">
             {mounted && matches && <RecipeTitle />}
             {mounted && matches && <RecipeTimes />}
             {mounted && matches && <RecipeDescription />}
@@ -182,15 +203,15 @@ export default function CreateRecipeForm({ nutrition, cuisines, diets, dishTypes
             <RecipeInstructions />
             <RecipeNutrition />
             <button
-              disabled={isSubmitting}
+              disabled={isSubmitting || isValidating}
               type="submit" 
-              className="flex xl:hidden mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
+              className="flex @min-4xl/create-recipe:hidden mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
             >
-              {isSubmitting ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
+              {isSubmitting || isValidating ? <LoaderCircle className="animate-spin"/> : "Create Recipe"}
             </button>
           </div>
         </div>
       </form>
-    </CreateRecipeFormContext.Provider>
+    </CreateRecipeFormContext>
   );
 }

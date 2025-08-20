@@ -8,6 +8,7 @@ import { useWatch } from "react-hook-form";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
+import { ComponentProps } from "react";
 
 type RecipeCuisineProps = {
   readonly cuisines: {
@@ -17,16 +18,26 @@ type RecipeCuisineProps = {
   }[];
 };
 
-export default function RecipeCuisine({ cuisines }: RecipeCuisineProps) {
+export default function RecipeCuisine({
+  cuisines,
+  className,
+  ...props
+}: RecipeCuisineProps & Omit<ComponentProps<"section">, "children">) {
   const { control, setValue } = useEditRecipeFormContext();
   const currentCuisine = useWatch({ control, name: "cuisine" });
   
   return (
-    <div className="flex flex-col gap-3">
+    <section 
+      {...props}
+      className={cn(
+        "flex flex-col gap-0.5",
+        className
+      )}
+    >
       <h2 className="font-bold text-2xl">
         Cuisine
       </h2>
-      <p className="font-semibold text-muted-foreground">
+      <p className="font-semibold text-sm text-muted-foreground">
         Add the type of cuisine for this recipe here. (optional)
       </p>
       <Popover>
@@ -34,9 +45,9 @@ export default function RecipeCuisine({ cuisines }: RecipeCuisineProps) {
           <Button
             variant="outline"
             role="combobox"
-            className="cursor-pointer flex-1 justify-between"
+            className="cursor-pointer font-normal flex-1 justify-between mt-3 rounded-sm shadow-none"
           >
-            {currentCuisine?.id && currentCuisine?.adjective ? currentCuisine.adjective : "Select a cuisine..."}
+            {currentCuisine?.adjective || "Select a cuisine"}
             <ChevronDown className="opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -50,7 +61,11 @@ export default function RecipeCuisine({ cuisines }: RecipeCuisineProps) {
               <CommandGroup>
                 <CommandItem
                   className="font-semibold p-2"
-                  onSelect={() => setValue("cuisine", undefined)}
+                  onSelect={() => setValue(
+                    "cuisine",
+                    undefined,
+                    { shouldDirty: true }
+                  )}
                 >
                   None
                 </CommandItem>
@@ -59,7 +74,11 @@ export default function RecipeCuisine({ cuisines }: RecipeCuisineProps) {
                     <CommandItem
                       key={c.id}
                       value={c.adjective}
-                      onSelect={(val) => setValue("cuisine", cuisines.find(({ adjective }) => adjective === val)!)}
+                      onSelect={(val) => setValue(
+                        "cuisine",
+                        cuisines.find(({ adjective }) => adjective === val)!,
+                        { shouldDirty: true }
+                      )}
                     >
                       <div className="flex items-center gap-2">
                         <Image
@@ -85,6 +104,6 @@ export default function RecipeCuisine({ cuisines }: RecipeCuisineProps) {
           </Command>
         </PopoverContent>
       </Popover>
-    </div>
+    </section>
   );
 }

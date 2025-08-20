@@ -1,4 +1,4 @@
-import { sql, relations, InferInsertModel } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import { pgTable, check, unique, primaryKey } from "drizzle-orm/pg-core";
 import { user, userToCuisine, userToDiet, userToDishType } from "./user";
 import { mealToRecipe } from "./meal";
@@ -20,21 +20,15 @@ export const recipe = pgTable("recipe", (t) => ({
     .default([]),
   sourceName: t.varchar("recipe_source_name", { length: 256 }),
   sourceUrl: t.varchar("recipe_source_url", { length: 2048 }),
-  cookTime: t.numeric("recipe_cook_time", {
-    mode: "number",
-    precision: 6,
-    scale: 2,
-  }).notNull().default(0),
-  prepTime: t.numeric("recipe_prep_time", {
-    mode: "number",
-    precision: 6,
-    scale: 2
-  }).notNull().default(0),
-  readyTime: t.numeric("recipe_ready_time", {
-    mode: "number",
-    precision: 6,
-    scale: 2
-  }).notNull().default(0),
+  cookTime: t.integer("recipe_cook_time")
+    .notNull()
+    .default(0),
+  prepTime: t.integer("recipe_prep_time")
+    .notNull()
+    .default(0),
+  readyTime: t.integer("recipe_ready_time")
+    .notNull()
+    .default(0),
   servingSizeUnit: t.text("recipe_serving_size_unit")
     .notNull()
     .$type<Unit["abbreviation"]>(),
@@ -66,8 +60,6 @@ export const recipe = pgTable("recipe", (t) => ({
     sql`${t.cookTime} >= 0 AND ${t.prepTime} >= 0 AND ${t.readyTime} >= 0`
   )
 ]);
-
-export type InsertRecipe = InferInsertModel<typeof recipe>;
 
 export const recipeStatistics = pgTable("recipe_stats", (t) => ({
   recipeId: t.text("recipe_id")
@@ -112,11 +104,7 @@ export const instruction = pgTable("instruction", (t) => ({
     .primaryKey()
     .$default(() => nanoid()),
   title: t.text("inst_title").notNull(),
-  time: t.numeric("inst_time", {
-    mode: "number",
-    precision: 5,
-    scale: 2
-  }).notNull(),
+  time: t.integer("inst_time").notNull(),
   description: t.text("inst_desc").notNull(),
   index: t.integer("inst_index").notNull(),
   recipeId: t.text("recipe_id")
@@ -127,7 +115,7 @@ export const instruction = pgTable("instruction", (t) => ({
 }), (t) => [
   check("index_check", sql`${t.index} > 0`),
   unique().on(t.recipeId, t.index),
-  check("instruction_time_check", sql`${t.time} > 0`)
+  check("instruction_time_check", sql`${t.time} >= 0`)
 ]);
 
 export const nutrition = pgTable("nutrition", (t) => ({

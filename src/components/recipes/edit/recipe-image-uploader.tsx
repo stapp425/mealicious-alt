@@ -4,6 +4,9 @@ import { Input } from "@/components/ui/input";
 import { ImageSchema } from "@/lib/zod/recipe";
 import { Info, Plus } from "lucide-react";
 import { 
+  ChangeEvent,
+  ComponentProps,
+  useCallback,
   useEffect, 
   useRef, 
   useState
@@ -13,12 +16,17 @@ import defaultRecipeImage from "@/img/default/default-background.jpg";
 import { useFormState, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { useEditRecipeFormContext } from "@/components/recipes/edit/edit-recipe-form";
+import { cn } from "@/lib/utils";
 
 type ImageUploaderProps = {
   recipeImageURL: string;
 };
 
-export default function RecipeImageUploader({ recipeImageURL }: ImageUploaderProps) {
+export default function RecipeImageUploader({ 
+  recipeImageURL,
+  className,
+  ...props
+}: ImageUploaderProps & Omit<ComponentProps<"section">, "children">) {
   const { control, setValue } = useEditRecipeFormContext();
   const { 
     errors: {
@@ -28,6 +36,27 @@ export default function RecipeImageUploader({ recipeImageURL }: ImageUploaderPro
   const image = useWatch({ control, name: "image" });
   const [imageURL, setImageURL] = useState<string>(recipeImageURL);
   const addImageButton = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return;
+    const addedImage = e.target.files[0];
+    
+    const imageValidation = ImageSchema.safeParse(addedImage);
+    if (!imageValidation.success) {
+      const errors = imageValidation.error.issues.map(({ message }) => message);
+      toast.error(errors, {
+        duration: 10000
+      });
+      e.target.value = "";
+      return;
+    }
+
+    setValue(
+      "image",
+      addedImage,
+      { shouldDirty: true }
+    );
+  }, [setValue]);
   
   useEffect(() => {
     if (!image) {
@@ -42,26 +71,18 @@ export default function RecipeImageUploader({ recipeImageURL }: ImageUploaderPro
   }, [image, setImageURL, recipeImageURL]);
   
   return (
-    <div className="bg-sidebar border border-border h-[425px] flex flex-col overflow-hidden relative group rounded-md">
+    <section 
+      {...props}
+      className={cn(
+        "bg-sidebar border border-border h-108 flex flex-col overflow-hidden relative group rounded-md",
+        className
+      )}
+    >
       <Input
         ref={addImageButton}
         type="file"
         accept="image/jpg,image/jpeg,image/png,image/webp"
-        onChange={(e) => {
-          const addedImage = e.target.files?.[0];
-          
-          if (!addedImage)
-            return;
-          
-          const validateImage = ImageSchema.safeParse(addedImage);
-          if (!validateImage.success) {
-            toast.error(validateImage.error.message);
-            e.target.value = "";
-            return;
-          }
-
-          setValue("image", addedImage);
-        }}
+        onChange={handleImageUpload}
         className="hidden"
       />
       {
@@ -88,7 +109,11 @@ export default function RecipeImageUploader({ recipeImageURL }: ImageUploaderPro
                   type="button"
                   onClick={() => {
                     setImageURL(recipeImageURL);
-                    setValue("image", null);
+                    setValue(
+                      "image",
+                      null,
+                      { shouldDirty: false }
+                    );
                   }}
                   className="cursor-pointer bg-red-500 hover:bg-red-700 font-semibold text-white text-nowrap text-xs py-1 px-3 rounded-md"
                 >
@@ -121,6 +146,6 @@ export default function RecipeImageUploader({ recipeImageURL }: ImageUploaderPro
           </div>
         )
       }
-    </div>
+    </section>
   );
 }
