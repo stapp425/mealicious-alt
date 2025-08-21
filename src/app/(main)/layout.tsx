@@ -12,16 +12,22 @@ import {
 import siteLogo from "@/img/logo/mealicious-logo.svg";
 import Image from "next/image";
 import ProfileInfo from "@/components/main/profile-info";
+import { useContainerQuery } from "@/hooks/use-container-query";
 
+const CONTAINER_2XL_BREAKPOINT = 672;
 const queryClient = new QueryClient();
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const [ref, matches] = useContainerQuery({
+    condition: ({ width }) => width >= CONTAINER_2XL_BREAKPOINT
+  });
+  
   return (
     <SessionProvider refetchOnWindowFocus={false}>
       <SidebarProvider>
         <AppSidebar />
         <QueryClientProvider client={queryClient}>
-          <main className="@container/main relative min-h-screen max-w-screen flex-1 flex flex-col">
+          <main ref={ref} className="@container/main relative min-h-screen max-w-screen flex-1 flex flex-col">
             <header className="h-20 print:hidden sticky border-b top-0 bg-background flex z-50 items-center gap-4 p-4">
               <SidebarTrigger className="cursor-pointer"/>
               <Image
@@ -31,7 +37,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 className="dark:invert"
                 priority
               />
-              <RecipeSearchBar />
+              <div className="flex-1">
+                <RecipeSearchBar 
+                  mode={matches ? "popover" : "dialog"}
+                  className="@max-2xl/main:ml-auto"
+                />
+              </div>
               <ProfileInfo />
             </header>
             {children}

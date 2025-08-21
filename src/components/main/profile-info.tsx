@@ -11,10 +11,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import defaultProfilePicture from "@/img/default/default-pfp.jpg";
 import { LogOut, Settings, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { ComponentProps, useMemo } from "react";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
-export default function ProfileInfo() {
+export default function ProfileInfo({ 
+  className,
+  skeletonClassName,
+  shouldRedirect = true,
+  ...props
+}: ComponentProps<"div"> & {
+  skeletonClassName?: string;
+  shouldRedirect?: boolean;
+}) {
   const { push } = useRouter();
   const { data } = useSession();
 
@@ -39,7 +48,10 @@ export default function ProfileInfo() {
 
   if (!userInfo) {
     return (
-      <div className="flex items-center gap-2 ml-0 sm:ml-auto">
+      <div className={cn(
+        "flex items-center gap-2 ml-0",
+        skeletonClassName
+      )}>
         <div className="hidden sm:flex flex-col items-end gap-1.5">
           <Skeleton className="h-5 w-36 rounded-sm"/>
           <Skeleton className="h-4 w-30 rounded-sm"/>
@@ -52,8 +64,14 @@ export default function ProfileInfo() {
   
   return (
     <Popover>
-      <div className="flex items-center gap-4.5 ml-0 sm:ml-auto">
-        <div className="hidden sm:flex flex-col text-right">
+      <div 
+        {...props}
+        className={cn(
+          "flex items-center gap-4.5",
+          className
+        )}
+      >
+        <div className="hidden @min-2xl:flex flex-col text-right">
           <h2 className="font-semibold text-sm">{userInfo.name}</h2>
           <span className="italic text-muted-foreground text-xs">Mealicious User</span>
         </div>
@@ -62,7 +80,11 @@ export default function ProfileInfo() {
             src={userInfo.image || defaultProfilePicture}
             alt={`Profile picture of ${userInfo.name}`}
             fill
-            className="object-cover object-center bg-slate-100"
+            className={cn(
+              "object-cover object-center bg-slate-100",
+              shouldRedirect && "cursor-pointer"
+            )}
+            onClick={shouldRedirect ? () => push(`/user/${userInfo.id}`) : undefined}
           />
         </div>
         <PopoverTrigger className="cursor-pointer">

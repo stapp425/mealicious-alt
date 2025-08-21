@@ -17,23 +17,27 @@ import { Root as VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { ArrowRight, Clock, Loader2, Search, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { ComponentProps, memo, useCallback, useMemo, useRef, useState } from "react"
 import { useDebounce } from "use-debounce";
 import { useRouter } from "next/navigation";
 import { nanoid } from "nanoid";
 import { RecentRecipeSearch, RecipeSearchIndex } from "@/lib/zod/recipe";
 import Link from "next/link";
-import { useLocalStorage, useMediaQuery } from "usehooks-ts";
+import { useLocalStorage } from "usehooks-ts";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { searchForRecipesQueryIndices } from "@/lib/actions/algolia";
 
 const MAX_RECENT_RECIPE_SEARCH_AMOUNT = 4;
 
-export default function RecipeSearchBar() {
-  const [mounted, setMounted] = useState(false);
-  const _sm = useMediaQuery("(min-width: 40rem)");
-  
+export default function RecipeSearchBar({
+  className,
+  onClick,
+  mode = "dialog",
+  ...props
+}: Omit<ComponentProps<"div">, "children"> & {
+  mode?: "dialog" | "popover";
+}) {
   const [touched, setTouched] = useState<boolean>(false);
   const [open, setOpen] = useState<boolean>(false);
   const [query, setQuery] = useState<string>("");
@@ -50,95 +54,98 @@ export default function RecipeSearchBar() {
     setQuery("");
     setTouched(false);
   }, [setOpen, setQuery, setTouched]);
-
-  useEffect(
-    () => closeSearch(),
-    [_sm, closeSearch]
-  );
-
-  useEffect(
-    () => setMounted(true),
-    [setMounted]
-  );
   
-  if (mounted && _sm) {
+  if (mode === "dialog") {
     return (
-      <Popover
-        open={open}
-        onOpenChange={setOpen}
-      >
-        <PopoverTrigger asChild>
-          <div
-            onClick={(e) => open && e.preventDefault()}
-            tabIndex={-1}
-            className="border border-input w-[40vw] max-w-125 h-9 text-muted-foreground flex justify-between items-center gap-2 p-2 rounded-sm"
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <div 
+            {...props}
+            onClick={onClick}
+            className={cn(
+              "mealicious-button size-10 [&>svg]:shrink-0 font-semibold text-sm flex justify-center items-center gap-3 py-2 px-5 rounded-full",
+              className
+            )}
           >
             <Search size={16}/>
-            <Input
-              ref={searchInput}
-              value={query}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setOpen(true)}
-              placeholder="Search Recipe"
-              className="border-none bg-transparent! focus-visible:ring-0 p-0 shadow-none"
+          </div>
+        </DialogTrigger>
+        <DialogContent className="p-0 gap-0 overflow-hidden" asChild>
+          <div className="flex flex-col">
+            <VisuallyHidden>
+              <DialogHeader>
+                <DialogTitle>
+                  Recipe Search
+                </DialogTitle>
+                <DialogDescription>
+                  Search for Mealicious recipes that you know and love.
+                </DialogDescription>
+              </DialogHeader>
+            </VisuallyHidden>
+            <div className="text-muted-foreground flex justify-between items-center gap-2 py-2 px-4 rounded-sm">
+              <Input
+                value={query}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search Recipe"
+                className="border-none bg-transparent! focus-visible:ring-0 p-0 shadow-none"
+              />
+              <X
+                onClick={closeSearch}
+                strokeWidth={1.25}
+                className="cursor-pointer"
+              />
+            </div>
+            <Separator />
+            <RecipeSearchBody 
+              query={query}
+              touched={touched}
+              close={closeSearch}
             />
           </div>
-        </PopoverTrigger>
-        <PopoverContent 
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          className="bg-background w-[40vw] max-w-125 p-0 gap-0 overflow-hidden"
-        >
-          <RecipeSearchBody 
-            query={query}
-            touched={touched}
-            close={closeSearch}
-          />
-        </PopoverContent>
-      </Popover>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button className="mealicious-button size-10 sm:size-auto [&>svg]:shrink-0 font-semibold text-sm flex justify-center items-center gap-3 ml-auto py-2 px-5 rounded-full">
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+    >
+      <PopoverTrigger asChild>
+        <div
+          onClick={(e) => {
+            if (open) e.preventDefault();
+            onClick?.(e);
+          }}
+          className={cn(
+            "border border-input w-[40vw] max-w-125 h-9 text-muted-foreground flex justify-between items-center gap-2 p-2 rounded-sm",
+            className
+          )}
+          {...props}
+        >
           <Search size={16}/>
-        </button>
-      </DialogTrigger>
-      <DialogContent className="p-0 gap-0 overflow-hidden" asChild>
-        <div className="flex flex-col">
-          <VisuallyHidden>
-            <DialogHeader>
-              <DialogTitle>
-                Recipe Search
-              </DialogTitle>
-              <DialogDescription>
-                Search for Mealicious recipes that you know and love.
-              </DialogDescription>
-            </DialogHeader>
-          </VisuallyHidden>
-          <div className="text-muted-foreground flex justify-between items-center gap-2 py-2 px-4 rounded-sm">
-            <Input
-              value={query}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Recipe"
-              className="border-none bg-transparent! focus-visible:ring-0 p-0 shadow-none"
-            />
-            <X
-              onClick={closeSearch}
-              strokeWidth={1.25}
-              className="cursor-pointer"
-            />
-          </div>
-          <Separator />
-          <RecipeSearchBody 
-            query={query}
-            touched={touched}
-            close={closeSearch}
+          <Input
+            ref={searchInput}
+            value={query}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setOpen(true)}
+            placeholder="Search Recipe"
+            className="border-none bg-transparent! focus-visible:ring-0 p-0 shadow-none"
           />
         </div>
-      </DialogContent>
-    </Dialog>
+      </PopoverTrigger>
+      <PopoverContent 
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="bg-background w-[40vw] max-w-125 p-0 gap-0 overflow-hidden"
+      >
+        <RecipeSearchBody 
+          query={query}
+          touched={touched}
+          close={closeSearch}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 

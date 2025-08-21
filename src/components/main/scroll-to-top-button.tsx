@@ -2,13 +2,17 @@
 
 import { cn } from "@/lib/utils";
 import { ArrowUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ComponentProps, useEffect, useState } from "react";
 
-type ScrollToTopButtonProps = {
+export default function ScrollToTopButton({ 
+  id = "scroll-button",
+  visibilityThreshold = 100,
+  onClick,
+  className,
+  ...props
+}: Omit<ComponentProps<"button">, "children"> & {
   visibilityThreshold?: number;
-};
-
-export default function ScrollToTopButton({ visibilityThreshold = 100 }: ScrollToTopButtonProps) {
+}) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -16,18 +20,24 @@ export default function ScrollToTopButton({ visibilityThreshold = 100 }: ScrollT
       const position = window.scrollY;
       setScrolled(position > visibilityThreshold);
     };
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [visibilityThreshold]);
 
   return (
     <button
-      id="scroll-button"
-      onClick={() => scrollTo({ top: 0, behavior: "smooth" })}
+      id={id}
+      onClick={(e) => {
+        scrollTo({ top: 0, behavior: "smooth" });
+        onClick?.(e);
+      }}
       className={cn(
         scrolled ? "opacity-100" : "opacity-0 pointer-events-none",
-        "fixed bottom-4 right-4 flex justify-center items-center mealicious-button rounded-full size-14 p-0 shadow-xl"
+        "fixed bottom-4 right-4 flex justify-center items-center mealicious-button rounded-full size-14 p-0 shadow-xl",
+        className
       )}
+      {...props}
     >
       <ArrowUp size={28}/>
     </button>
