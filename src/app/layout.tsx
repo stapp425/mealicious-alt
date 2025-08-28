@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Serif_Text, Heebo } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const heebo = Heebo({
   subsets: ["latin"],
+  variable: "--font-heebo",
+  fallback: ["Georgia", "sans-serif", "serif"]
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const dmSerifText = DM_Serif_Text({
   subsets: ["latin"],
+  variable: "--font-dm-serif-text",
+  fallback: ["Georgia", "sans-serif", "serif"],
+  weight: ["400"]
 });
 
 export const metadata: Metadata = {
@@ -31,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${heebo.className} ${dmSerifText.variable} antialiased`}>
         <Toaster richColors/>
         <NuqsAdapter>
           <ThemeProvider attribute="class" defaultTheme="system">

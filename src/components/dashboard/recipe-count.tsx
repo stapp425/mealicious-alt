@@ -6,6 +6,7 @@ import { and, count, eq, exists, not } from "drizzle-orm";
 import { ArrowDownToLine, Eye, Heart, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Route } from "next";
 
 type RecipeCountProps = {
   userId: string;
@@ -97,7 +98,7 @@ export default async function RecipeCount({ userId }: RecipeCountProps) {
               />
             </div>
             <h2 className="absolute bottom-3 left-3 font-bold text-4xl">{c.count}</h2>
-            <Link href={c.href} className="absolute bottom-3 right-3 cursor-pointer bg-white hover:bg-slate-300 text-black text-sm flex items-center gap-2 py-1 px-3 rounded-full transition-colors">
+            <Link href={c.href as Route} className="absolute bottom-3 right-3 cursor-pointer bg-white hover:bg-slate-300 text-black text-sm flex items-center gap-2 py-1 px-3 rounded-full transition-colors">
               <span className="font-semibold">View</span>
               <Eye size={18}/>
             </Link>

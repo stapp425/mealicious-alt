@@ -18,6 +18,7 @@ import { ActionError } from "@/lib/types";
 import z from "zod/v4";
 import axios from "axios";
 import { UrlSchema } from "@/lib/zod";
+import { Route } from "next";
 
 export const verifyEmail = actionClient
   .inputSchema(EmailVerificationFormSchema)
@@ -122,7 +123,7 @@ export const signInWithCredentials = actionClient
 
       return {
         success: true as const,
-        redirectUrl: callbackUrl.href
+        redirectUrl: callbackUrl.href as Route
       };
     } catch (err) {
       if (err instanceof AuthError && err.type === "CredentialsSignin") throw new ActionError("Invalid username or password.");

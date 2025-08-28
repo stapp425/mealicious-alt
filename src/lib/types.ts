@@ -5,8 +5,6 @@ export class ActionError extends Error {
   }
 }
 
-export const MAX_REVIEW_DISPLAY_LIMIT = 5;
-
 export const sorts = ["title", "calories", "prepTime", "saveDate"] as const;
 export const filters = ["created", "favorited"] as const;
 
@@ -16,24 +14,6 @@ export type Filter = typeof filters[number];
 export const recipeDetailViews = ["simplified", "detailed"] as const;
 
 export type RecipeDetailView = typeof recipeDetailViews[number];
-
-export type Review = {
-  id: string;
-  content: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  rating: number;
-  likeCount: number;
-  creator: {
-    image: string | null;
-    id: string;
-    email: string;
-    name: string;
-  };
-  likedBy: {
-    userId: string;
-  }[]
-};
 
 export type Statistics = {
   fiveStarCount: number;

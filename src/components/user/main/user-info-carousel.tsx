@@ -7,10 +7,11 @@ import { ArrowRight, SearchX } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { Route } from "next";
 
 type UserInfoCarousel = {
   header: string;
-  href: string;
+  href: Route;
   items: React.ReactElement<React.HTMLAttributes<HTMLDivElement>, "div">[];
 }
 

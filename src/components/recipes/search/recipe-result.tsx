@@ -75,15 +75,14 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
         <div className="size-full"/>
           {
             recipe.sourceUrl && (
-              <Link
+              <a
                 href={recipe.sourceUrl}
                 onClick={(e) => e.stopPropagation()}
-                prefetch={false}
                 target="_blank"
                 className="absolute bottom-3 left-3 bg-white text-black p-1.5 rounded-sm"
               >
                 <Earth size={20}/>
-              </Link>
+              </a>
             )
           }
           {

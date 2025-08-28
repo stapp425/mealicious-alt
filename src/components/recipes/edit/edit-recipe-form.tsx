@@ -26,6 +26,7 @@ import RecipeNutrition from "@/components/recipes/edit/recipe-nutrition";
 import { updateRecipe, updateRecipeImage } from "@/lib/actions/recipe";
 import { generatePresignedUrlForImageDelete, generatePresignedUrlForImageUpload } from "@/lib/actions/r2";
 import { useContainerQuery } from "@/hooks/use-container-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 const CONTAINER_4XL_BREAKPOINT = 896;
 
@@ -118,7 +119,9 @@ export default function EditRecipeForm({
   recipe,
   nutrition
 }: EditRecipeFormProps) {  
+  const queryClient = useQueryClient();
   const { replace } = useRouter();
+
   const [mounted, setMounted] = useState<boolean>(false);
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
     condition: ({ width }) => width > CONTAINER_4XL_BREAKPOINT
@@ -226,6 +229,10 @@ export default function EditRecipeForm({
           throw new Error("Failed to add image to the recipe.");
       }
 
+      await queryClient.invalidateQueries({
+        queryKey: ["recipe-details", data.id]
+      });
+
       reset(data);
       toast.success("Recipe successfully edited!");
       replace(`/recipes/${data.id}`);
@@ -238,7 +245,7 @@ export default function EditRecipeForm({
         return;
       }
     }
-  }), [handleSubmit, reset, replace]);
+  }), [handleSubmit, recipe.image, reset, replace, queryClient]);
 
   const providerProps = useMemo(
     () => ({ 

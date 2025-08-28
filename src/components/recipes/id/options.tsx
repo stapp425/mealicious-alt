@@ -2,132 +2,125 @@
 
 import { toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/recipe";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDownToLine, Heart, Loader2, X } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
+import { ComponentProps, useState } from "react";
 import { toast } from "sonner";
 
-type FavoriteProps = {
+export function Favorite({ 
+  recipeId,
+  isRecipeFavorite,
+  className,
+  ...props
+}: Omit<ComponentProps<"button">, "children" | "disabled" | "onClick"> & {
   recipeId: string;
   isRecipeFavorite: boolean;
-  favoriteCount: number;
-};
-
-export function Favorite({ recipeId, isRecipeFavorite, favoriteCount }: FavoriteProps) {
-  const [isFavorite, setIsFavorite] = useState<boolean>(isRecipeFavorite);
-  const [_favoriteCount, _setFavoriteCount] = useState<number>(favoriteCount);
-  const { executeAsync, isExecuting } = useAction(toggleRecipeFavorite, {
+}) {
+  const queryClient = useQueryClient();
+  
+  const [isFavorite, setIsFavorite] = useState(isRecipeFavorite);
+  const { executeAsync, isExecuting, isTransitioning } = useAction(toggleRecipeFavorite, {
     onSuccess: ({ data }) => {
-      if (!data) return;
-      setIsFavorite((f) => !f);
-      _setFavoriteCount((c) => data.isFavorite ? c + 1 : c - 1);
+      setIsFavorite(data.isFavorite)
+      queryClient.invalidateQueries({
+        queryKey: ["recipe-statistics", recipeId]
+      });
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });
 
+  const isActionExecuting = isExecuting || isTransitioning;
+
   return (
     <button 
-      disabled={isExecuting}
-      onClick={async () => await executeAsync({ recipeId })}
-      className="cursor-pointer disabled:bg-rose-300 bg-rose-400 hover:bg-rose-500 text-white text-xs sm:text-sm flex flex-col justify-center items-center py-2 md:py-3 rounded-sm transition-colors"
+      disabled={isActionExecuting}
+      onClick={async () => await executeAsync(recipeId)}
+      className={cn(
+        "group/favorite cursor-pointer disabled:cursor-not-allowed border border-rose-400 hover:border-rose-500 text-xs",
+        "bg-rose-400/15 disabled:bg-rose-400/10 hover:bg-rose-400/33 dark:hover:bg-rose-400/40",
+        "text-rose-400 hover:text-rose-500",
+        "flex flex-col items-center",
+        isActionExecuting ? "justify-center" : "justify-center @min-3xl:justify-between",
+        "p-1.5 @min-3xl:p-2 rounded-sm transition-colors",
+        className
+      )}
+      {...props}
     >
       {
-        isExecuting ? (
-          <Loader2 size={24} className="animate-spin"/>
+        isActionExecuting ? (
+          <Loader2 size={28} className="animate-spin"/>
         ) : (
-          <div className="w-full flex flex-col lg:flex-row justify-center items-center gap-1.5 lg:gap-4.5">
-            <Heart size={28} fill={isFavorite ? "white" : "none"}/>
-            <div className="flex flex-col">
-              <span className="font-semibold hidden md:block">{isFavorite ? "Unfavorite" : "Favorite"}</span>
-              <span className="hidden md:block text-xs font-semibold">
-                ({_favoriteCount} {_favoriteCount !== 1 ? "favorites" : "favorite"})
-              </span>
-              <span className="block md:hidden text-xs font-semibold">
-                {_favoriteCount}
-              </span>
-            </div>
-          </div>
+          <>
+          <Heart 
+            size={28}
+            className={cn(isFavorite ? "fill-rose-400 group-hover/favorite:fill-rose-500" : "fill-none")}
+          />
+          <span className="font-semibold hidden @min-3xl:block">
+            {isFavorite ? "Unfavorite" : "Favorite"}
+          </span>
+          </>
         )
       }
     </button>
   );
 }
 
-type SavedProps = {
+export function Saved({ 
+  recipeId,
+  isRecipeSaved,
+  className,
+  ...props
+}: Omit<ComponentProps<"button">, "children" | "disabled" | "onClick"> & {
   recipeId: string;
   isRecipeSaved: boolean;
-  isAuthor: boolean;
-  savedCount: number;
-};
-
-export function Saved({ recipeId, isRecipeSaved, isAuthor, savedCount }: SavedProps) {
+}) {
+  const queryClient = useQueryClient();
+  
   const [isSaved, setIsSaved] = useState<boolean>(isRecipeSaved);
-  const [_savedCount, _setSavedCount] = useState<number>(savedCount);
-  const { executeAsync, isExecuting } = useAction(toggleSavedListRecipe, {
+  const { executeAsync, isExecuting, isTransitioning } = useAction(toggleSavedListRecipe, {
     onSuccess: ({ data }) => {
-      if (!data) return;
-      setIsSaved((s) => !s);
-      _setSavedCount((c) => data?.isSaved ? c + 1 : c - 1);
-      if (data?.isSaved)
-        toast.success("Successfully saved recipe!");
-      else
-        toast.warning("Successfully removed recipe from saved list!");
+      setIsSaved(data.isSaved);
+      queryClient.invalidateQueries({
+        queryKey: ["recipe-statistics", recipeId]
+      });
+
+      if (data.isSaved) toast.success("Successfully saved recipe!");
+      else toast.warning("Successfully removed recipe from saved list!");
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });
-  
+
+  const isActionExecuting = isExecuting || isTransitioning;
   const label = isSaved ? "Unsave" : "Save";
-  const Icon = isAuthor
-    ? ArrowDownToLine
-    : isSaved 
-      ? X
-      : ArrowDownToLine;
+  const Icon = isSaved ? X : ArrowDownToLine;
+  const savedStateClassName = isSaved
+    ? "border-red-500 bg-red-300/15 disabled:bg-red-300/10 hover:bg-red-300/33 dark:hover:bg-red-300/50 dark:hover:bg-red-300/40 text-red-500"
+    : "border-green-500 bg-green-300/15 disabled:bg-green-300/10 hover:bg-green-300/33 dark:hover:bg-green-300/40 text-green-500";
   
   return (
     <button 
-      disabled={isExecuting || isAuthor}
-      onClick={async () => await executeAsync({ recipeId })}
+      disabled={isActionExecuting}
+      onClick={async () => await executeAsync(recipeId)}
       className={cn(
-        "text-white text-xs sm:text-sm font-semibold flex flex-col lg:flex-row justify-center items-center gap-1.5 lg:gap-4.5 py-2 md:py-3 rounded-sm transition-colors",
-        isAuthor 
-          ? "bg-green-500"
-          : isSaved
-            ? "cursor-pointer disabled:cursor-not-allowed disabled:bg-red-300 bg-red-500 hover:bg-red-700"
-            : "cursor-pointer disabled:cursor-not-allowed disabled:bg-green-300 bg-green-500 hover:bg-green-700"
+        "group/saved cursor-pointer disabled:cursor-not-allowed border text-xs",
+        "flex flex-col justify-between items-center",
+        "p-1.5 @min-3xl:p-2 rounded-sm transition-colors",
+        isActionExecuting ? "justify-center" : "justify-center @min-3xl:justify-between",
+        savedStateClassName,
+        className
       )}
+      {...props}
     >
       {
-        isExecuting ? (
-          <Loader2 size={24} className="animate-spin"/>
+        isActionExecuting ? (
+          <Loader2 size={28} className="animate-spin"/>
         ) : (
           <>
           <Icon size={28}/>
-          <div className="flex flex-col">
-            {
-              isAuthor ? (
-                <>
-                <span className="font-semibold hidden md:block">
-                  {savedCount} {savedCount !== 1 ? "Saves" : "Save"}
-                </span>
-                <span className="font-semibold block md:hidden">
-                  {savedCount}
-                </span>
-                </>
-              ) : (
-                <>
-                <span className="font-semibold hidden md:block">
-                  {label}
-                </span>
-                <span className="hidden md:block text-xs font-semibold">
-                  ({_savedCount} {_savedCount !== 1 ? "saves" : "save"})
-                </span>
-                <span className="block md:hidden text-xs font-semibold">
-                  {_savedCount}
-                </span>
-                </>
-              )
-            }
-          </div>
+          <span className="font-semibold hidden md:block">
+            {label}
+          </span>
           </>
         )
       }

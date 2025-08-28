@@ -5,18 +5,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { recipeDetailViews } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { Info, Search, Square } from "lucide-react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { ComponentProps } from "react";
 
-type DietsProps = {
+export default function Diets({
+  diets,
+  className,
+  ...props
+}: Omit<ComponentProps<"section">, "children"> & {
   diets: {
     name: string;
     id: string;
     description: string | null;
   }[];
-};
-
-export default function Diets({ diets }: DietsProps) {
+}) {
   const [view, setView] = useQueryState(
     "dietsView",
     parseAsStringLiteral(recipeDetailViews)
@@ -28,13 +32,19 @@ export default function Diets({ diets }: DietsProps) {
       value={view}
       onValueChange={(val) => setView(val as "simplified" | "detailed")}
     >
-      <section className="overflow-hidden bg-sidebar border border-border flex flex-col rounded-md">
+      <section 
+        className={cn(
+          "@container dark:bg-sidebar overflow-hidden border border-border flex flex-col rounded-md",
+          className
+        )}
+        {...props}
+      >
         <div className="flex justify-between items-center gap-2 py-2 px-3">
           <Popover>
             <PopoverTrigger asChild>
               <div className="flex items-center gap-2">
-                <h2 className="font-bold text-lg">Diets</h2>
                 <Info size={16} className="cursor-pointer"/>
+                <h2 className="font-bold text-lg mt-0.5">Diets</h2>
               </div>
             </PopoverTrigger>
             <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
@@ -44,17 +54,27 @@ export default function Diets({ diets }: DietsProps) {
           <TabsList className="bg-transparent gap-2 p-0">
             <TabsTrigger
               value="simplified"
-              className="cursor-pointer border-border data-[state=active]:border-none data-[state=active]:cursor-default data-[state=active]:bg-mealicious-primary data-[state=active]:text-white dark:data-[state=active]:bg-mealicious-primary data-[state=inactive]:hover:bg-secondary transition-colors p-4"
+              className={cn(
+                "cursor-pointer border-border flex items-center gap-1.5 transition-colors py-2.5! px-3.5!",
+                "data-[state=active]:border-none data-[state=active]:pointer-events-none data-[state=active]:text-white",
+                "data-[state=active]:bg-mealicious-primary dark:data-[state=active]:bg-mealicious-primary",
+                "data-[state=inactive]:hover:bg-secondary"
+              )}
             >
-              <Square />
-              <span className="hidden md:inline">Simplified</span>
+              <Square size={14}/>
+              <span className="hidden @min-sm:inline text-xs">Simplified</span>
             </TabsTrigger>
             <TabsTrigger
               value="detailed"
-              className="cursor-pointer border-border data-[state=active]:border-none data-[state=active]:cursor-default data-[state=active]:bg-mealicious-primary data-[state=active]:text-white dark:data-[state=active]:bg-mealicious-primary data-[state=inactive]:hover:bg-secondary transition-colors p-4"
+              className={cn(
+                "cursor-pointer border-border flex items-center gap-1.5 transition-colors py-2.5! px-3.5!",
+                "data-[state=active]:border-none data-[state=active]:pointer-events-none data-[state=active]:text-white",
+                "data-[state=active]:bg-mealicious-primary dark:data-[state=active]:bg-mealicious-primary",
+                "data-[state=inactive]:hover:bg-secondary"
+              )}
             >
-              <Search />
-              <span className="hidden md:inline">Detailed</span>
+              <Search size={14}/>
+              <span className="hidden @min-sm:inline text-xs">Detailed</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -71,16 +91,16 @@ export default function Diets({ diets }: DietsProps) {
           </div>
         </TabsContent>
         <TabsContent value="detailed" asChild>
-          <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 p-3">
+          <div className="grid @min-2xl:grid-cols-2 gap-2 p-3">
             {
               diets.map((d) => (
                 <div
                   key={d.id}
                   className="bg-mealicious-primary text-white flex flex-col gap-2 p-3 rounded-md"
                 >
-                  <h2 className="font-bold text-lg">{d.name}</h2>
+                  <h2 className="font-bold">{d.name}</h2>
                   <Separator />
-                  <p>{d.description}</p>
+                  <p className="text-sm">{d.description}</p>
                 </div>
               ))
             }

@@ -228,7 +228,7 @@ const RecipeInstruction = memo(({
 
     document.addEventListener("pointerup", handleOutsideClick);
     return () => document.removeEventListener("pointerup", handleOutsideClick);
-  }, [editMode, currentInstructionContent]);
+  }, [editMode, resetInstructionInput, currentInstructionContent]);
   
   if (editMode) {
     return (

@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { ComponentProps, useMemo } from "react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ProfileInfo({ 
   className,
@@ -24,6 +25,7 @@ export default function ProfileInfo({
   skeletonClassName?: string;
   shouldRedirect?: boolean;
 }) {
+  const queryClient = useQueryClient();
   const { push } = useRouter();
   const { data } = useSession();
 
@@ -42,9 +44,12 @@ export default function ProfileInfo({
     {
       label: "Log Out",
       icon: LogOut,
-      onClick: async () => await signOut()
+      onClick: async () => await Promise.all([
+        signOut(),
+        queryClient.clear()
+      ])
     }
-  ], [userInfo, push]);
+  ], [userInfo, push, queryClient]);
 
   if (!userInfo) {
     return (
@@ -71,9 +76,9 @@ export default function ProfileInfo({
           className
         )}
       >
-        <div className="hidden @min-2xl:flex flex-col text-right">
+        <div className="hidden @min-4xl:flex flex-col text-right">
           <h2 className="font-semibold text-sm">{userInfo.name}</h2>
-          <span className="italic text-muted-foreground text-xs">Mealicious User</span>
+          <span className="text-muted-foreground text-xs">Mealicious User</span>
         </div>
         <div className="relative aspect-square size-10 sm:size-12 rounded-full overflow-hidden shrink-0">
           <Image 

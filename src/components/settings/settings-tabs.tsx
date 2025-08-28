@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { Settings2, UserRound } from "lucide-react";
 import Link from "next/link";
+import { Route } from "next";
 
 const settingsSections = [
   {
@@ -29,7 +30,7 @@ export default function SettingsTabs() {
         settingsSections.map((s) => (
           <Link 
             key={s.label}
-            href={s.link}
+            href={s.link as Route}
             data-active={pathname.includes(s.link)}
             className="border border-border data-[active=true]:border-mealicious-primary data-[active=true]:bg-mealicious-primary data-[active=true]:text-white data-[active=true]:pointer-events-none font-semibold flex items-center text-sm hover:bg-border gap-4 py-2 px-4 rounded-sm transition-colors"
           >

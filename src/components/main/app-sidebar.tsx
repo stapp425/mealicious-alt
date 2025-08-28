@@ -19,6 +19,7 @@ import SidebarUser from "@/components/main/sidebar-user";
 import { usePathname } from "next/navigation";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { cn } from "@/lib/utils";
+import { Route } from "next";
 
 const sidebarSections = [
   {
@@ -142,7 +143,7 @@ export default function AppSidebar() {
                           >
                             <SidebarMenuButton asChild>
                               <Link 
-                                href={`${group.path}/${section.route}`} 
+                                href={`${group.path}/${section.route}` as Route} 
                                 className={cn(
                                   "h-10 px-2 rounded-sm",
                                   "group-data-[state=active]/sub-item:pointer-events-none",

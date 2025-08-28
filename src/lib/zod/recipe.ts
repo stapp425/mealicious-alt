@@ -17,6 +17,7 @@ export const MAX_RECIPE_DISH_TYPES_LENGTH = 10;
 export const MAX_RECIPE_INGREDIENTS_LENGTH = 50;
 export const MAX_RECIPE_INGREDIENT_AMOUNT = 999.99;
 export const MAX_RECIPE_INGREDIENT_NAME_LENGTH = 100;
+export const MAX_RECIPE_INGREDIENT_NOTE_LENGTH = 50;
 export const MAX_RECIPE_INSTRUCTION_TITLE_LENGTH = 100;
 export const MAX_RECIPE_INSTRUCTION_TIME_AMOUNT = 999.99;
 export const MAX_RECIPE_INSTRUCTION_CONTENT_LENGTH = 500;
@@ -223,7 +224,16 @@ const RecipeFormSchema = z.object({
     }).transform((val) => Number(val.toFixed(2))),
     unit: UnitSchema,
     isAllergen: z.boolean("Expected a boolean, but received an invalid type."),
-    note: z.optional(z.string("Expected a string, but received an invalid type."))
+    note: z.optional(
+      z.string("Expected a string, but received an invalid type.")
+        .nonempty({
+          abort: true,
+          error: "Ingredient note cannot be empty."
+        })
+        .max(MAX_RECIPE_INGREDIENT_NOTE_LENGTH, {
+          error: `Ingredient note cannot have more than ${MAX_RECIPE_INGREDIENT_NOTE_LENGTH.toLocaleString()} characters.`
+        })
+    )
   })).nonempty({
     abort: true,
     error: "Recipe must contain at least 1 ingredient."

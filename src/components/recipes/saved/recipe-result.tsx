@@ -172,9 +172,9 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
               {
                 (recipe.sourceName && recipe.sourceUrl) && (
                   <div className="flex flex-row-reverse md:flex-row items-center gap-2 underline">
-                    <Link href={recipe.sourceUrl} target="_blank">
+                    <a href={recipe.sourceUrl} target="_blank">
                       {recipe.sourceName}
-                    </Link>
+                    </a>
                     <Earth />
                   </div>
                 )
@@ -226,7 +226,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   disabled={isToggleFavoriteExecuting}
-                  onClick={async () => executeToggleFavorite({ recipeId: recipe.id })}
+                  onClick={async () => executeToggleFavorite(recipe.id)}
                   onSelect={(e) => e.preventDefault()}
                   className="cursor-pointer disabled:cursor-not-allowed"
                 >
@@ -292,7 +292,7 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
                         <AlertDialogFooter>
                           <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
                           <Button
-                            onClick={async () => await executeToggleSaved({ recipeId: recipe.id })}
+                            onClick={async () => await executeToggleSaved(recipe.id)}
                             disabled={isToggleSavedExecuting}
                             variant="destructive"
                             className="min-w-[75px] cursor-pointer"
@@ -353,13 +353,13 @@ export default function RecipeResult({ recipe }: RecipeResultProps) {
             (recipe.sourceName && recipe.sourceUrl) && (
               <div className="flex items-end gap-2.5 truncate">
                 <Earth className="shrink-0"/>
-                <Link 
+                <a 
                   href={recipe.sourceUrl}
                   target="_blank"
                   className="underline truncate"
                 >
                   {recipe.sourceName}
-                </Link>
+                </a>
               </div>
             )
           }

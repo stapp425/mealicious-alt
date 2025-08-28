@@ -170,7 +170,8 @@ const RecipeSearchBody = memo(({
   } = useQuery({
     queryKey: ["quick-recipe-search-results", debouncedQuery, debouncedTouched],
     queryFn: () => debouncedTouched ? searchForRecipesQueryIndices(debouncedQuery) : [],
-    staleTime: 1000 * 120 // 2 minutes
+    gcTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false
   });
 
   const addToRecentSearches = useCallback(({
@@ -202,7 +203,7 @@ const RecipeSearchBody = memo(({
 
   const removeFromRecentSearches = useCallback((objectID: string) => {
     setRecentSearches((search) => search.filter((s) => s.id !== objectID));
-  }, [recentSearches, setRecentSearches]);
+  }, [setRecentSearches]);
 
   if (searchResultsLoading) {
     return (
@@ -219,6 +220,7 @@ const RecipeSearchBody = memo(({
         <RecipeSearchResults
           searchResults={searchResults}
           onResultClick={addToRecentSearches}
+          className="mb-1.5"
         />
         <button
           onClick={() => addToRecentSearches({
@@ -229,7 +231,7 @@ const RecipeSearchBody = memo(({
           className="cursor-pointer flex items-start gap-3 hover:underline [&>svg]:shrink-0"
         >
           <Search size={14}/>
-          <h1 className="font-semibold text-sm text-left -mt-1 line-clamp-3">Search for &quot;{query}&quot;</h1>
+          <h1 className="font-semibold text-sm text-left line-clamp-3 -mt-0.5">Search for &quot;{query}&quot;</h1>
         </button>
       </div>
     );

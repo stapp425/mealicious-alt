@@ -272,7 +272,7 @@ const RecipeIngredient = memo(({
 
     document.addEventListener("pointerup", handleOutsideClick);
     return () => document.removeEventListener("pointerup", handleOutsideClick);
-  }, [editMode, currentIngredientContent]);
+  }, [editMode, resetIngredientInput, currentIngredientContent]);
 
   if (editMode) {
     return (

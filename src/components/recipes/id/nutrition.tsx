@@ -1,82 +1,97 @@
 "use client";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { Unit } from "@/lib/types";
-import { Slot } from "@radix-ui/react-slot";
-import { Info, Minus, Plus } from "lucide-react";
-import { parseAsInteger, useQueryState } from "nuqs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getRecipeNutrition } from "@/lib/actions/recipe";
+import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { Info } from "lucide-react";
+import { ComponentProps } from "react";
 
-type NutritionProps = {
-  servingSizeAmount: number;
-  servingSizeUnit: Unit["abbreviation"];
-  nutritions: {
-    amount: number;
-    unit: Unit["abbreviation"];
-    nutrition: {
-      name: string;
-      id: string;
-      description: string;
-    } | null;
-  }[];
-};
+export default function Nutrition({ 
+  count,
+  recipeId,
+  className,
+  ...props
+}: Omit<ComponentProps<"section">, "children"> & {
+  count: number;
+  recipeId: string;
+}) {
+  const { 
+    data: nutrition,
+    isLoading: nutritionLoading,
+    error: nutritionError
+  } = useQuery({
+    queryKey: ["recipe-details", recipeId, { type: "nutrition" }],
+    queryFn: () => getRecipeNutrition(recipeId),
+    gcTime: 1000 * 60 * 5, // 2 minutes,
+    refetchOnWindowFocus: false
+  });
 
-export default function Nutrition({ servingSizeAmount, servingSizeUnit, nutritions }: NutritionProps) {
-  const [count, setCount] = useQueryState(
-    "servingSizeCount",
-    parseAsInteger.withDefault(1)
-  );
+  if (nutritionError) {
+    return (
+      <section className="error-label flex items-center gap-2 p-2">
+        <Info size={16}/>
+        There was an error while fetching nutrition content.
+      </section>
+    );
+  }
+  
+  if (nutritionLoading || !nutrition) {
+    return (
+      <section className="flex flex-col gap-2">
+        <Skeleton className="w-32 h-10 rounded-sm"/>
+        <div className="font-bold flex justify-between items-center gap-2">
+          <Skeleton className="w-26 h-8 rounded-sm"/>
+          <Skeleton className="w-24 h-8 rounded-sm"/>
+        </div>
+        <div className="grid gap-2">
+          {
+            Array.from({ length: 4 }, (_, i) => i).map((i) => (
+              <Skeleton key={i} className="h-12 rounded-sm"/>
+            ))
+          }
+        </div>
+      </section>
+    );
+  }
   
   return (
-    <section className="flex flex-col gap-2">
+    <section 
+      className={cn(
+        "flex flex-col gap-2",
+        className
+      )}
+      {...props}
+    >
       <Popover>
         <PopoverTrigger asChild>
           <div className="flex items-center gap-2">
-            <h2 className="font-bold text-xl">Nutrition</h2>
             <Info size={16} className="cursor-pointer"/>
+            <h2 className="font-bold text-xl">Nutrition</h2>
           </div>
         </PopoverTrigger>
         <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
           Substances found in food that provide supplementary energy.
         </PopoverContent>
       </Popover>
-      <Separator />
-      <div className="flex justify-between items-center gap-2">
-        <h2 className="border border-border font-semibold py-2 px-4 rounded-sm">Serving Size: {Math.round(servingSizeAmount)} {servingSizeUnit}</h2>
-        <div className="flex items-stretch gap-2">
-          <button 
-            disabled={count <= 1}
-            onClick={() => setCount((s) => s - 1)}
-            className="size-8 mealicious-button flex justify-center items-center font-semibold p-2 rounded-md"
-          >
-            <Minus size={14}/>
-          </button>
-          <span className="size-8 border border-border flex justify-center items-center rounded-sm">{count}</span>
-          <button 
-            onClick={() => setCount((s) => s + 1)}
-            className="size-8 mealicious-button flex justify-center items-center font-semibold p-2 rounded-md"
-          >
-            <Plus size={14}/>
-          </button>
-        </div>
+      <div className="font-bold flex justify-between items-center gap-2">
+        <h2>Nutrient</h2>
+        <h2>Amount</h2>
       </div>
-      <div className="flex justify-between items-center gap-2">
-        <h2 className="font-bold">Nutrient</h2>
-        <h2 className="font-bold w-[85px]">Amount</h2>
-      </div>
-      {
-        nutritions.map((n, i) => (
-          <Slot key={n.nutrition?.id}>
-            <>
-            <div key={n.nutrition?.id} className="flex justify-between items-center gap-2">
-              <h3 className="font-semibold">{n.nutrition?.name}</h3>
-              <p className="w-[85px]">{Math.round(n.amount) * count} {n.unit}</p>
+      <div className="grid">
+        {
+          nutrition.map((n) => (
+            <div 
+              key={n.id}
+              className="flex justify-between items-center gap-2 odd:bg-border dark:odd:bg-muted py-3 px-4 rounded-sm"
+            >
+              <h3>{n.name}</h3>
+              <p>{(Math.round(n.amount) * count).toLocaleString()} {n.unit}</p>
             </div>
-            {i < nutritions.length - 1 && <Separator />}
-            </>
-          </Slot>
-        ))
-      }
+          ))
+        }
+      </div>
     </section>
   );
 }

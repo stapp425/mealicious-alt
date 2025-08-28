@@ -3,6 +3,7 @@ import { diet, nutrition, recipe, recipeToDiet, recipeToNutrition } from "@/db/s
 import { and, desc, eq, sql } from "drizzle-orm";
 import UserInfoCarousel from "@/components/user/main/user-info-carousel";
 import CreatedRecipesResult from "@/components/user/main/created-recipes-result";
+import { Route } from "next";
 
 type CreatedRecipesProps = {
   userId: string;
@@ -67,7 +68,7 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
   return (
     <UserInfoCarousel 
       header="Created Recipes"
-      href={`/user/${userId}/recipes?option=created`}
+      href={`/user/${userId}/recipes?option=created` as Route}
       items={createdRecipes.map((r) => (
         <CreatedRecipesResult 
           key={r.id}

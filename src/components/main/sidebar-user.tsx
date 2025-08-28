@@ -27,8 +27,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import Image from "next/image";
 import defaultProfilePicture from "@/img/default/default-pfp.jpg";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function SidebarUser() {
+  const queryClient = useQueryClient();
   const { data, status } = useSession();
   const [mounted, setMounted] = useState<boolean>(false);
   const { setTheme } = useTheme();
@@ -71,8 +73,8 @@ export default function SidebarUser() {
                 />
               </div>
               <div className="flex flex-col max-w-36">
-                <span className="font-bold truncate ">{name}</span>
-                <span className="truncate">{email}</span>
+                <span className="font-bold truncate text-sm">{name}</span>
+                <span className="truncate text-muted-foreground text-xs">{email}</span>
               </div>
               <ChevronsUpDown className="ml-auto"/>
             </SidebarMenuButton>
@@ -135,9 +137,10 @@ export default function SidebarUser() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem
-                onClick={async () => {
-                  await signOut();
-                }}
+                onClick={async () => await Promise.all([
+                  signOut(),
+                  queryClient.clear()
+                ])}
                 className="cursor-pointer"
               >
                 <span>Log Out</span>

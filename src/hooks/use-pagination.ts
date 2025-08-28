@@ -33,7 +33,7 @@ export function usePagination({
     const clampedPage = Math.max(currentPage - 1, 0);
     setCurrentPage(clampedPage);
     onSetPage?.(clampedPage);
-  }, [onSetPage, totalPages, currentPage]);
+  }, [onSetPage, currentPage]);
 
   return {
     isFirstPage,
@@ -84,7 +84,7 @@ export function useQueryPagination({
     const clampedPage = Math.max(currentPage - 1, 0)
     setCurrentPage(clampedPage);
     onSetPage?.(clampedPage);
-  }, [onSetPage, setCurrentPage, totalPages, currentPage]);
+  }, [onSetPage, setCurrentPage, currentPage]);
 
   return {
     isFirstPage,

@@ -3,9 +3,9 @@
 import { ActionError } from "@/lib/types";
 import { authActionClient } from "@/safe-action";
 import { db } from "@/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull, sql } from "drizzle-orm";
 import { CreateRecipeFormSchema, EditRecipeFormSchema, CreateReviewFormSchema } from "@/lib/zod/recipe";
-import { ingredient, instruction, recipe, recipeFavorite, recipeReview, recipeStatistics, recipeToDiet, recipeToDishType, recipeToNutrition, reviewLike, savedRecipe } from "@/db/schema";
+import { ingredient, instruction, nutrition, recipe, recipeFavorite, recipeReview, recipeStatistics, recipeToDiet, recipeToDishType, recipeToNutrition, reviewLike, savedRecipe } from "@/db/schema";
 import { deleteRecipeQueryIndex, insertRecipeQueryIndex } from "@/lib/actions/algolia";
 import { revalidatePath } from "next/cache";
 import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
@@ -307,12 +307,14 @@ export const updateRecipeImage = authActionClient
   });
 
 export const toggleRecipeFavorite = authActionClient
-  .inputSchema(z.object({
-    recipeId: z.string().nonempty({
-      message: "Recipe ID cannot be empty."
-    })
+  .inputSchema(z.string({
+    error: (issue) => typeof issue.input === "undefined"
+      ? "A recipe id is required."
+      : "Expected a string, but received an invalid type."
+  }).nonempty({
+    message: "Recipe id cannot be empty."
   }))
-  .action(async ({ ctx: { user }, parsedInput: { recipeId } }) => {
+  .action(async ({ ctx: { user }, parsedInput: recipeId }) => {
     let isFavorite = false;
     const foundFavoritedRecipe = await db.query.recipeFavorite.findFirst({
       where: (recipeFavorite, { eq, and }) => and(
@@ -362,16 +364,15 @@ export const toggleRecipeFavorite = authActionClient
   });
 
 export const toggleSavedListRecipe = authActionClient
-  .inputSchema(z.object({
-    recipeId: z.string({
+  .inputSchema(z.string({
       error: (issue) => typeof issue.input === "undefined"
         ? "A recipe id is required."
         : "Expected a string, but received an invalid type."
     }).nonempty({
       error: "Recipe id cannot be empty."
     })
-  }))
-  .action(async ({ ctx: { user }, parsedInput: { recipeId } }) => {
+  )
+  .action(async ({ ctx: { user }, parsedInput: recipeId }) => {
     let isSaved = false;
     const foundSavedRecipe = await db.query.savedRecipe.findFirst({
       where: (savedRecipe, { eq, and }) => and(
@@ -420,6 +421,199 @@ export const toggleSavedListRecipe = authActionClient
     };
   });
 
+export async function getRecipeNutrition(recipeId: string) {
+  return db.select({
+    id: nutrition.id,
+    amount: recipeToNutrition.amount,
+    unit: recipeToNutrition.unit,
+    name: nutrition.name,
+    description: nutrition.description
+  }).from(recipeToNutrition)
+    .where(eq(recipeToNutrition.recipeId, recipeId))
+    .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
+    .orderBy(asc(nutrition.sortIndex));
+}
+
+export async function getRecipeIngredients(recipeId: string) {
+  return db.select({
+    id: ingredient.id,
+    name: ingredient.name,
+    amount: ingredient.amount,
+    unit: ingredient.unit,
+    isAllergen: ingredient.isAllergen,
+    note: ingredient.note
+  }).from(ingredient)
+    .where(eq(ingredient.recipeId, recipeId));
+}
+
+export async function getRecipeInstructions(recipeId: string) {
+  return db.select({
+    id: instruction.id,
+    index: instruction.index,
+    title: instruction.title,
+    time: instruction.time,
+    description: instruction.description
+  }).from(instruction)
+    .where(eq(instruction.recipeId, recipeId))
+    .orderBy(asc(instruction.index));
+}
+
+export async function getReviewsByRecipe({ recipeId, limit, offset, userId }: { recipeId: string; limit: number; offset: number; userId?: string; }) {
+  return db.query.recipeReview.findMany({
+    where: (review, { eq, isNotNull, and }) => and(
+      eq(review.recipeId, recipeId),
+      isNotNull(review.content)
+    ),
+    columns: {
+      userId: false,
+      recipeId: false
+    },
+    with: {
+      creator: {
+        columns: {
+          id: true,
+          image: true,
+          name: true,
+          email: true
+        }
+      },
+      likedBy: {
+        where: (liked, { eq }) => eq(liked.userId, userId || ""),
+        columns: {
+          userId: true
+        }
+      }
+    },
+    limit,
+    offset,
+    orderBy: (review, { desc }) => [desc(review.createdAt)]
+  });
+}
+
+export async function getRecipeReviewStatistics(recipeId: string) {
+  const foundRecipeStatistics = await db.query.recipeStatistics.findFirst({
+    where: (stats, { eq }) => eq(stats.recipeId, recipeId),
+    columns: {
+      savedCount: false,
+      favoriteCount: false
+    }
+  });
+
+  if (!foundRecipeStatistics) {
+    return {
+      overallRating: 0,
+      oneStarCount: 0,
+      twoStarCount: 0,
+      threeStarCount: 0,
+      fourStarCount: 0,
+      fiveStarCount: 0,
+    };
+  }
+
+  const totalReviewCount = 
+    foundRecipeStatistics.fiveStarCount + 
+    foundRecipeStatistics.fourStarCount + 
+    foundRecipeStatistics.threeStarCount + 
+    foundRecipeStatistics.twoStarCount + 
+    foundRecipeStatistics.oneStarCount;
+
+  const overallRating = (
+    foundRecipeStatistics.fiveStarCount * 5 + 
+    foundRecipeStatistics.fourStarCount * 4 + 
+    foundRecipeStatistics.threeStarCount * 3 + 
+    foundRecipeStatistics.twoStarCount * 2 + 
+    foundRecipeStatistics.oneStarCount * 1
+  ) / totalReviewCount || 0;
+
+  return {
+    overallRating: Number(overallRating.toFixed(1)),
+    oneStarCount: foundRecipeStatistics.oneStarCount,
+    twoStarCount: foundRecipeStatistics.twoStarCount,
+    threeStarCount: foundRecipeStatistics.threeStarCount,
+    fourStarCount: foundRecipeStatistics.fourStarCount,
+    fiveStarCount: foundRecipeStatistics.fiveStarCount,
+  };
+}
+
+export async function getRecipeStatistics(recipeId: string) {
+  const foundRecipeStatistics = await db.query.recipeStatistics.findFirst({
+    where: (stats, { eq }) => eq(stats.recipeId, recipeId),
+    columns: { recipeId: false }
+  });
+
+  if (!foundRecipeStatistics) return null;
+
+  const totalReviewCount = 
+    foundRecipeStatistics.fiveStarCount + 
+    foundRecipeStatistics.fourStarCount + 
+    foundRecipeStatistics.threeStarCount + 
+    foundRecipeStatistics.twoStarCount + 
+    foundRecipeStatistics.oneStarCount;
+
+  const overallRating = (
+    foundRecipeStatistics.fiveStarCount * 5 + 
+    foundRecipeStatistics.fourStarCount * 4 + 
+    foundRecipeStatistics.threeStarCount * 3 + 
+    foundRecipeStatistics.twoStarCount * 2 + 
+    foundRecipeStatistics.oneStarCount * 1
+  ) / totalReviewCount || 0;
+
+  return {
+    recipeId,
+    overallRating: Number(overallRating.toFixed(1)),
+    favoriteCount: foundRecipeStatistics.favoriteCount,
+    savedCount: foundRecipeStatistics.savedCount
+  };
+}
+
+export async function getRecipeReviewCount(recipeId: string) {
+  const [{ count: reviewCount }] = await db.select({ count: count() })
+    .from(recipeReview)
+    .where(and(
+      eq(recipeReview.recipeId, recipeId),
+      isNotNull(recipeReview.content)
+    ));
+
+  return reviewCount;
+}
+
+export async function getUserReview({
+  recipeId,
+  userId
+}: {
+  recipeId: string;
+  userId: string;
+}) {
+  const foundUser = await db.query.recipeReview.findFirst({
+    where: (review, { eq, and }) => and(
+      eq(review.recipeId, recipeId),
+      eq(review.userId, userId)
+    ),
+    columns: {
+      userId: false,
+      recipeId: false
+    },
+    with: {
+      creator: {
+        columns: {
+          id: true,
+          image: true,
+          name: true,
+          email: true
+        }
+      },
+      likedBy: {
+        where: (liked, { eq }) => eq(liked.userId, userId || ""),
+        columns: {
+          userId: true
+        }
+      }
+    }
+  });
+
+  return foundUser || null;
+}
+
 export const createReview = authActionClient
   .inputSchema(z.object({
     recipeId: z.string({
@@ -453,20 +647,19 @@ export const createReview = authActionClient
       userId: user.id!,
       rating: review.rating,
       content: review.content || undefined,
-    }).returning({
-      insertedReviewId: recipeReview.id
-    });
+    }).returning();
 
     const insertedRating = getRatingKey(review.rating);
     const updateRecipeStatisticsQuery = db.update(recipeStatistics).set({
       [insertedRating]: sql`${recipeStatistics[insertedRating]} + 1`
     }).where(eq(recipeStatistics.recipeId, recipeId));
 
-    const [[{ insertedReviewId }]] = await Promise.all([insertRecipeReviewQuery, updateRecipeStatisticsQuery]);
+    const [[insertedReview]] = await Promise.all([insertRecipeReviewQuery, updateRecipeStatisticsQuery]);
 
     return {
       success: true as const,
-      review: insertedReviewId
+      message: "Review successfully created!",
+      review: insertedReview
     };
   });
 
@@ -516,7 +709,8 @@ export const deleteReview = authActionClient
 
     return {
       success: true as const,
-      message: "Review successfully removed!"
+      message: "Review successfully removed!",
+      reviewId: deletedReview.id
     };
   });
 
@@ -546,59 +740,31 @@ export const toggleReviewLike = authActionClient
         userId: user.id!
       });
 
-      await db.update(recipeReview)
+      const [{ likeCount: updatedLikeCount }] = await db.update(recipeReview)
         .set({ likeCount: sql`${recipeReview.likeCount} + 1` })
-        .where(eq(recipeReview.id, reviewId));
+        .where(eq(recipeReview.id, reviewId))
+        .returning({
+          likeCount: recipeReview.likeCount
+        });
 
       return {
         success: true as const,
-        isLiked: true
+        isLiked: true,
+        likeCount: updatedLikeCount
       };
     }
 
     const deleteReviewLikeQuery = db.delete(reviewLike).where(eq(reviewLike.reviewId, reviewId));
     const updateRecipeReview = db.update(recipeReview)
-      .set({
-        likeCount: sql`${recipeReview.likeCount} - 1`
-      })
-      .where(eq(recipeReview.id, reviewId));
+      .set({ likeCount: sql`${recipeReview.likeCount} - 1` })
+      .where(eq(recipeReview.id, reviewId))
+      .returning({ likeCount: recipeReview.likeCount });
 
-    await Promise.all([deleteReviewLikeQuery, updateRecipeReview]);
+    const [[{ likeCount: updatedLikedCount }]] = await Promise.all([updateRecipeReview, deleteReviewLikeQuery]);
 
     return {
       success: true as const,
-      isLiked: false
+      isLiked: false,
+      likeCount: updatedLikedCount
     };
   });
-
-export async function getReviewsByRecipe({ recipeId, limit, offset, userId }: { recipeId: string; limit: number; offset: number; userId?: string; }) {
-  return db.query.recipeReview.findMany({
-    where: (review, { eq, isNotNull, and }) => and(
-      eq(review.recipeId, recipeId),
-      isNotNull(review.content)
-    ),
-    columns: {
-      userId: false,
-      recipeId: false
-    },
-    with: {
-      creator: {
-        columns: {
-          id: true,
-          image: true,
-          name: true,
-          email: true
-        }
-      },
-      likedBy: {
-        where: (liked, { eq }) => eq(liked.userId, userId || ""),
-        columns: {
-          userId: true
-        }
-      }
-    },
-    limit,
-    offset,
-    orderBy: (review, { desc }) => [desc(review.createdAt)]
-  });
-}
