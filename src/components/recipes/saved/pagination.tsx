@@ -10,35 +10,42 @@ type PaginationProps = {
 };
 
 export default function Pagination({ totalPages }: PaginationProps) {
-  const pagination = useQueryPagination({
+  const {
+    currentPage,
+    isFirstPage,
+    isLastPage,
+    setToPage,
+    incrementPage,
+    decrementPage,
+    list: paginationList
+  } = useQueryPagination({
     totalPages,
     shallow: false
   });
   
   return (
-    <div className="flex items-center h-12 gap-3 mx-auto mt-auto">
+    <div className="flex items-end h-10 gap-3 mx-auto">
       <Button
         variant="ghost"
-        disabled={pagination.isFirstPage}
-        onClick={pagination.decrementPage}
+        disabled={isFirstPage}
+        onClick={decrementPage}
         className="cursor-pointer disabled:cursor-not-allowed"
       >
         <ChevronLeft />
-        <span className="hidden md:block">Previous</span>
       </Button>
       {
-        pagination.list.map((p, i) => p === "..." ? (
-          <span key={i}>
+        paginationList.map((p, i) => p === "..." ? (
+          <span key={i} className="text-muted-foreground">
             ...
           </span>
         ) : (
           <button
             key={`page-${p}`}
-            onClick={() => pagination.setToPage(p - 1)}
-            disabled={p - 1 === pagination.currentPage}
+            onClick={() => setToPage(p - 1)}
+            disabled={p - 1 === currentPage}
             className={cn(
-              pagination.currentPage === p - 1 ? "bg-mealicious-primary text-white" : "border border-foreground text-foreground",
-              "cursor-pointer disabled:cursor-not-allowed h-full flex justify-center items-center min-w-10 font-semibold px-3 rounded-md transition-colors"
+              p - 1 === currentPage ? "border-mealicious-primary bg-mealicious-primary text-white" : "border-secondary-foreground text-secondary-foreground",
+              "border cursor-pointer disabled:cursor-not-allowed text-sm h-full flex justify-center items-center min-w-6 font-semibold px-3 rounded-sm transition-colors"
             )}
           >
             {p}
@@ -47,11 +54,10 @@ export default function Pagination({ totalPages }: PaginationProps) {
       }
       <Button
         variant="ghost"
-        disabled={pagination.isLastPage}
-        onClick={pagination.incrementPage}
+        disabled={isLastPage}
+        onClick={incrementPage}
         className="cursor-pointer disabled:cursor-not-allowed"
       >
-        <span className="hidden md:block">Next</span>
         <ChevronRight />
       </Button>
     </div>

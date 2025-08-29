@@ -1,5 +1,6 @@
 import { IdSchema, UnitSchema, UrlSchema } from "@/lib/zod";
 import z from "zod/v4";
+import { filters, Sort, sorts } from "@/lib/types";
 
 export const MAX_RECIPE_TITLE_LENGTH = 100;
 export const MAX_RECIPE_DESCRIPTION_LENGTH = 1000;
@@ -305,6 +306,23 @@ export const EditRecipeFormSchema = RecipeFormSchema.extend({
 });
 
 export type EditRecipeForm = z.infer<typeof EditRecipeFormSchema>;
+
+export const SavedRecipeSearchSchema = z.object({
+  query: z.string("Expected a string, but received an invalid type."),
+  sort: z.optional(
+    z.custom<Sort>((val) => typeof val === "string" && sorts.includes(val as Sort), {
+      error: "Expected a valid sort value, but received an invalid type."
+    })
+  ),
+  filters: z.array(
+    z.enum(filters, {
+      error: "Invalid filter value(s) detected."
+    }),
+    "Expected an array, but received an invalid type."
+  ).transform((val) => [...new Set(val)])
+});
+
+export type SavedRecipeSearch = z.infer<typeof SavedRecipeSearchSchema>;
 
 export const RecipeSearchSchema = z.object({
   query: z.string("Expected a string, but received an invalid type."),

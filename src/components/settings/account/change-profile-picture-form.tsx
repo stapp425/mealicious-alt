@@ -85,7 +85,7 @@ export default function ChangeProfilePictureForm({ id, avatarImageUrl }: ChangeA
     const url = URL.createObjectURL(currentImage);
     setImageURL(url);
     return () => URL.revokeObjectURL(url);
-  }, [currentImage, setImageURL]);
+  }, [currentImage, setImageURL, avatarImageUrl]);
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-1.5">

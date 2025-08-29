@@ -3,25 +3,27 @@
 import { redis } from "@/lib/redis";
 import { UTCDate } from "@date-fns/utc";
 import { differenceInSeconds } from "date-fns";
-import { ZodType } from "zod/v4";
+import z from "zod/v4";
 
-export async function getDataFromKey<T>({ key, schema }: { key: string; schema: ZodType<T>; }) {
+export async function getDataFromKey<T>({ key, schema }: { key: string; schema: z.ZodType<T>; }) {
   const result = await redis.get(key);
   return result ? schema.parse(JSON.parse(result)) : result;
 }
 
-export async function getCachedData<T>({ schema, cacheKey, call, timeToLive }: {
-  schema: ZodType<T>;
+export async function getCachedData<T extends z.ZodType>({
+  schema,
+  cacheKey,
+  call,
+  timeToLive
+}: {
+  schema: T;
   cacheKey: string;
-  call: () => Promise<T>;
+  call: () => Promise<z.input<T>>;
   timeToLive?: number | Date;
-}): Promise<T> {
+}): Promise<z.infer<T>> {
   const cachedResult = await redis.get(cacheKey);
 
-  if (cachedResult) {
-    const parsedCachedResult = schema.parse(JSON.parse(cachedResult));
-    return parsedCachedResult;
-  }
+  if (cachedResult) return schema.parse(JSON.parse(cachedResult));
 
   const databaseResult = await call();
 
@@ -31,7 +33,7 @@ export async function getCachedData<T>({ schema, cacheKey, call, timeToLive }: {
       JSON.stringify(databaseResult),
     );
 
-    return databaseResult;
+    return schema.parse(databaseResult);
   }
   
   await redis.set(
@@ -40,7 +42,7 @@ export async function getCachedData<T>({ schema, cacheKey, call, timeToLive }: {
     "EX", typeof timeToLive === "number" ? timeToLive : differenceInSeconds(timeToLive, new UTCDate())
   );
 
-  return databaseResult;
+  return schema.parse(databaseResult);
 }
 
 export async function removeCacheKeys(pattern: string) {

@@ -128,17 +128,17 @@ export default function Reviews({
       className={cn("@container flex flex-col gap-3", className)}
       {...props}
     >
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
             <Info size={16} className="cursor-pointer"/>
-            <h2 className="font-bold text-xl">Reviews</h2>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
-          You can see what others think about this recipe here and optionally like reviews.
-        </PopoverContent>
-      </Popover>
+          </PopoverTrigger>
+          <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+            You can see what others think about this recipe here and optionally like reviews.
+          </PopoverContent>
+        </Popover>
+        <h2 className="font-bold text-xl">Reviews</h2>
+      </div>
       <UserReview
         recipeId={recipeId}
         userId={userId}
@@ -201,6 +201,35 @@ const RecipeStatistics = memo(({
     refetchOnWindowFocus: false
   });
 
+  const statisticsObj = useMemo(() => [
+    {
+      rating: 5,
+      count: statistics?.fiveStarCount || 0
+    },
+    {
+      rating: 4,
+      count: statistics?.fourStarCount || 0
+    },
+    {
+      rating: 3,
+      count: statistics?.threeStarCount || 0
+    },
+    {
+      rating: 2,
+      count: statistics?.twoStarCount || 0
+    },
+    {
+      rating: 1,
+      count: statistics?.oneStarCount || 0
+    }
+  ], [
+    statistics?.fiveStarCount,
+    statistics?.fourStarCount,
+    statistics?.threeStarCount,
+    statistics?.twoStarCount,
+    statistics?.oneStarCount
+  ]);
+
   if (statisticsError) {
     return (
       <div className="error-label flex items-center gap-2 p-2">
@@ -247,55 +276,23 @@ const RecipeStatistics = memo(({
     >
       <div className="bg-mealicious-primary text-white min-w-38 flex-1 flex flex-col justify-center items-center gap-1.5 p-3 rounded-md">
         <span className="font-bold">Overall Rating</span>
-        <div className="flex items-end gap-1">
+        <div className="flex items-center gap-1">
           <b className="text-4xl">{statistics.overallRating.toFixed(1)}</b>
-          <span className="text-[#ffba00] text-2xl">
-            {'\u2605'}
-          </span>
+          <Star className="size-6 stroke-amber-400 fill-amber-400"/>
         </div>
         Total: {totalReviewCount}
       </div>
       <div className="w-full @min-3xl:w-3/4 flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <b>5</b>
-          <span className="text-[#ffba00]">
-            {'\u2605'}
-          </span>
-          <Progress value={Math.round(statistics.fiveStarCount / totalReviewCount * 100)}/>
-          <b>{statistics.fiveStarCount}</b>
-        </div>
-        <div className="flex items-center gap-2">
-          <b>4</b>
-          <span className="text-[#ffba00]">
-            {'\u2605'}
-          </span>
-          <Progress value={Math.round(statistics.fourStarCount / totalReviewCount * 100)}/>
-          <b>{statistics.fourStarCount}</b>
-        </div>
-        <div className="flex items-center gap-2">
-          <b>3</b>
-          <span className="text-[#ffba00]">
-            {'\u2605'}
-          </span>
-          <Progress value={Math.round(statistics.threeStarCount / totalReviewCount * 100)}/>
-          <b>{statistics.threeStarCount}</b>
-        </div>
-        <div className="flex items-center gap-2">
-          <b>2</b>
-          <span className="text-[#ffba00]">
-            {'\u2605'}
-          </span>
-          <Progress value={Math.round(statistics.twoStarCount / totalReviewCount * 100)}/>
-          <b>{statistics.twoStarCount}</b>
-        </div>
-        <div className="flex items-center gap-2">
-          <b>1</b>
-          <span className="text-[#ffba00]">
-            {'\u2605'}
-          </span>
-          <Progress value={Math.round(statistics.oneStarCount / totalReviewCount * 100)}/>
-          <b>{statistics.oneStarCount}</b>
-        </div>
+        {
+          statisticsObj.map(({ count, rating }) => (
+            <div key={rating} className="flex items-center gap-2">
+              <b>{rating}</b>
+              <Star className="size-4 stroke-amber-400 fill-amber-400"/>
+              <Progress value={Math.round(count / totalReviewCount * 100)}/>
+              <b>{count}</b>
+            </div>
+          ))
+        }
       </div>
     </div>
   );
@@ -393,7 +390,7 @@ const ReviewCard = memo(({
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="cursor-pointer">
+                        <AlertDialogCancel className="cursor-pointer font-normal shadow-none rounded-sm">
                           Cancel
                         </AlertDialogCancel>
                         <Button

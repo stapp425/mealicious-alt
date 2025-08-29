@@ -11,7 +11,7 @@ import { getTime } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { UTCDate } from "@date-fns/utc";
 import z from "zod/v4";
-import { CountSchema } from "../zod";
+import { CountSchema } from "@/lib/zod";
 
 export const createPlan = authActionClient
   .inputSchema(CreatePlanFormSchema)

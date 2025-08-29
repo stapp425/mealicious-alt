@@ -78,7 +78,7 @@ export default function ChangeEmailForm({ email, canEdit }: ChangeEmailFormProps
       reset();
       setEditMode(false);
     }
-  }, [open]);
+  }, [open, reset, setEditMode]);
   
   return (
     <form id="change-email-form" onSubmit={onSubmit} className="flex flex-col gap-1.5">
@@ -201,7 +201,7 @@ const EmailVerification = memo(({ open, loading, email, codeLength = 6 }: EmailV
       generatedCode.current = "";
       setCode("");
     }
-  }, [open, setCode]);
+  }, [open, email, codeLength, setCode]);
 
   return (
     <div className="grid gap-2.5">

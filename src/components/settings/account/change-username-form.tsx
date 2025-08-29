@@ -55,7 +55,7 @@ export function ChangeUsernameForm({ username }: ChangeUsernameFormProps) {
 
   useEffect(() => {
     if (!editMode) reset();
-  }, [editMode]);
+  }, [editMode, reset]);
   
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-1.5">

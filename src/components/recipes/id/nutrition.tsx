@@ -64,17 +64,17 @@ export default function Nutrition({
       )}
       {...props}
     >
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
             <Info size={16} className="cursor-pointer"/>
-            <h2 className="font-bold text-xl">Nutrition</h2>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
-          Substances found in food that provide supplementary energy.
-        </PopoverContent>
-      </Popover>
+          </PopoverTrigger>
+          <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+            Substances found in food that provide supplementary energy.
+          </PopoverContent>
+        </Popover>
+        <h2 className="font-bold text-xl">Nutrition</h2>
+      </div>
       <div className="font-bold flex justify-between items-center gap-2">
         <h2>Nutrient</h2>
         <h2>Amount</h2>

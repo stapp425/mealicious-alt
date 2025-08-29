@@ -11,11 +11,13 @@ import { toast } from "sonner";
 export function Favorite({ 
   recipeId,
   isRecipeFavorite,
+  onRecipeFavoriteToggle,
   className,
   ...props
 }: Omit<ComponentProps<"button">, "children" | "disabled" | "onClick"> & {
   recipeId: string;
   isRecipeFavorite: boolean;
+  onRecipeFavoriteToggle?: (status: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   
@@ -26,6 +28,7 @@ export function Favorite({
       queryClient.invalidateQueries({
         queryKey: ["recipe-statistics", recipeId]
       });
+      onRecipeFavoriteToggle?.(data.isFavorite);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });
@@ -69,11 +72,13 @@ export function Favorite({
 export function Saved({ 
   recipeId,
   isRecipeSaved,
+  onRecipeSavedToggle,
   className,
   ...props
 }: Omit<ComponentProps<"button">, "children" | "disabled" | "onClick"> & {
   recipeId: string;
   isRecipeSaved: boolean;
+  onRecipeSavedToggle?: (status: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   
@@ -87,6 +92,8 @@ export function Saved({
 
       if (data.isSaved) toast.success("Successfully saved recipe!");
       else toast.warning("Successfully removed recipe from saved list!");
+
+      onRecipeSavedToggle?.(data.isSaved);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });

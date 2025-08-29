@@ -48,9 +48,9 @@ export default async function RecipeCount({ userId }: RecipeCountProps) {
   });
 
   const [
-    [{ count: createdRecipesCount }],
-    [{ count: savedRecipesCount }],
-    [{ count: favoritedRecipesCount }]
+    createdRecipesCount,
+    savedRecipesCount,
+    favoritedRecipesCount
   ] = await Promise.all([
     createdRecipesCountQuery,
     savedRecipesCountQuery,

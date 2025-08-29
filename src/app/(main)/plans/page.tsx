@@ -88,7 +88,7 @@ export default async function Page({ searchParams }: PageProps) {
         date2 = startOfDayNow;
     }
 
-  const [{ count: plansCount }] = await getPlansInTimeFrameCount({
+  const plansCount = await getPlansInTimeFrameCount({
     userId,
     startDate: date1 ? new UTCDate(date1) : undefined,
     endDate: date2 ? new UTCDate(addMilliseconds(date2, -1, inUtc)) : undefined,

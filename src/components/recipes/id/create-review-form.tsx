@@ -65,8 +65,8 @@ export default function CreateReviewForm({
     onSuccess: async ({ data }) => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ["recipe-reviews", data.review.recipeId]
-        }).then(refresh),
+          queryKey: ["recipe-reviews", recipeId]
+        }),
         queryClient.invalidateQueries({
           queryKey: ["recipe-statistics", recipeId]
         })
@@ -92,17 +92,17 @@ export default function CreateReviewForm({
       className={cn("@container", className)}
       {...props}
     >
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className="flex items-center gap-2 mb-2.5">
+      <div className="flex items-center gap-2 mb-2.5">
+        <Popover>
+          <PopoverTrigger asChild>
             <Info size={16} className="cursor-pointer"/>
-            <h2 className="font-bold text-xl">Create a Review</h2>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
-          Create a review for the recipe here! If you add content to your review, others will be able to see and like it.
-        </PopoverContent>
-      </Popover>
+          </PopoverTrigger>
+          <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+            Create a review for the recipe here! If you add content to your review, others will be able to see and like it.
+          </PopoverContent>
+        </Popover>
+        <h2 className="font-bold text-xl">Create a Review</h2>
+      </div>
       <div className="flex flex-col gap-1">
         <h2 className="font-semibold required-field">Your Rating</h2>
         <p className="text-muted-foreground text-sm">

@@ -246,13 +246,13 @@ export const updateRecipe = authActionClient
   });
 
 export const deleteRecipe = authActionClient
-  .inputSchema(z.object({
-    recipeId: z.string()
+  .inputSchema(
+    z.string()
       .nonempty({
         message: "Recipe ID must not be empty."
       })
-  }))
-  .action(async ({ ctx: { user }, parsedInput: { recipeId } }) => {
+  )
+  .action(async ({ ctx: { user }, parsedInput: recipeId }) => {
     const foundRecipe = await db.query.recipe.findFirst({
       where: (recipe, { eq }) => eq(recipe.id, recipeId),
       columns: {
@@ -354,8 +354,6 @@ export const toggleRecipeFavorite = authActionClient
     }
 
     await removeCacheKeys(`user_${user.id}_favorited_recipes_count`);
-    revalidatePath("/recipes");
-    revalidatePath(`/recipes/${recipeId}`);
 
     return { 
       success: true as const,
@@ -412,11 +410,10 @@ export const toggleSavedListRecipe = authActionClient
     }
 
     await removeCacheKeys(`user_${user.id}_saved_recipes_count`);
-    revalidatePath("/recipes");
-    revalidatePath(`/recipes/${recipeId}`);
 
     return {
       success: true as const,
+      message: isSaved ? "Recipe successfully saved!" : "Recipe successfully removed from saved list!",
       isSaved
     };
   });

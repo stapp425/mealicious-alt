@@ -1,5 +1,5 @@
 import { Sort, Filter } from "@/lib/types";
-import { Info, SearchX } from "lucide-react";
+import { SearchX } from "lucide-react";
 import { db } from "@/db";
 import {
   cuisine, 
@@ -140,21 +140,15 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
     .orderBy(...(sort ? [orderByClauses[sort]] : []));
   
   return (
-    <div className="flex-1 flex flex-col gap-3">
+    <div className="flex-1 flex flex-col gap-2.5">
       <h2 className="font-bold text-2xl">
         Search Results ({count})
       </h2>
       {
         savedRecipes.length > 0 ? (
-          <>
-          <div className="flex w-full items-center gap-2 text-sm">
-            <Info size={16}/>
-            You can click on a recipe to show more details.
-          </div>
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-3">
             {savedRecipes.map((r) => <RecipeResult key={r.id} recipe={r}/>)}
           </div>
-          </>
         ) : (
           <div className="w-full bg-sidebar border border-border rounded-md flex flex-col justify-center items-center gap-8 p-4 mx-auto">
             <SearchX size={60}/>

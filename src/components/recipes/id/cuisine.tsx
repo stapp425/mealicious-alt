@@ -36,18 +36,16 @@ export default function Cuisine({
         )}
         {...props}
       >
-        <div className="p-3">
+        <div className="flex items-center gap-2 p-3">
           <Popover>
             <PopoverTrigger asChild>
-              <div className="flex items-center gap-2">
-                <Info size={16} className="cursor-pointer"/>
-                <h2 className="font-bold text-lg mt-0.5">Cuisine</h2>
-              </div>
+              <Info size={16} className="cursor-pointer"/>
             </PopoverTrigger>
             <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
               A cultural style of cooking practices with distinctive ingredients, cooking methods, and presentation of food.
             </PopoverContent>
           </Popover>
+          <h2 className="font-bold text-lg mt-0.5">Cuisine</h2>
         </div>
         <Separator />
         <div className="flex flex-col gap-3 p-3">

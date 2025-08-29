@@ -1,14 +1,11 @@
 "use client";
 
-import { Clock, Earth, EllipsisVertical, Flame, Heart, Loader2, Medal, Pencil, SquareArrowOutUpRight, Trash2, X } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Root as VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { Clock, Earth, EllipsisVertical, Flame, Heart, Loader2, Medal, Pencil, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { getDateDifference } from "@/lib/utils";
+import { cn, getDateDifference } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import defaultImage from "@/img/default/default-background.jpg";
-import { useState } from "react";
+import { ComponentProps, memo, useCallback, useState } from "react";
 import { useAction } from "next-safe-action/hooks";
 import { toast } from "sonner";
 import { 
@@ -34,7 +31,12 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { deleteRecipe, toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/recipe";
 
-type RecipeResultProps = {
+export default function RecipeResult({
+  recipe,
+  className,
+  onClick,
+  ...props
+}: Omit<ComponentProps<"div">, "children"> & {
   recipe: {
     id: string;
     title: string;
@@ -57,317 +59,301 @@ type RecipeResultProps = {
     isFavorite: boolean;
     isAuthor: boolean;
   };
-};
+}) {
+  const { refresh, push } = useRouter();
+  const [_isFavorite, _setIsFavorite] = useState(recipe.isFavorite);
 
-export default function RecipeResult({ recipe }: RecipeResultProps) {
-  const [isFavorite, setIsFavorite] = useState<boolean>(recipe.isFavorite);
-  const [open, setOpen] = useState<boolean>(false);
-  const { refresh } = useRouter();
-  
-  const { executeAsync: executeDeleteRecipe, isExecuting: isDeleteRecipeExecuting } = useAction(deleteRecipe, {
-    onSuccess: ({ data }) => {
-      if (!data) return;
-      setOpen(false);
-      refresh();
-      toast.warning(data.message);
-    },
-    onError: ({ error: { serverError } }) => toast.error(serverError)
-  });
-
-  const { executeAsync: executeToggleFavorite, isExecuting: isToggleFavoriteExecuting } = useAction(toggleRecipeFavorite, {
-    onSuccess: ({ data }) => {
-      if (!data) return;
-      setIsFavorite(data.isFavorite);
-    },
-    onError: ({ error: { serverError } }) => toast.error(serverError)
-  });
-
-  const { executeAsync: executeToggleSaved, isExecuting: isToggleSavedExecuting } = useAction(toggleSavedListRecipe, {
-    onSuccess: () => {
-      setOpen(false);
-      refresh();
-      toast.warning("Recipe has been unsaved!");
-    },
-    onError: ({ error: { serverError } }) => toast.error(serverError)
-  });
+  const onToggleFavorite = useCallback(
+    (status: boolean) => _setIsFavorite(status),
+    [_setIsFavorite]
+  );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <div className="overflow-x-hidden cursor-pointer bg-sidebar flex flex-col md:flex-row justify-between gap-4 border border-border p-4 rounded-md hover:bg-muted transition-colors">
-          <div className="shrink-0 group relative w-full md:w-[250px] h-[300px] min-h-[150px] md:h-auto rounded-sm overflow-hidden">
-            <Image 
-              src={recipe.image}
-              alt={`Image of ${recipe.title}`}
-              fill
-              className="block size-full object-cover object-center"
-            />
-            <div className="size-full bg-black opacity-0 group-hover:opacity-25 transition-opacity"/>
-            {
-              isFavorite && (
-                <div className="absolute top-2 left-2 flex justify-center items-center size-8 bg-rose-400 rounded-md">
-                  <Heart size={18} className="text-white"/>
-                </div>
-              )
-            }
-          </div>
-          <div className="flex-1 flex flex-col gap-3">
-            <div className="flex justify-between items-start gap-3">
-              <h2 className="font-bold text-2xl hyphens-auto line-clamp-2 grow-0 text-left">{recipe.title}</h2>
-              {
-                recipe.cuisine && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Image 
-                        src={recipe.cuisine.icon}
-                        alt={`Flag of ${recipe.cuisine.adjective} cuisine`}
-                        width={35}
-                        height={35}
-                        className="object-cover rounded-full"
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{recipe.cuisine.adjective}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )
-              }
+    <div 
+      onClick={(e) => {
+        push(`/recipes/${recipe.id}`);
+        onClick?.(e);
+      }}
+      className={cn(
+        "overflow-x-hidden cursor-pointer dark:bg-sidebar grid @min-3xl:grid-cols-[256px_1fr] gap-4 border border-border p-4 rounded-md transition-colors",
+        className
+      )}
+      {...props}
+    >
+      <div className="shrink-0 group relative w-full h-64 min-h-48 @min-3xl:h-auto rounded-sm overflow-hidden">
+        <Image 
+          src={recipe.image}
+          alt={`Image of ${recipe.title}`}
+          fill
+          className="block size-full object-cover object-center"
+        />
+        <div className="absolute size-full bg-linear-to-t from-gray-700/25 from-5% to-white/0 to-50%"/>
+        {
+          _isFavorite && (
+            <div className="absolute bottom-2 left-2 flex justify-center items-center size-8 bg-rose-400 rounded-md">
+              <Heart size={18} className="text-white"/>
             </div>
-            {
-              recipe.isAuthor && (
-                <div className="flex items-center gap-2 text-orange-400 text-sm font-semibold">
-                  <Medal />
-                  You created this recipe
-                </div>
-              )
-            }
-            {
-              recipe.diets.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {
-                    recipe.diets.map((d) => (
-                      <div key={d.id} className="bg-mealicious-primary text-white font-semibold text-xs px-3 py-1 rounded-full">
-                        {d.name}
-                      </div>
-                    ))
-                  }
-                </div>
-              )
-            }
-            <div className="flex items-center gap-3 min-h-[25px]">
-              <div className="flex items-center gap-1.5 font-semibold text-sm">
-                <Flame size={14} fill="var(--primary)"/>
-                <span>{Number(recipe.calories).toLocaleString()} Calories</span>
-              </div>
-              <Separator orientation="vertical"/>
-              <div className="flex items-center gap-1.5 font-semibold text-sm">
-                <Clock size={14}/>
-                <span>{Math.floor(recipe.prepTime)} min</span>
-              </div>
-            </div>
-            <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-end gap-2 mt-auto">
-              <i className="text-muted-foreground text-sm">
-                Saved {getDateDifference({ earlierDate: recipe.saveDate })} ago
-              </i>
-              {
-                (recipe.sourceName && recipe.sourceUrl) && (
-                  <div className="flex flex-row-reverse md:flex-row items-center gap-2 underline">
-                    <a href={recipe.sourceUrl} target="_blank">
-                      {recipe.sourceName}
-                    </a>
-                    <Earth />
-                  </div>
-                )
-              }
-            </div>
-          </div>
-        </div>
-      </DialogTrigger>
-      <DialogContent className="p-4 w-fit">
-        <VisuallyHidden>
-          <DialogHeader>
-            <DialogTitle>
-              {recipe.title}
-            </DialogTitle>
-            <DialogDescription>
-              Provides basic information such as title, image, diets, and cuisine of {recipe.title}.
-            </DialogDescription>
-          </DialogHeader>
-        </VisuallyHidden>
-        <div className="w-[300px] flex flex-col gap-2">
-          <div className="relative w-full h-[175px] md:h-[225px]">
-            <Image 
-              src={recipe.image || defaultImage}
-              alt={`Image of ${recipe.title}`}
-              fill
-              className="rounded-sm object-cover"
-            />
-          </div>
-          <div className="flex justify-between items-start gap-5">
-            <h2 className="font-bold text-lg hyphens-auto line-clamp-2 mt-0.5">{recipe.title}</h2>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="secondary">
-                  <EllipsisVertical />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[150px] bg-background">
-                <DropdownMenuLabel>Options</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link 
-                    href={`/recipes/${recipe.id}`}
-                    className="cursor-pointer"
-                  >
-                    View Details
-                    <SquareArrowOutUpRight />
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled={isToggleFavoriteExecuting}
-                  onClick={async () => executeToggleFavorite(recipe.id)}
-                  onSelect={(e) => e.preventDefault()}
-                  className="cursor-pointer disabled:cursor-not-allowed"
-                >
-                  {isFavorite ? "Unfavorite" : "Favorite"}
-                  {isToggleFavoriteExecuting ? <Loader2 className="animate-spin"/> : <Heart fill={isFavorite ? "var(--foreground)" : "none"}/>}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {
-                  recipe.isAuthor ? (
-                    <>
-                    <DropdownMenuItem asChild>
-                      <Link 
-                        href={`/recipes/${recipe.id}/edit`}
-                        className="cursor-pointer"
-                      >
-                        Edit
-                        <Pencil />
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <AlertDialog>
-                        <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
-                          Delete
-                          <Trash2 size={16} className="text-muted-foreground"/>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Deleting this recipe is an irreversible action! Other users who have this recipe saved will not be able to access this recipe permanently!
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
-                            <Button
-                              onClick={async () => await executeDeleteRecipe({ recipeId: recipe.id })}
-                              disabled={isDeleteRecipeExecuting}
-                              variant="destructive"
-                              className="min-w-[75px] cursor-pointer"
-                            >
-                              {isDeleteRecipeExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
-                            </Button>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </DropdownMenuItem>
-                    </>
-                  ) : (
-                    <AlertDialog>
-                      <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
-                        Unsave
-                        <X size={16} className="text-muted-foreground"/>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Removing this recipe from your saved list will be permanent. The recipe may be set to private, 
-                            so you may not be able to add it back again in the future!
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
-                          <Button
-                            onClick={async () => await executeToggleSaved(recipe.id)}
-                            disabled={isToggleSavedExecuting}
-                            variant="destructive"
-                            className="min-w-[75px] cursor-pointer"
-                          >
-                            {isToggleSavedExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
-                          </Button>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )
-                }
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          {
-            recipe.isAuthor && (
-              <div className="flex items-center gap-2 text-orange-400 text-sm font-semibold">
-                <Medal />
-                You created this recipe
-              </div>
-            )
-          }
-          {
-            recipe.cuisine && (
-              <div className="border border-border flex items-center gap-3 rounded-md p-2">
+          )
+        }
+        {
+          recipe.cuisine && (
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Image 
                   src={recipe.cuisine.icon}
                   alt={`Flag of ${recipe.cuisine.adjective} cuisine`}
-                  width={35}
-                  height={35}
+                  width={30}
+                  height={30}
+                  className="absolute bottom-2 right-2 object-cover object-center rounded-full"
                 />
-                <h3 className="font-semibold">{recipe.cuisine.adjective}</h3>
-              </div>
-            )
-          }
-          {
-            (recipe.diets && recipe.diets.length > 0) && (
-              <div className="flex flex-wrap items-center gap-2">
-                {
-                  recipe.diets.map((d) => (
-                    <div key={d.id} className="bg-mealicious-primary text-white font-semibold text-xs px-3 py-1 rounded-full">
-                      {d.name}
-                    </div>
-                  ))
-                }
-              </div>
-            )
-          }
-          <h2 className="font-bold text-lg">Description</h2>
-          {
-            recipe.description ? (
-              <p className="text-muted-foreground text-sm hyphens-auto line-clamp-3">{recipe.description}</p>
-            ) : (
-              <p className="italic text-muted-foreground">No description is available.</p>
-            )
-          }
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{recipe.cuisine.adjective}</p>
+              </TooltipContent>
+            </Tooltip>
+          )
+        }
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="flex justify-between items-start gap-3">
+          <h2 className="font-bold text-2xl hyphens-auto line-clamp-2">{recipe.title}</h2>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="cursor-pointer size-8 flex justify-center items-center rounded-full [&>svg]:size-5 hover:bg-muted">
+                <EllipsisVertical />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="end"
+              className="w-36 bg-background"
+              onClick={(e) => e.stopPropagation()} // this prevents the recipe result div container's click event from triggering (navigates to recipe details page)
+            >
+              <DropdownMenuLabel>Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <FavoriteOption
+                recipeId={recipe.id}
+                isFavorite={_isFavorite}
+                onToggleFavorite={onToggleFavorite}
+              />
+              <DropdownMenuSeparator />
+              {
+                recipe.isAuthor ? (
+                  <>
+                  <DropdownMenuItem asChild>
+                    <Link 
+                      href={`/recipes/${recipe.id}/edit`}
+                      className="cursor-pointer"
+                    >
+                      Edit
+                      <Pencil />
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DeleteOption 
+                    recipeId={recipe.id}
+                    onDelete={refresh}
+                  />
+                  </>
+                ) : (
+                  <UnsaveOption 
+                    recipeId={recipe.id}
+                    onUnsave={refresh}
+                  />
+                )
+              }
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        {
+          recipe.isAuthor && (
+            <div className="flex items-center gap-2 text-orange-400 text-sm mb-1.25 font-semibold">
+              <Medal size={16}/>
+              You created this recipe
+            </div>
+          )
+        }
+        {
+          recipe.diets.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {
+                recipe.diets.map((d) => (
+                  <div key={d.id} className="bg-mealicious-primary text-white font-semibold text-xs px-3 py-1 rounded-full">
+                    {d.name}
+                  </div>
+                ))
+              }
+            </div>
+          )
+        }
+        <div className="flex items-center gap-3 h-6">
+          <div className="flex items-center gap-1.5 font-semibold text-sm">
+            <Flame size={14} className="fill-primary"/>
+            <span>{Number(recipe.calories).toLocaleString()} Calories</span>
+          </div>
+          <Separator orientation="vertical"/>
+          <div className="flex items-center gap-1.5 font-semibold text-sm">
+            <Clock size={14}/>
+            <span>{Math.floor(recipe.prepTime)} min</span>
+          </div>
+        </div>
+        <div className="flex flex-col-reverse md:flex-row justify-between items-start @min-3xl:items-end gap-2 mt-auto">
+          <span className="text-muted-foreground text-sm">
+            Saved {getDateDifference({ earlierDate: recipe.saveDate })} ago
+          </span>
           {
             (recipe.sourceName && recipe.sourceUrl) && (
-              <div className="flex items-end gap-2.5 truncate">
-                <Earth className="shrink-0"/>
+              <div className="flex flex-row-reverse @min-3xl:flex-row items-center gap-2">
                 <a 
                   href={recipe.sourceUrl}
                   target="_blank"
-                  className="underline truncate"
+                  className="text-sm hover:underline max-w-48 truncate"
                 >
                   {recipe.sourceName}
                 </a>
+                <Earth size={16}/>
               </div>
             )
           }
-          <i className="text-muted-foreground text-sm">
-            Saved {getDateDifference({ earlierDate: recipe.saveDate })} ago
-          </i>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
+
+const FavoriteOption = memo(({
+  recipeId,
+  isFavorite,
+  onToggleFavorite
+}: { 
+  recipeId: string;
+  isFavorite: boolean;
+  onToggleFavorite?: (status: boolean) => void;
+}) => {
+  const {
+    execute: executeToggleFavorite,
+    isExecuting: isToggleFavoriteExecuting
+  } = useAction(toggleRecipeFavorite, {
+    onSuccess: ({ data }) => onToggleFavorite?.(data.isFavorite),
+    onError: ({ error: { serverError } }) => toast.error(serverError)
+  });
+  
+  return (
+    <DropdownMenuItem
+      disabled={isToggleFavoriteExecuting}
+      onClick={() => executeToggleFavorite(recipeId)}
+      onSelect={(e) => e.preventDefault()}
+      className="cursor-pointer disabled:cursor-not-allowed"
+    >
+      {isFavorite ? "Unfavorite" : "Favorite"}
+      {isToggleFavoriteExecuting ? <Loader2 className="animate-spin"/> : <Heart fill={isFavorite ? "var(--foreground)" : "none"}/>}
+    </DropdownMenuItem>
+  );
+});
+
+FavoriteOption.displayName = "FavoriteOption";
+
+const DeleteOption = memo(({
+  recipeId,
+  onDelete
+}: {
+  recipeId: string;
+  onDelete?: () => void;
+}) => {
+  const {
+    execute: executeDeleteRecipe,
+    isExecuting: isDeleteRecipeExecuting
+  } = useAction(deleteRecipe, {
+    onSuccess: ({ data }) => {
+      toast.warning(data.message);
+      onDelete?.();
+    },
+    onError: ({ error: { serverError } }) => toast.error(serverError)
+  });
+  
+  return (
+    <DropdownMenuItem 
+      variant="destructive"
+      asChild
+    >
+      <AlertDialog>
+        <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
+          Delete
+          <Trash2 size={16} className="text-muted-foreground"/>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deleting this recipe is an irreversible action! Other users who have this recipe saved will not be able to access this recipe permanently!
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+            <Button
+              onClick={() => executeDeleteRecipe(recipeId)}
+              disabled={isDeleteRecipeExecuting}
+              variant="destructive"
+              className="min-w-[75px] cursor-pointer"
+            >
+              {isDeleteRecipeExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </DropdownMenuItem>
+  );
+});
+
+DeleteOption.displayName = "DeleteOption";
+
+const UnsaveOption = memo(({
+  recipeId,
+  onUnsave
+}: {
+  recipeId: string;
+  onUnsave?: () => void;
+}) => {
+  const {
+    execute: executeToggleSaved,
+    isExecuting: isToggleSavedExecuting
+  } = useAction(toggleSavedListRecipe, {
+    onSuccess: ({ data }) => {
+      toast.warning(data.message);
+      onUnsave?.();
+    },
+    onError: ({ error: { serverError } }) => toast.error(serverError)
+  });
+  
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
+        Unsave
+        <X size={16} className="text-muted-foreground"/>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Removing this recipe from your saved list will be permanent. The recipe may be set to private, 
+            so you may not be able to add it back again in the future!
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="cursor-pointer font-normal rounded-sm shadow-none">
+            Cancel
+          </AlertDialogCancel>
+          <Button
+            onClick={() => executeToggleSaved(recipeId)}
+            disabled={isToggleSavedExecuting}
+            variant="destructive"
+            className="min-w-18 cursor-pointer rounded-sm shadow-none"
+          >
+            {isToggleSavedExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+});
+
+UnsaveOption.displayName = "UnsaveOption";

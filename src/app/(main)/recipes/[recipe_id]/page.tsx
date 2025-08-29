@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import RecipeInfo from "@/components/recipes/id/recipe-info";
 import Reviews from "@/components/recipes/id/reviews";
 import Statistics from "@/components/recipes/id/statistics";
+import { revalidatePath } from "next/cache";
 
 const MAX_NUTRIENT_PREVIEW_DISPLAY_LIMIT = 4;
 
@@ -126,7 +127,7 @@ export default async function Page({ params }: PageProps<"/recipes/[recipe_id]">
               </span>
             </div>
           </section>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 empty:hidden">
             {
               foundRecipe.tags.map((t) => (
                 <Badge
@@ -138,16 +139,8 @@ export default async function Page({ params }: PageProps<"/recipes/[recipe_id]">
               ))
             }
           </div>
-          <section>
-            <p className={cn(
-              "text-muted-foreground text-sm text-wrap hyphens-auto truncate",
-              !foundRecipe.description && "italic"
-            )}>
-              {foundRecipe.description || "No description is available."}
-            </p>
-          </section>
+          <Statistics recipeId={foundRecipe.id}/>
           <div className="flex flex-col gap-3 mt-auto">
-            <Statistics recipeId={foundRecipe.id}/>
             {
               (foundRecipe.sourceName && foundRecipe.sourceUrl) && (
                 <a 
@@ -177,12 +170,22 @@ export default async function Page({ params }: PageProps<"/recipes/[recipe_id]">
               <Favorite 
                 recipeId={foundRecipe.id}
                 isRecipeFavorite={isFavorited}
+                onRecipeFavoriteToggle={async () => {
+                  "use server";
+                  revalidatePath("/recipes");
+                  revalidatePath(`/recipes/${foundRecipe.id}`);
+                }}
               />
               {
                 !isAuthor && (
                   <Saved 
                     recipeId={foundRecipe.id}
                     isRecipeSaved={isSaved}
+                    onRecipeSavedToggle={async () => {
+                      "use server";
+                      revalidatePath("/recipes");
+                      revalidatePath(`/recipes/${foundRecipe.id}`);
+                    }}
                   />
                 )
               }
@@ -232,12 +235,31 @@ export default async function Page({ params }: PageProps<"/recipes/[recipe_id]">
           </h1>
           <Separator className="w-28! h-1.5! bg-mealicious-primary"/>
         </div>
+        <section className="@min-4xl:col-span-2 flex flex-col gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Info size={16} className="cursor-pointer"/>
+              </PopoverTrigger>
+              <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+                A brief summary of what the recipe is about and the origins behind it.
+              </PopoverContent>
+            </Popover>
+            <h2 className="font-bold text-xl">Description</h2>
+          </div>
+          <p className={cn(
+            "text-muted-foreground text-sm text-wrap hyphens-auto truncate",
+            !foundRecipe.description && "italic"
+          )}>
+            {foundRecipe.description || "No description is available."}
+          </p>
+        </section>
         <div className="peer/details flex flex-col gap-3">
           { foundRecipe.cuisine && <Cuisine cuisine={foundRecipe.cuisine}/> }
           { foundRecipe.diets.length > 0 && <Diets diets={foundRecipe.diets.map(({ diet }) => diet)}/> }
           { foundRecipe.dishTypes.length > 0 && <DishTypes dishTypes={foundRecipe.dishTypes.map(({ dishType }) => dishType)}/> }
         </div>
-        <div className="peer-empty/details:col-span-2 flex flex-col gap-3 @min-2xl:gap-4.5">
+        <div className="peer-empty/details:col-span-2 flex flex-col gap-3 @min-2xl:gap-7.5">
           <section className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Popover>

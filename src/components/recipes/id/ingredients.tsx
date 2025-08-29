@@ -63,17 +63,17 @@ export default function Ingredients({
       )}
       {...props}
     >
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
             <Info size={16} className="cursor-pointer"/>
-            <h2 className="font-bold text-xl">Ingredients</h2>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
-          Raw materials that are necessary in making this recipe. You can use the checkbox for each ingredient to track that you are in possession of the ingredient.
-        </PopoverContent>
-      </Popover>
+          </PopoverTrigger>
+          <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+            Raw materials that are necessary in making this recipe. You can use the checkbox for each ingredient to track that you are in possession of the ingredient.
+          </PopoverContent>
+        </Popover>
+        <h2 className="font-bold text-xl">Ingredients</h2>
+      </div>
       <div className="grid @min-2xl:grid-cols-2 @min-3xl:grid-cols-3 @min-4xl:grid-cols-4 gap-3">
         {
           ingredients.map((i) => {

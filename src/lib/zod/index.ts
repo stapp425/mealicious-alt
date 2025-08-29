@@ -68,4 +68,4 @@ export const CountSchema = z.array(z.object({
   })
 })).length(1, {
   error: "Count array can only have one element."
-});
+}).transform((val) => val[0].count);

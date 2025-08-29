@@ -5,7 +5,7 @@ import { sql, and, eq, exists, count } from "drizzle-orm";
 import { SearchX } from "lucide-react";
 import Pagination from "@/components/user/recipes/pagination";
 import FavoritedRecipesResult from "@/components/user/recipes/favorited-recipes-result";
-import z from "zod/v4";
+import { CountSchema } from "@/lib/zod";
 
 type FavoritedRecipesProps = {
   userId: string;
@@ -104,14 +104,12 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
       )
     ));
   
-  const [[{ count: favoritedRecipesCount }], favoritedRecipes] = await Promise.all([
+  const [favoritedRecipesCount, favoritedRecipes] = await Promise.all([
     getCachedData({
       cacheKey: `favorited_recipes_user_${userId}`,
       timeToLive: 120,
       call: () => favoritedRecipesCountQuery,
-      schema: z.array(z.object({
-        count: z.number()
-      })).length(1)
+      schema: CountSchema
     }),
     favoritedRecipesQuery
   ]);

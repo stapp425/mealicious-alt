@@ -40,17 +40,17 @@ export default function Diets({
         {...props}
       >
         <div className="flex justify-between items-center gap-2 py-2 px-3">
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
                 <Info size={16} className="cursor-pointer"/>
-                <h2 className="font-bold text-lg mt-0.5">Diets</h2>
-              </div>
-            </PopoverTrigger>
-            <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
-              A curated selection of foods and drinks with similar nutritional qualities.
-            </PopoverContent>
-          </Popover>
+              </PopoverTrigger>
+              <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+                A curated selection of foods and drinks with similar nutritional qualities.
+              </PopoverContent>
+            </Popover>
+            <h2 className="font-bold text-lg mt-0.5">Diets</h2>
+          </div>
           <TabsList className="bg-transparent gap-2 p-0">
             <TabsTrigger
               value="simplified"

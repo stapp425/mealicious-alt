@@ -1,8 +1,5 @@
-import ResultOptions from "@/components/recipes/saved/result-options";
 import SearchBar from "@/components/recipes/saved/search-bar";
 import SearchResults from "@/components/recipes/saved/search-results";
-import { Separator } from "@/components/ui/separator";
-import { SearchParams } from "nuqs";
 import { filters, sorts } from "@/lib/types";
 import { 
   createLoader,
@@ -23,10 +20,6 @@ import { redirect } from "next/navigation";
 import { SearchResultsSkeleton } from "@/components/recipes/saved/search-results";
 import { nanoid } from "nanoid";
 
-type AllRecipesPageProps = {
-  searchParams: Promise<SearchParams>;
-};
-
 export const metadata: Metadata = {
   title: "Saved Recipes | Mealicious",
   description: "View all your saved mealicious recipes here!"
@@ -39,7 +32,7 @@ const loadSearchParams = createLoader({
   page: parseAsIndex.withDefault(0)
 });
 
-export default async function Page({ searchParams }: AllRecipesPageProps) {
+export default async function Page({ searchParams }: PageProps<"/recipes">) {
   const { filters, query, page, sort } = await loadSearchParams(searchParams);
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -71,12 +64,12 @@ export default async function Page({ searchParams }: AllRecipesPageProps) {
     ));
 
   return (
-    <div className="max-w-[850px] w-full flex-1 flex flex-col gap-2.5 mx-auto p-4">
+    <div className="max-w-212 w-full flex-1 flex flex-col gap-2.5 mx-auto p-4">
       <h1 className="text-4xl font-bold mb-2">Saved Recipes</h1>
-      <h2 className="font-bold">Search Recipe</h2>
-      <SearchBar />
-      <ResultOptions />
-      <Separator />
+      <div className="grid gap-1.5">
+        <h2 className="font-bold">Search Recipe</h2>
+        <SearchBar />
+      </div>
       <Suspense key={nanoid()} fallback={<SearchResultsSkeleton />}>
         <SearchResults
           count={savedRecipesCount}

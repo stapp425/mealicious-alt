@@ -74,17 +74,17 @@ export default function Instructions({
       )}
       {...props}
     >
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
             <Info size={16} className="cursor-pointer"/>
-            <h2 className="font-bold text-xl">Instructions</h2>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
-          Specific directions on how to create a recipe. Make sure to follow as closely as possible for optimal results.
-        </PopoverContent>
-      </Popover>
+          </PopoverTrigger>
+          <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+            Specific directions on how to create a recipe. Make sure to follow as closely as possible for optimal results.
+          </PopoverContent>
+        </Popover>
+        <h2 className="font-bold text-xl">Instructions</h2>
+      </div>
       <div className="border border-border flex flex-col gap-3 p-4 rounded-sm">
         <h2 className="font-bold text-lg">Options</h2>
         <Label className="flex items-center gap-4">

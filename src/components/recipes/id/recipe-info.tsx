@@ -11,6 +11,7 @@ import Ingredients from "@/components/recipes/id/ingredients";
 import Instructions from "@/components/recipes/id/instructions";
 import { Slider } from "@/components/ui/slider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 
 type Tab = {
   label: string;
@@ -85,33 +86,38 @@ export default function RecipeInfo({
         }
       </TabsList>
       <div className="border border-border w-full flex flex-col gap-0.25 p-4 rounded-sm">
-        <Popover>
-          <PopoverTrigger asChild>
-            <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
               <Info size={16} className="cursor-pointer"/>
-              <h2 className="font-semibold">Serving Size</h2>
-            </div>
-          </PopoverTrigger>
-          <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
-            The amount of a recipe that is generally served.
-          </PopoverContent>
-        </Popover>
+            </PopoverTrigger>
+            <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+              The amount of a recipe that is generally served.
+            </PopoverContent>
+          </Popover>
+          <h2 className="font-semibold">Serving Size</h2>
+        </div>
         <h3 className="font-light">
           <b className="font-bold text-2xl">{Math.round(servingSizeAmount)}</b> {servingSizeUnit}
         </h3>
         <div className="flex justify-between items-center gap-2 -my-1">
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
                 <Info size={16} className="cursor-pointer"/>
-                <h2 className="font-bold">Serving Size Scalar</h2>
-              </div>
-            </PopoverTrigger>
-            <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
-              How much the serving size is multiplied by. Nutrition and ingredient quantities are calculated accordingly.
-            </PopoverContent>
-          </Popover>
-          <h3 className="w-fit font-semibold border border-border bg-sidebar text-sm py-1.5 px-4 mb-2 rounded-sm">{count}</h3>
+              </PopoverTrigger>
+              <PopoverContent className="text-xs font-semibold text-muted-foreground p-3" align="start">
+                How much the serving size is multiplied by. Nutrition and ingredient quantities are calculated accordingly.
+              </PopoverContent>
+            </Popover>
+            <h2 className="font-bold">Serving Size Scalar</h2>
+          </div>
+          <Input 
+            type="number"
+            value={count}
+            onChange={(e) => setCount(Math.min(Math.max(1, Number(e.target.value)), MAX_SERVING_SIZE_SCALAR))}
+            className="w-20 font-semibold border border-border flex bg-sidebar text-center text-sm py-1.5 mb-2 rounded-sm shadow-none"
+          />
         </div>
         <Slider
           value={[count]}

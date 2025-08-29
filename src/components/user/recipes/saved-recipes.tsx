@@ -5,7 +5,7 @@ import { sql, and, eq, exists, not, count } from "drizzle-orm";
 import { SearchX } from "lucide-react";
 import Pagination from "@/components/user/recipes/pagination";
 import SavedRecipesResult from "@/components/user/recipes/saved-recipes-result";
-import z from "zod/v4";
+import { CountSchema } from "@/lib/zod";
 
 type SavedRecipesProps = {
   userId: string;
@@ -106,14 +106,12 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
     .leftJoinLateral(userSubQuery, sql`true`)
     .limit(limit);
 
-  const [[{ count: savedRecipesCount }], savedRecipes] = await Promise.all([
+  const [savedRecipesCount, savedRecipes] = await Promise.all([
     getCachedData({
       cacheKey: `saved_recipes_user_${userId}`,
       timeToLive: 120,
       call: () => savedRecipesCountQuery,
-      schema: z.array(z.object({
-        count: z.number()
-      })).length(1)
+      schema: CountSchema
     }),
     savedRecipesQuery
   ]);
