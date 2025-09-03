@@ -3,13 +3,33 @@
 import { ActionError } from "@/lib/types";
 import { authActionClient } from "@/safe-action";
 import { db } from "@/db";
-import { and, asc, count, eq, isNotNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, ilike, isNotNull, sql } from "drizzle-orm";
 import { CreateRecipeFormSchema, EditRecipeFormSchema, CreateReviewFormSchema } from "@/lib/zod/recipe";
-import { ingredient, instruction, nutrition, recipe, recipeFavorite, recipeReview, recipeStatistics, recipeToDiet, recipeToDishType, recipeToNutrition, reviewLike, savedRecipe } from "@/db/schema";
+import { 
+  cuisine as cuisineTable,
+  diet as dietTable,
+  dishType as dishTypeTable,
+  ingredient,
+  instruction,
+  nutrition,
+  recipe,
+  recipeFavorite,
+  recipeReview,
+  recipeStatistics,
+  recipeToDiet,
+  recipeToDishType,
+  recipeToNutrition,
+  reviewLike,
+  savedRecipe,
+  user,
+  userToCuisine,
+  userToDiet,
+  userToDishType
+} from "@/db/schema";
 import { deleteRecipeQueryIndex, insertRecipeQueryIndex } from "@/lib/actions/algolia";
 import { revalidatePath } from "next/cache";
 import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
-import { getRatingKey } from "@/lib/utils";
+import { getRatingKey, MAX_GRID_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
 import axios from "axios";
 import { removeCacheKeys } from "@/lib/actions/redis";
 import z from "zod/v4";
@@ -765,3 +785,230 @@ export const toggleReviewLike = authActionClient
       likeCount: updatedLikedCount
     };
   });
+
+export async function getInfiniteSearchedRecipes({
+  userId,
+  limit = MAX_GRID_RECIPE_DISPLAY_LIMIT,
+  offset = 0,
+  query = "",
+  diet,
+  dishType,
+  cuisine,
+  isUsingCuisinePreferences = false,
+  isUsingDietPreferences = false,
+  isUsingDishTypePreferences = false
+}: {
+  userId: string;
+  limit?: number;
+  offset?: number;
+  query?: string;
+  diet?: string;
+  dishType?: string;
+  cuisine?: string;
+  isUsingCuisinePreferences?: boolean;
+  isUsingDietPreferences?: boolean;
+  isUsingDishTypePreferences?: boolean;
+}): Promise<{
+  id: string;
+  title: string;
+  image: string;
+  prepTime: number;
+  calories: number;
+  creator: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+  } | null;
+  statistics: {
+    saveCount: number;
+    favoriteCount: number;
+    fiveStarCount: number;
+    fourStarCount: number;
+    threeStarCount: number;
+    twoStarCount: number;
+    oneStarCount: number;
+  };
+  cuisine: {
+    id: string;
+    adjective: string;
+    icon: string;
+  } | null;
+  sourceName: string | null;
+  sourceUrl: string | null;
+  cuisineScore: number;
+  dietScore: number;
+  dishTypeScore: number;
+  createdAt: Date;
+}[]> {
+  const creatorSubQuery = db.select({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    image: user.image
+  }).from(user)
+    .where(eq(recipe.createdBy, user.id))
+    .as("creator_sub");
+
+  const recipeStatisticsSubQuery = db.select({
+    savedCount: recipeStatistics.savedCount,
+    favoriteCount: recipeStatistics.favoriteCount,
+    fiveStarCount: recipeStatistics.fiveStarCount,
+    fourStarCount: recipeStatistics.fourStarCount,
+    threeStarCount: recipeStatistics.threeStarCount,
+    twoStarCount: recipeStatistics.twoStarCount,
+    oneStarCount: recipeStatistics.oneStarCount
+  }).from(recipeStatistics)
+    .where(eq(recipeStatistics.recipeId, recipe.id))
+    .as("recipe_stats_sub");
+
+  const cuisineSubQuery = db.select({
+    id: cuisineTable.id,
+    adjective: cuisineTable.adjective,
+    icon: cuisineTable.icon
+  }).from(cuisineTable)
+    .where(eq(cuisineTable.id, recipe.cuisineId))
+    .as("cuisine_sub");
+
+  const caloriesSubQuery = db.select({
+    calories: recipeToNutrition.amount
+  }).from(recipeToNutrition)
+    .where(and(
+      eq(recipeToNutrition.recipeId, recipe.id),
+      eq(nutrition.name, "Calories")
+    ))
+    .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
+    .as("recipe_to_nutrition_sub");
+
+  const cuisinePreferencesScoreQuery = db.select({ 
+    score: userToCuisine.preferenceScore
+  }).from(userToCuisine)
+    .where(and(
+      eq(userToCuisine.userId, userId),
+      eq(userToCuisine.cuisineId, recipe.cuisineId)
+    ))
+    .orderBy(userToCuisine.preferenceScore)
+    .innerJoin(cuisineTable, eq(userToCuisine.cuisineId, cuisineTable.id))
+    .as("cuisine_preferences");
+
+  const dietPreferencesScoreQuery = db.select({
+    totalScore: sql<number>`coalesce(sum(${userToDiet.preferenceScore})::integer, 0)`.as("diet_total_score")
+  }).from(userToDiet)
+    .where(and(
+      eq(userToDiet.userId, userId),
+      exists(
+        db.select({ id: recipeToDiet.dietId })
+          .from(recipeToDiet)
+          .where(and(
+            eq(recipeToDiet.recipeId, recipe.id),
+            eq(recipeToDiet.dietId, userToDiet.dietId),
+            eq(recipeToDiet.dietId, dietTable.id)
+          ))
+      )
+    ))
+    .innerJoin(dietTable, eq(userToDiet.dietId, dietTable.id))
+    .as("diet_preferences");
+
+  const dishTypePreferencesScoreQuery = db.select({
+    totalScore: sql<number>`coalesce(sum(${userToDishType.preferenceScore})::integer, 0)`.as("dish_type_total_score")
+  }).from(userToDishType)
+    .where(and(
+      eq(userToDishType.userId, userId),
+      exists(
+        db.select({ id: recipeToDishType.dishTypeId })
+          .from(recipeToDishType)
+          .where(and(
+            eq(recipeToDishType.recipeId, recipe.id),
+            eq(recipeToDishType.dishTypeId, userToDishType.dishTypeId),
+            eq(recipeToDishType.dishTypeId, dishTypeTable.id)
+          ))
+      )
+    ))
+    .innerJoin(dishTypeTable, eq(userToDishType.dishTypeId, dishTypeTable.id))
+    .as("dish_type_preferences");
+
+  const preferencesOrdering = [
+    isUsingCuisinePreferences ? desc(sql`coalesce(${cuisinePreferencesScoreQuery.score}, 0)`) : undefined,
+    isUsingDietPreferences ? desc(dietPreferencesScoreQuery.totalScore) : undefined,
+    isUsingDishTypePreferences ? desc(dishTypePreferencesScoreQuery.totalScore) : undefined,
+    desc(recipeStatisticsSubQuery.savedCount),
+    asc(recipe.title),
+    asc(recipe.id)
+  ];
+
+  const searchedRecipes = db.select({
+    id: recipe.id,
+    title: recipe.title,
+    image: recipe.image,
+    prepTime: recipe.prepTime,
+    calories: sql<number>`coalesce(${caloriesSubQuery.calories}::integer, 0)`.as("calories"),
+    creator: {
+      id: creatorSubQuery.id,
+      name: creatorSubQuery.name,
+      email: creatorSubQuery.email,
+      image: creatorSubQuery.image
+    },
+    statistics: {
+      saveCount: recipeStatisticsSubQuery.savedCount,
+      favoriteCount: recipeStatisticsSubQuery.favoriteCount,
+      fiveStarCount: recipeStatisticsSubQuery.fiveStarCount,
+      fourStarCount: recipeStatisticsSubQuery.fourStarCount,
+      threeStarCount: recipeStatisticsSubQuery.threeStarCount,
+      twoStarCount: recipeStatisticsSubQuery.twoStarCount,
+      oneStarCount: recipeStatisticsSubQuery.oneStarCount
+    },
+    cuisine: {
+      id: cuisineSubQuery.id,
+      adjective: cuisineSubQuery.adjective,
+      icon: cuisineSubQuery.icon
+    },
+    sourceName: recipe.sourceName,
+    sourceUrl: recipe.sourceUrl,
+    cuisineScore: sql`coalesce(${cuisinePreferencesScoreQuery.score}::integer, 0)`.mapWith(Number),
+    dietScore: dietPreferencesScoreQuery.totalScore,
+    dishTypeScore: dishTypePreferencesScoreQuery.totalScore,
+    createdAt: recipe.createdAt
+  }).from(recipe)
+    .where(and(
+      eq(recipe.isPublic, true),
+      ilike(recipe.title, `%${query}%`),
+      diet ? exists(
+        db.select({ id: recipeToDiet.dietId })
+          .from(recipeToDiet)
+          .innerJoin(dietTable, eq(recipeToDiet.dietId, dietTable.id))
+          .where(and(
+            eq(recipeToDiet.recipeId, recipe.id),
+            eq(dietTable.name, diet),
+          ))
+      ) : undefined,
+      dishType ? exists(
+        db.select({ id: recipeToDishType.dishTypeId })
+          .from(recipeToDishType)
+          .innerJoin(dishTypeTable, eq(recipeToDishType.dishTypeId, dishTypeTable.id))
+          .where(and(
+            eq(recipeToDishType.recipeId, recipe.id),
+            eq(dishTypeTable.name, dishType),
+          ))
+      ) : undefined,
+      cuisine ? exists(
+        db.select({ id: cuisineTable.id })
+          .from(cuisineTable)
+          .where(and(
+            eq(cuisineTable.id, recipe.cuisineId),
+            eq(cuisineTable.adjective, cuisine)
+          ))
+      ) : undefined
+    ))
+    .leftJoinLateral(creatorSubQuery, sql`true`)
+    .innerJoinLateral(recipeStatisticsSubQuery, sql`true`)
+    .leftJoinLateral(cuisineSubQuery, sql`true`)
+    .leftJoinLateral(caloriesSubQuery, sql`true`)
+    .leftJoinLateral(cuisinePreferencesScoreQuery, sql`true`)
+    .leftJoinLateral(dietPreferencesScoreQuery, sql`true`)
+    .leftJoinLateral(dishTypePreferencesScoreQuery, sql`true`)
+    .limit(limit)
+    .orderBy(...preferencesOrdering.filter((o) => !!o))
+    .offset(offset);
+
+  return searchedRecipes;
+}

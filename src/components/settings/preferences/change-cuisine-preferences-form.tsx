@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { updateCuisinePreferences } from "@/lib/actions/settings";
 import { useAction } from "next-safe-action/hooks";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 type ChangeCuisinePreferencesFormProps = {
   cuisinePreferences: {
@@ -39,6 +40,7 @@ export function useChangeCuisinePreferencesFormContext() {
 }
 
 export default function ChangeCuisinePreferencesForm({ cuisinePreferences }: ChangeCuisinePreferencesFormProps) {
+  const queryClient = useQueryClient();
   const {
     control,
     handleSubmit,
@@ -58,7 +60,9 @@ export default function ChangeCuisinePreferencesForm({ cuisinePreferences }: Cha
 
   const { executeAsync } = useAction(updateCuisinePreferences, {
     onSuccess: ({ data, input }) => {
-      if (!data) return;
+      queryClient.invalidateQueries({
+        queryKey: ["search-recipes-results"]
+      });
       toast.success(data.message);
       reset(input);
     },

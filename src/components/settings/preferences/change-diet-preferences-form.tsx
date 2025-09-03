@@ -14,6 +14,7 @@ import { Info, LoaderCircle, Minus, Plus } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { updateDietPreferences } from "@/lib/actions/settings";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 type ChangeDietPreferencesFormProps = {
   dietPreferences: {
@@ -27,6 +28,7 @@ type ChangeDietPreferencesFormProps = {
 const MAX_DIET_DISPLAY_LIMIT = 6;
 
 export default function ChangeDietPreferencesForm({ dietPreferences }: ChangeDietPreferencesFormProps) {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const {
     control,
@@ -47,7 +49,9 @@ export default function ChangeDietPreferencesForm({ dietPreferences }: ChangeDie
 
   const { executeAsync } = useAction(updateDietPreferences, {
     onSuccess: ({ data, input }) => {
-      if (!data) return;
+      queryClient.invalidateQueries({
+        queryKey: ["search-recipes-results"]
+      });
       toast.success(data.message);
       reset(input);
     },

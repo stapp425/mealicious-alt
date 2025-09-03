@@ -12,9 +12,9 @@ import { Control, useForm, UseFormSetValue, useWatch } from "react-hook-form";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { useMediaQuery } from "usehooks-ts";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useContainerQuery } from "@/hooks/use-container-query";
 
 type SearchBarProps = {
   cuisines: {
@@ -41,9 +41,20 @@ type Item = {
   icon?: string;
 };
 
-export default function SearchBar({ cuisines, diets, dishTypes, hasCuisinePreferences, hasDietPreferences, hasDishTypePreferences }: SearchBarProps) {
-  const [mounted, setMounted] = useState<boolean>(false);
-  const matches = useMediaQuery("(min-width: 48rem)");
+const CONTAINER_4XL_BREAKPOINT = 896;
+
+export default function SearchBar({
+  cuisines,
+  diets,
+  dishTypes,
+  hasCuisinePreferences,
+  hasDietPreferences,
+  hasDishTypePreferences
+}: SearchBarProps) {
+  const [mounted, setMounted] = useState(false);
+  const [ref, matches] = useContainerQuery<HTMLFormElement>({
+    condition: ({ width }) => width >= CONTAINER_4XL_BREAKPOINT
+  });
   
   const [{ 
     query,
@@ -72,7 +83,7 @@ export default function SearchBar({ cuisines, diets, dishTypes, hasCuisinePrefer
     reset,
     watch,
     formState: { isSubmitting }
-  } = useForm<RecipeSearch>({
+  } = useForm({
     resolver: zodResolver(RecipeSearchSchema),
     defaultValues: { 
       query,
@@ -181,18 +192,17 @@ export default function SearchBar({ cuisines, diets, dishTypes, hasCuisinePrefer
     [setValue, dishTypes]
   );
 
-  const isOptionsTouched = useMemo(
-    () => currentCuisine || currentDiet || currentDishType || cuisinePreferencesStatus || dietPreferencesStatus || dishTypePreferencesStatus,
-    [currentCuisine, currentDiet, currentDishType, cuisinePreferencesStatus, dietPreferencesStatus, dishTypePreferencesStatus]
-  );
-
   useEffect(() => {
     setMounted(true);
   }, [setMounted]);
   
   return (
     <Popover>
-      <form onSubmit={onSubmit} className="w-full flex flex-col items-start gap-3">
+      <form
+        ref={ref}
+        onSubmit={onSubmit}
+        className="w-full flex flex-col items-start gap-3 my-1.5"
+      >
         <div className="w-full flex justify-between items-stretch gap-3">
           <Input 
             placeholder="Recipe Title"
@@ -217,7 +227,7 @@ export default function SearchBar({ cuisines, diets, dishTypes, hasCuisinePrefer
             <Plus />
           </Button>
         </PopoverTrigger>
-        <div className="hidden has-[.flex]:flex flex-wrap items-center gap-4">
+        <div className="hidden has-[.flex]:flex flex-wrap items-center gap-x-4 gap-y-3">
           <button
             type="button"
             onClick={() => {
@@ -431,7 +441,7 @@ export default function SearchBar({ cuisines, diets, dishTypes, hasCuisinePrefer
                   isUsingDishTypePreferences: false
                 })}
                 className={cn(
-                  isOptionsTouched
+                  currentCuisine || currentDiet || currentDishType || cuisinePreferencesStatus || dietPreferencesStatus || dishTypePreferencesStatus
                     ? "size-fit cursor-pointer text-red-500 p-0"
                     : "hidden"
                 )}

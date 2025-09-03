@@ -21,7 +21,7 @@ export function useContainerQuery<T extends HTMLElement = HTMLElement>({
       setMatches(condition({
         width: contentRect.width,
         height: contentRect.height
-      }))
+      }));
     });
     
     resizeObserver.observe(element);

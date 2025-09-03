@@ -24,7 +24,7 @@ export default function Pagination({ totalPages }: PaginationProps) {
   });
   
   return (
-    <div className="flex items-end h-10 gap-3 mx-auto">
+    <div className="flex items-end h-10 gap-3 mx-auto mt-4">
       <Button
         variant="ghost"
         disabled={isFirstPage}

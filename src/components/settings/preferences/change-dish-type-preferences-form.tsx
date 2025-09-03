@@ -14,6 +14,7 @@ import { Info, LoaderCircle, Minus, Plus } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { updateDishTypePreferences } from "@/lib/actions/settings";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 type ChangeDishTypePreferencesFormProps = {
   dishTypePreferences: {
@@ -27,6 +28,7 @@ type ChangeDishTypePreferencesFormProps = {
 const MAX_DISH_TYPE_DISPLAY_LIMIT = 6;
 
 export default function ChangeDishTypePreferencesForm({ dishTypePreferences }: ChangeDishTypePreferencesFormProps) {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const {
     control,
@@ -47,7 +49,9 @@ export default function ChangeDishTypePreferencesForm({ dishTypePreferences }: C
 
   const { executeAsync } = useAction(updateDishTypePreferences, {
     onSuccess: ({ data, input }) => {
-      if (!data) return;
+      queryClient.invalidateQueries({
+        queryKey: ["search-recipes-results"]
+      });
       toast.success(data.message);
       reset(input);
     },

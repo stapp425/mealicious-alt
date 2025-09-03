@@ -4,7 +4,7 @@ import { twMerge } from "tailwind-merge";
 import { Rating } from "@/lib/types";
 
 export const MAX_LIST_RECIPE_DISPLAY_LIMIT = 10;
-export const MAX_GRID_RECIPE_DISPLAY_LIMIT = 20;
+export const MAX_GRID_RECIPE_DISPLAY_LIMIT = 12;
 export const MAX_MEAL_DISPLAY_LIMIT = 10;
 export const MAX_PLAN_DISPLAY_LIMIT = 5;
 

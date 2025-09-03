@@ -24,7 +24,7 @@ export default function Nutrition({
   } = useQuery({
     queryKey: ["recipe-details", recipeId, { type: "nutrition" }],
     queryFn: () => getRecipeNutrition(recipeId),
-    gcTime: 1000 * 60 * 5, // 2 minutes,
+    gcTime: 1000 * 60 * 5, // 5 minutes,
     refetchOnWindowFocus: false
   });
 
