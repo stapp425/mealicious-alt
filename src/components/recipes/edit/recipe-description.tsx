@@ -33,7 +33,7 @@ export default function RecipeDescription({
         Add a brief description about your recipe here. (optional)
       </p>
       <div className="error-text text-xs mb-1 has-[>span:empty]:hidden">
-        <Info size={16}/>
+        <Info size={14}/>
         <span>{descriptionError?.message}</span>
       </div>
       <Textarea

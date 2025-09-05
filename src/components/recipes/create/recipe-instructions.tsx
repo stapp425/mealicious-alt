@@ -70,7 +70,7 @@ export default function RecipeInstructions({ className, ...props }: Omit<Compone
         Add instructions to your recipe here.
       </p>
       <div className="error-text text-xs has-[>span:empty]:hidden">
-        <Info size={16}/>
+        <Info size={14}/>
         <span>{instructionsError?.message}</span>
       </div>
       <div className="flex justify-between items-end gap-2">

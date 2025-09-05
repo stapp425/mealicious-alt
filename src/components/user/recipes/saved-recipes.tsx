@@ -121,7 +121,7 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
       <section className="flex flex-col justify-center gap-2">
         <h1 className="font-bold text-xl">Saved Recipes ({savedRecipesCount})</h1>
         <div className="border border-border bg-sidebar min-h-[250px] flex flex-col justify-center items-center gap-4 py-12 rounded-md">
-          <SearchX size={48}/>
+          <SearchX size={48} className="stroke-muted-foreground"/>
           <h3 className="font-bold text-lg">No saved recipes yet...</h3>
         </div>
       </section>

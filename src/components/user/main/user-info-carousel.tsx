@@ -28,7 +28,7 @@ export default function UserInfoCarousel({ header, href, items }: UserInfoCarous
       <section className="flex flex-col justify-center gap-2">
         <h1 className="font-bold text-lg">{header}</h1>
         <div className="border border-border bg-sidebar min-h-[250px] flex flex-col justify-center items-center gap-4 py-12 rounded-md">
-          <SearchX size={48}/>
+          <SearchX size={48} className="stroke-muted-foreground"/>
           <h3 className="font-bold text-lg">Nothing here yet...</h3>
         </div>
       </section>

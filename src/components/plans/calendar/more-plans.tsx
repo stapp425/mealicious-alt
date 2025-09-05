@@ -50,7 +50,7 @@ export default async function MorePlans({ userId, startDate, endDate, searchPara
           </div>
         ) : (
           <div className="bg-sidebar border border-border w-full flex flex-col justify-center items-center gap-6 py-10 px-8 rounded-md">
-            <SearchX size={60}/>
+            <SearchX size={60} className="stroke-muted-foreground"/>
             <div className="flex flex-col items-center gap-2">
               <h3 className="font-bold text-lg mt-auto">No Plan Found!</h3>
               <span className="font-semibold text-center text-muted-foreground">Try making another search or start creating one!</span>

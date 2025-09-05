@@ -10,7 +10,7 @@ export default function NotFound() {
   return (
     <div className="h-full flex flex-col justify-center items-center p-4">
       <div className="bg-sidebar border border-border w-full max-w-[500px] flex flex-col justify-center items-center gap-6 mx-auto py-10 px-8 rounded-md">
-        <SearchX size={96}/>
+        <SearchX size={96} className="stroke-muted-foreground"/>
         <h1 className="text-xl text-center font-bold">
           The requested recipe was not found!
         </h1>

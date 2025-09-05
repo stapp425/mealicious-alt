@@ -89,6 +89,12 @@ export function Saved({
       queryClient.invalidateQueries({
         queryKey: ["recipe-statistics", recipeId]
       });
+      queryClient.invalidateQueries({
+        queryKey: ["create-meal-form-recipes"]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["edit-meal-form-recipes"]
+      });
 
       if (data.isSaved) toast.success("Successfully saved recipe!");
       else toast.warning("Successfully removed recipe from saved list!");

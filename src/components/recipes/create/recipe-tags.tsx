@@ -39,7 +39,7 @@ export default function RecipeTags({ className, ...props }: Omit<ComponentProps<
     >
       <h1 className="text-2xl font-bold">Tags</h1>
       <div className="error-text text-sm has-[>span:empty]:hidden">
-        <Info size={16}/>
+        <Info size={14}/>
         <span>{tagsError?.message}</span>
       </div>
       <div className="flex justify-between items-stretch gap-3">

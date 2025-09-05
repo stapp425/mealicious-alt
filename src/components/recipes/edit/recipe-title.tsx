@@ -41,7 +41,7 @@ export default function RecipeTitle({ className, ...props }: Omit<ComponentProps
         </span>
       </div>
       <div className="error-text text-xs has-[>span:empty]:hidden -mt-1">
-        <Info size={16}/>
+        <Info size={14}/>
         <span>{titleError?.message}</span>
       </div>
       <Input

@@ -162,7 +162,7 @@ export default async function UpcomingPlan() {
         <h1 className="font-bold text-2xl">Upcoming Plan</h1>
         <span className="text-muted-foreground mb-3">The most recent upcoming plan will be shown here.</span>
         <div className="bg-sidebar border border-border text-muted-foreground text-center font-semibold min-h-[450px] flex flex-col justify-center items-center gap-6 rounded-md">
-          <SearchX size={72}/>
+          <SearchX size={72} className="stroke-muted-foreground"/>
           <span className="text-lg">No Upcoming Plan Found!</span>
         </div>
       </div>

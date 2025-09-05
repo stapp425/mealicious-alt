@@ -2,45 +2,40 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { MAX_MEAL_DESCRIPTION_LENGTH, CreateMealForm } from "@/lib/zod/meal";
+import { MAX_MEAL_DESCRIPTION_LENGTH } from "@/lib/zod/meal";
 import { Info } from "lucide-react";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useFormState, useWatch } from "react-hook-form";
+import { useCreateMealFormContext } from "@/components/meals/create/create-meal-form";
 
 export default function MealDescription() {
+  const { control, register } = useCreateMealFormContext();
   const {
-    control,
-    register,
-    formState: {
-      errors
+    errors: {
+      description: descriptionError
     }
-  } = useFormContext<CreateMealForm>();
+  } = useFormState({ control, name: "description" });
   const currentDescription = useWatch({ control, name: "description" });
   
   return (
-    <div className="flex flex-col gap-3">
+    <section className="flex flex-col gap-1.5">
       <h1 className="text-2xl font-bold">Description</h1>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end">
-        <p className="text-muted-foreground font-semibold">
-          Add a brief description about your recipe here. (optional)
-        </p>
-        <span className={cn(currentDescription && currentDescription.length > MAX_MEAL_DESCRIPTION_LENGTH && "text-red-500")}>
-          <b className="text-xl">{currentDescription?.length || 0}</b> / {MAX_MEAL_DESCRIPTION_LENGTH}
-        </span>
-      </div>
+      <p className="text-muted-foreground font-semibold text-sm">
+        Add a brief description about your recipe here. (optional)
+      </p>
       <Textarea
         {...register("description")}
         spellCheck={false}
-        placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Aliquam nulla facilisi cras fermentum odio eu feugiat pretium nibh."
+        placeholder="Description"
         autoComplete="off"
-        className="min-h-[100px] hyphens-auto flex-1 flex rounded-md"
+        className="resize-none min-h-24 hyphens-auto flex-1 flex rounded-sm shadow-none"
       />
-      {
-        errors.description?.message &&
-        <div className="error-text text-sm">
-          <Info size={16}/>
-          {errors.description?.message}
-        </div> 
-      }
-    </div>
+      <span className={cn("shrink-0 text-sm", currentDescription && currentDescription.length > MAX_MEAL_DESCRIPTION_LENGTH && "text-red-500")}>
+        <b className="text-base">{currentDescription?.length || 0}</b> / {MAX_MEAL_DESCRIPTION_LENGTH}
+      </span>
+      <div className="error-text text-xs has-[>span:empty]:hidden">
+        <Info size={14}/>
+        <span>{descriptionError?.message}</span>
+      </div>
+    </section>
   );
 }

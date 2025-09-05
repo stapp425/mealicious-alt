@@ -151,7 +151,7 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
           </div>
         ) : (
           <div className="w-full bg-sidebar border border-border rounded-md flex flex-col justify-center items-center gap-8 p-4 mx-auto">
-            <SearchX size={60}/>
+            <SearchX size={60} className="stroke-muted-foreground"/>
             <div className="flex flex-col items-center gap-2">
               <h3 className="font-bold text-lg mt-auto">No Recipe Found!</h3>
               <span className="font-semibold text-center text-muted-foreground">Try making another search or start creating one!</span>

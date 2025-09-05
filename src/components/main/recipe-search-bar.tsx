@@ -17,7 +17,7 @@ import { Root as VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { ArrowRight, Clock, Loader2, Search, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { ComponentProps, memo, useCallback, useMemo, useRef, useState } from "react"
+import { ComponentProps, memo, useCallback, useMemo, useState } from "react"
 import { useDebounce } from "use-debounce";
 import { useRouter } from "next/navigation";
 import { nanoid } from "nanoid";
@@ -38,11 +38,9 @@ export default function RecipeSearchBar({
 }: Omit<ComponentProps<"div">, "children"> & {
   mode?: "dialog" | "popover";
 }) {
-  const [touched, setTouched] = useState<boolean>(false);
-  const [open, setOpen] = useState<boolean>(false);
-  const [query, setQuery] = useState<string>("");
-
-  const searchInput = useRef<HTMLInputElement>(null);
+  const [touched, setTouched] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
 
   const setSearchQuery = useCallback((query: string) => {
     setQuery(query);
@@ -71,7 +69,10 @@ export default function RecipeSearchBar({
           </div>
         </DialogTrigger>
         <DialogContent className="p-0 gap-0 overflow-hidden" asChild>
-          <div className="flex flex-col">
+          <div
+            data-mode="dialog"
+            className="@container/dialog group/container grid"
+          >
             <VisuallyHidden>
               <DialogHeader>
                 <DialogTitle>
@@ -87,12 +88,12 @@ export default function RecipeSearchBar({
                 value={query}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search Recipe"
-                className="border-none bg-transparent! focus-visible:ring-0 p-0 shadow-none"
+                className="grow-0 max-w-[calc(100%-2rem)] border-none bg-transparent! focus-visible:ring-0 p-0 shadow-none"
               />
               <X
                 onClick={closeSearch}
                 strokeWidth={1.25}
-                className="cursor-pointer"
+                className="flex-1 cursor-pointer"
               />
             </div>
             <Separator />
@@ -126,7 +127,6 @@ export default function RecipeSearchBar({
         >
           <Search size={16}/>
           <Input
-            ref={searchInput}
             value={query}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setOpen(true)}
@@ -137,7 +137,8 @@ export default function RecipeSearchBar({
       </PopoverTrigger>
       <PopoverContent 
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className="bg-background w-[40vw] max-w-125 p-0 gap-0 overflow-hidden"
+        data-mode="popover"
+        className="@container/popover group/container bg-background w-[40vw] max-w-125 p-0 gap-0 overflow-hidden"
       >
         <RecipeSearchBody 
           query={query}
@@ -207,7 +208,7 @@ const RecipeSearchBody = memo(({
 
   if (searchResultsLoading) {
     return (
-      <div className="min-h-[50px] flex justify-center items-center">
+      <div className="min-h-12 flex justify-center items-center">
         <Loader2 className="animate-spin m-auto my-3"/>
       </div>
     );
@@ -215,7 +216,7 @@ const RecipeSearchBody = memo(({
 
   if (touched && searchResults) {
     return (
-      <div className="flex flex-col gap-3 p-4">
+      <div className="grid gap-3 p-4">
         {searchResults.length > 0 && <h2 className="font-bold text-lg">Search Results</h2>}
         <RecipeSearchResults
           searchResults={searchResults}
@@ -251,7 +252,7 @@ const RecipeSearchBody = memo(({
   }
 
   return (
-    <div className="min-h-[100px] flex justify-center items-center p-4">
+    <div className="min-h-24 flex justify-center items-center p-4">
       <h2 className="text-center text-muted-foreground text-lg font-semibold">No recent searches</h2>
     </div>
   );
@@ -271,7 +272,7 @@ const RecipeSearchResults = memo(({
   return (
     <ul
       className={cn(
-        "flex flex-col gap-3 empty:hidden",
+        "grid gap-3 empty:hidden",
         className
       )}
       {...props}
@@ -284,12 +285,12 @@ const RecipeSearchResults = memo(({
                 objectID: r.objectID,
                 title: r.title
               })}
-              className="mealicious-button text-left w-full font-semibold flex items-center gap-4 py-2.5 px-3 transition-colors rounded-sm"
+              className="mealicious-button text-left w-full font-semibold grid grid-cols-[auto_1fr_auto] items-center gap-4 py-2.5 px-3 transition-colors rounded-sm [&>svg]:shrink-0"
             >
               <Search size={14}/>
-              <div className="flex flex-col items-start">
-                <span className="font-semibold truncate max-w-[200px] sm:max-w-[375px]">{r.title}</span>
-                <span className="font-semibold text-sm text-slate-100 dark:text-secondary-foreground hidden sm:block">Recipe</span>
+              <div className="overflow-hidden flex-1 flex flex-col items-start gap-1.5">
+                <span className="font-semibold leading-5 text-wrap hyphens-auto line-clamp-2">{r.title}</span>
+                <span className="font-semibold text-sm text-slate-100 dark:text-secondary-foreground hidden group-data-[mode=popover]/container:block">Recipe</span>
               </div>
               <ArrowRight size={16} className="ml-auto"/>
             </button>
@@ -319,23 +320,25 @@ const RecentRecipeSearches = memo(({
             <Link
               href={s.category === "query" ? `/recipes/search?query=${s.label}` : `/recipes/${s.id}`}
               onClick={() => onRecentSearchClick?.(s)}
-              className="border border-border bg-sidebar cursor-pointer hover:bg-muted text-left w-full truncate flex items-center gap-4 p-3 transition-colors rounded-sm"
+              className={cn(
+                "border border-border bg-sidebar cursor-pointer hover:bg-muted text-left w-full truncate grid grid-cols-[auto_1fr_auto] items-center gap-4 p-3 transition-colors rounded-sm",
+                "[&>svg]:shrink-0 [&>svg]:size-4.5 group-data-[mode=popover]/container:[&>svg]:size-6"
+              )}
             >
-              <Clock stroke="var(--muted-foreground)" size={24}/>
-              <div className="flex flex-col items-start">
-                <span className="font-semibold truncate max-w-[200px] sm:max-w-[375px]">{s.label}</span>
-                <span className="font-semibold text-sm text-muted-foreground hidden sm:block">{s.category ? "Query" : "Recipe"}</span>
+              <Clock className="shrink-0 stroke-muted-foreground"/>
+              <div className="overflow-hidden flex flex-col items-start">
+                <span className="font-semibold text-wrap hyphens-auto line-clamp-2">{s.label}</span>
+                <span className="font-semibold text-sm text-muted-foreground hidden group-data-[mode=popover]/container:block">{s.category ? "Query" : "Recipe"}</span>
               </div>
-              <div
-                onClick={(e) => {
+              <X 
+                strokeWidth={1.5}
+                  onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   removeRecentSearchData(s.id);
                 }}
-                className="cursor-pointer flex justify-center items-center ml-auto rounded-full transition-colors"
-              >
-                <X stroke="var(--muted-foreground)" strokeWidth={1.5}/>
-              </div>
+                className="cursor-pointer stroke-muted-foreground ml-auto"
+              />
             </Link>
           </li>
         ))

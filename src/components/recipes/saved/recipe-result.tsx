@@ -30,6 +30,7 @@ import {
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { deleteRecipe, toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/recipe";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function RecipeResult({
   recipe,
@@ -115,8 +116,8 @@ export default function RecipeResult({
         }
       </div>
       <div className="flex flex-col gap-2">
-        <div className="flex justify-between items-start gap-3">
-          <h2 className="font-bold text-2xl hyphens-auto line-clamp-2">{recipe.title}</h2>
+        <div className="grid grid-cols-[1fr_2rem] items-start gap-3">
+          <h2 className="flex-1 font-bold text-2xl hyphens-auto line-clamp-2 text-wrap">{recipe.title}</h2>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="cursor-pointer size-8 flex justify-center items-center rounded-full [&>svg]:size-5 hover:bg-muted">
@@ -126,7 +127,7 @@ export default function RecipeResult({
             <DropdownMenuContent 
               align="end"
               className="w-36 bg-background"
-              onClick={(e) => e.stopPropagation()} // this prevents the recipe result div container's click event from triggering (navigates to recipe details page)
+              onClick={(e) => e.stopPropagation()} // this prevents the recipe result div container's click event from triggering
             >
               <DropdownMenuLabel>Options</DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -196,7 +197,7 @@ export default function RecipeResult({
             <span>{Math.floor(recipe.prepTime)} min</span>
           </div>
         </div>
-        <div className="flex flex-col-reverse md:flex-row justify-between items-start @min-3xl:items-end gap-2 mt-auto">
+        <div className="flex flex-col-reverse @min-3xl:flex-row justify-between items-start @min-3xl:items-end gap-2 mt-auto">
           <span className="text-muted-foreground text-sm">
             Saved {getDateDifference({ earlierDate: recipe.saveDate })} ago
           </span>
@@ -206,7 +207,7 @@ export default function RecipeResult({
                 <a 
                   href={recipe.sourceUrl}
                   target="_blank"
-                  className="text-sm hover:underline max-w-48 truncate"
+                  className="text-sm hover:underline truncate max-w-72 @min-3xl:max-w-48"
                 >
                   {recipe.sourceName}
                 </a>
@@ -313,12 +314,19 @@ const UnsaveOption = memo(({
   recipeId: string;
   onUnsave?: () => void;
 }) => {
+  const queryClient = useQueryClient();
   const {
     execute: executeToggleSaved,
     isExecuting: isToggleSavedExecuting
   } = useAction(toggleSavedListRecipe, {
     onSuccess: ({ data }) => {
       toast.warning(data.message);
+      queryClient.invalidateQueries({
+        queryKey: ["create-meal-form-recipes"]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["edit-meal-form-recipes"]
+      });
       onUnsave?.();
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)

@@ -4,7 +4,7 @@ import { type EditMealForm, EditMealFormSchema } from "@/lib/zod/meal";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAction } from "next-safe-action/hooks";
 import { useRouter } from "next/navigation";
-import { FormProvider, useForm } from "react-hook-form";
+import { Control, useForm, UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { toast } from "sonner";
 import MealTitle from "@/components/meals/edit/meal-title";
 import MealDescription from "@/components/meals/edit/meal-description";
@@ -12,6 +12,7 @@ import MealTags from "@/components/meals/edit/meal-tags";
 import MealRecipeSearch from "@/components/meals/edit/meal-recipes";
 import { Loader2 } from "lucide-react";
 import { updateMeal } from "@/lib/actions/meal";
+import { createContext, useContext, useEffect, useMemo } from "react";
 
 type EditMealFormProps = {
   userId: string;
@@ -32,17 +33,33 @@ type EditMealFormProps = {
   };
 };
 
+type CreateMealFormContextProps<T extends EditMealForm = EditMealForm> = {
+  control: Control<T>;
+  register: UseFormRegister<T>;
+  setValue: UseFormSetValue<T>;
+};
+
+const EditMealFormContext = createContext<CreateMealFormContextProps | null>(null);
+
+export function useEditMealFormContext() {
+  const context = useContext(EditMealFormContext);
+  if (!context) throw new Error("useEditMealForm can only be used within a EditMealFormContext.");
+  return context;
+}
+
 export default function EditMealForm({ userId, meal }: EditMealFormProps) {
   const { replace } = useRouter();
-  const { executeAsync } = useAction(updateMeal, {
-    onSuccess: ({ data }) => {
-      toast.success(data?.message);
-      replace(`/meals`);
-    },
-    onError: () => toast.error("Failed to edit meal.")
-  });
   
-  const editMealForm = useForm<EditMealForm>({
+  const {
+    control,
+    register,
+    setValue,
+    handleSubmit,
+    reset,
+    formState: {
+      isDirty
+    }
+  } = useForm({
     resolver: zodResolver(EditMealFormSchema),
     defaultValues: {
       id: meal.id,
@@ -53,26 +70,48 @@ export default function EditMealForm({ userId, meal }: EditMealFormProps) {
     }
   });
 
-  const onSubmit = editMealForm.handleSubmit(async (data) => {
-    await executeAsync(data);
+  const { execute, isExecuting } = useAction(updateMeal, {
+    onSuccess: ({ data, input }) => {
+      toast.success(data.message);
+      reset(input);
+      replace("/meals");
+    },
+    onError: ({ error: { serverError } }) => toast.error(serverError)
   });
+
+  const providerProps = useMemo(
+    () => ({
+      control,
+      register,
+      setValue
+    }),
+    [control, register, setValue]
+  );
+
+  useEffect(() => {
+    if (!isDirty) return;
+    
+    const handleUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [isDirty]);
   
   return (
-    <FormProvider {...editMealForm}>
-      <form onSubmit={onSubmit} className="max-w-[750px] w-full min-h-screen flex flex-col gap-3 mx-auto p-4">
-        <h1 className="font-bold text-4xl mb-4">Edit Meal</h1>
+    <EditMealFormContext value={providerProps}>
+      <form onSubmit={handleSubmit(execute)} className="max-w-216 w-full min-h-screen flex flex-col gap-3 mx-auto p-4">
+        <h1 className="font-bold text-4xl">Edit Meal</h1>
         <MealTitle />
         <MealDescription />
         <MealTags />
         <MealRecipeSearch userId={userId}/>
         <button
-          disabled={editMealForm.formState.isSubmitting}
+          disabled={!isDirty || isExecuting}
           type="submit" 
-          className="flex mealicious-button justify-center items-center font-bold px-6 py-3 rounded-md"
+          className="mealicious-button flex justify-center items-center font-bold px-6 py-2 rounded-md"
         >
-          {editMealForm.formState.isSubmitting ? <Loader2 className="animate-spin"/> : "Edit Meal"}
+          {isExecuting ? <Loader2 className="animate-spin"/> : "Edit Meal"}
         </button>
       </form>
-    </FormProvider>
+    </EditMealFormContext>
   );
 }

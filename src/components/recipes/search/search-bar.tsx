@@ -197,7 +197,7 @@ export default function SearchBar({
   }, [setMounted]);
   
   return (
-    <Popover>
+    <Popover modal>
       <form
         ref={ref}
         onSubmit={onSubmit}

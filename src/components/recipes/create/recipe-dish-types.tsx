@@ -63,7 +63,7 @@ export default function RecipeDishTypes({
     >
       <h1 className="font-bold text-2xl">Dish Types</h1>
       <div className="error-text text-sm has-[>span:empty]:hidden">
-        <Info size={16}/>
+        <Info size={14}/>
         <span>{dishTypesError?.message}</span>
       </div>
       <div className="relative flex justify-between gap-3">

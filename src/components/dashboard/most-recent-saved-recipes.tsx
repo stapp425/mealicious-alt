@@ -82,7 +82,7 @@ export default async function MostRecentSavedRecipes({ userId }: MostRecentSaved
       <div className="flex flex-col">
         <h1 className="font-bold text-2xl mb-3">Most Recent Saved Recipes</h1>
         <div className="bg-sidebar border border-border text-muted-foreground text-center font-semibold min-h-[450px] flex flex-col justify-center items-center gap-6 rounded-md">
-          <SearchX size={72}/>
+          <SearchX size={72} className="stroke-muted-foreground"/>
           <span className="text-lg">No Saved Recipes Found!</span>
         </div>
       </div>

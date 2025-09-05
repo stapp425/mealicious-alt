@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { and, count, desc, eq, exists, ilike, sql } from "drizzle-orm";
 import { ActionError } from "@/lib/types";
 import z from "zod/v4";
+import { CountSchema } from "../zod";
 
 export const createMeal = authActionClient
   .inputSchema(CreateMealFormSchema)
@@ -42,7 +43,7 @@ export const createMeal = authActionClient
   });
 
 export const updateMeal = authActionClient
-  .schema(EditMealFormSchema)
+  .inputSchema(EditMealFormSchema)
   .action(async ({ ctx: { user }, parsedInput: editedMeal }) => {
     const foundMeal = await db.query.meal.findFirst({
       where: (meal, { eq }) => eq(meal.id, editedMeal.id),
@@ -123,8 +124,18 @@ export const deleteMeal = authActionClient
     };
   });
 
-export async function getSavedRecipesForMealForm({ userId, query, limit, offset }: { userId: string; query: string; limit: number; offset: number; }) {
-  return db.select({
+export async function getSavedRecipesForMealForm({
+  userId,
+  query,
+  limit,
+  offset
+}: {
+  userId: string;
+  query: string;
+  limit: number;
+  offset: number;
+}) {
+  const [savedRecipes] = await db.select({
     recipes: sql<{
       id: string;
       title: string;
@@ -157,10 +168,12 @@ export async function getSavedRecipesForMealForm({ userId, query, limit, offset 
         .orderBy(desc(savedRecipe.saveDate))
         .as("saved_recipe_sub")
     );
+
+  return savedRecipes?.recipes;
 }
 
 export async function getSavedRecipesForMealFormCount({ userId, query }: { userId: string, query: string }) {
-  return db.select({ count: count() })
+  const countQuery = await db.select({ count: count() })
     .from(savedRecipe)
     .where(and(
       eq(savedRecipe.userId, userId),
@@ -173,4 +186,6 @@ export async function getSavedRecipesForMealFormCount({ userId, query }: { userI
           ))
       )
     ));
+
+  return CountSchema.parse(countQuery);
 }

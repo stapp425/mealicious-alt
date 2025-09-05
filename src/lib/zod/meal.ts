@@ -4,6 +4,8 @@ import z from "zod/v4";
 
 export const MAX_MEAL_TITLE_LENGTH = 100;
 export const MAX_MEAL_DESCRIPTION_LENGTH = 250;
+export const MAX_MEAL_TAG_LENGTH = 20;
+export const MAX_MEAL_TAGS_LENGTH = 10;
 export const MAX_MEAL_RECIPES = 5;
 export const MAX_MEAL_SEARCH_CALORIES = 10000;
 
@@ -31,10 +33,19 @@ const MealFormSchema = z.object({
   tags: z.array(
     z.string("Expected a string, but received an invalid type.")
       .nonempty({
+        abort: true,
         error: "Meal tag cannot be left empty."
+      })
+      .max(MAX_MEAL_TAG_LENGTH, {
+        error: `Meal tag cannot have more than ${MAX_MEAL_TAG_LENGTH.toLocaleString()} characters.`
       }),
     "Expected an array, but received an invalid type."
-  ),
+  ).max(MAX_MEAL_TAGS_LENGTH, {
+    abort: true,
+    error: `A maximum of ${MAX_MEAL_TAGS_LENGTH} tags is allowed.`
+  }).refine((val) => [...new Set(val.map((str) => str.toLowerCase()))].length === val.length, {
+    error: "Each tag must be unique."
+  }),
   recipes: z.array(
     z.object({
       id: IdSchema,

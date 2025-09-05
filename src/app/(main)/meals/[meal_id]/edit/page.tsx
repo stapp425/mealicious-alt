@@ -9,17 +9,12 @@ export const metadata: Metadata = {
   description: "Edit your mealicious meals here!"
 };
 
-type PageProps = {
-  params: Promise<{ meal_id: string }>;
-};
-
-export default async function Page({ params }: PageProps) {
+export default async function Page({ params }: PageProps<"/meals/[meal_id]/edit">) {
   const { meal_id: mealId } = await params;
   const session = await auth();
   const userId = session?.user?.id;
 
-  if (!userId)
-    redirect("/login");
+  if (!userId) redirect("/login");
 
   const foundMeal = await db.query.meal.findFirst({
     where: (meal, { eq }) => eq(meal.id, mealId),
@@ -47,16 +42,8 @@ export default async function Page({ params }: PageProps) {
     }
   });
 
-  if (!foundMeal)
-    notFound();
+  if (!foundMeal) notFound();
+  if (foundMeal.createdBy !== userId) unauthorized();
   
-  if (foundMeal.createdBy !== userId)
-    unauthorized();
-  
-  return (
-    <EditMealForm
-      userId={userId!}
-      meal={foundMeal}
-    />
-  );
+  return <EditMealForm userId={userId} meal={foundMeal}/>;
 }

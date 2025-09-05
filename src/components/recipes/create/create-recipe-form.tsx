@@ -25,6 +25,7 @@ import RecipeDescription from "@/components/recipes/create/recipe-description";
 import RecipeNutrition from "@/components/recipes/create/recipe-nutrition";
 import { generatePresignedUrlForImageUpload } from "@/lib/actions/r2";
 import { useContainerQuery } from "@/hooks/use-container-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 const CONTAINER_4XL_BREAKPOINT = 896;
 
@@ -60,6 +61,8 @@ export default function CreateRecipeForm({
   dishTypes
 }: CreateRecipeFormProps) {  
   const { replace } = useRouter();
+  const queryClient = useQueryClient();
+
   const [mounted, setMounted] = useState<boolean>(false);
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
     condition: ({ width }) => width > CONTAINER_4XL_BREAKPOINT
@@ -135,6 +138,15 @@ export default function CreateRecipeForm({
       if (!updateRecipeImageResult?.data?.success)
         throw new Error("Failed to add image to the recipe.");
 
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["create-meal-form-recipes"]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["edit-meal-form-recipes"]
+        })
+      ]);
+
       reset();
       toast.success("Recipe successfully created!");
       replace(`/recipes/${recipeCreationResult.data.recipeId}`);
@@ -145,7 +157,7 @@ export default function CreateRecipeForm({
         toast.error(err.message);
       }
     }
-  }), [handleSubmit, reset, replace]);
+  }), [handleSubmit, queryClient, reset, replace]);
 
   const providerProps = useMemo(
     () => ({ 

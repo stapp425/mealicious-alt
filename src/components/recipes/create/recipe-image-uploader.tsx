@@ -117,7 +117,7 @@ export default function RecipeImageUploader({ className, ...props }: Omit<Compon
               </button>
             </div>
             <div className="error-label text-sm flex items-center gap-2 has-[>span:empty]:hidden">
-              <Info size={16}/>
+              <Info size={14}/>
               <span>{imageError?.message}</span>
             </div>
           </div>

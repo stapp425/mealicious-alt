@@ -104,7 +104,7 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
             <>{meals.map((m) => <MealResult key={m.id} meal={m}/>)}</> 
           ) : (
             <>
-            <SearchX size={60}/>
+            <SearchX size={60} className="stroke-muted-foreground"/>
             <div className="flex flex-col items-center gap-2">
               <h3 className="font-bold text-lg mt-auto">No Meal Found!</h3>
               <span className="font-semibold text-center text-muted-foreground">Try making another search or start creating one!</span>

@@ -85,7 +85,7 @@ export default function RecipeIngredients({ className, ...props }: Omit<Componen
       <h1 className="text-2xl font-bold required-field">Ingredients</h1>
       <p className="font-semibold text-muted-foreground text-sm">Add ingredients to your recipe here.</p>
       <div className="error-text text-xs has-[>span:empty]:hidden">
-        <Info size={16}/>
+        <Info size={14}/>
         <span>{ingredientsError?.message}</span>
       </div>
       <div className="flex flex-col @min-2xl:flex-row justify-between gap-2">

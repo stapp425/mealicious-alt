@@ -229,9 +229,17 @@ export default function EditRecipeForm({
           throw new Error("Failed to add image to the recipe.");
       }
 
-      await queryClient.invalidateQueries({
-        queryKey: ["recipe-details", data.id]
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["create-meal-form-recipes"]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["edit-meal-form-recipes"]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["recipe-details", data.id]
+        })
+      ]);
 
       reset(data);
       toast.success("Recipe successfully edited!");
@@ -245,7 +253,7 @@ export default function EditRecipeForm({
         return;
       }
     }
-  }), [handleSubmit, recipe.image, reset, replace, queryClient]);
+  }), [handleSubmit, recipe.image, queryClient, reset, replace]);
 
   const providerProps = useMemo(
     () => ({ 

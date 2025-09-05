@@ -62,7 +62,7 @@ export default function RecipeDiets({
     >
       <h1 className="font-bold text-2xl">Diets</h1>
       <div className="error-text text-sm has-[>span:empty]:hidden">
-        <Info size={16}/>
+        <Info size={14}/>
         <span>{dietsError?.message}</span>
       </div>
       <div className="relative flex justify-between gap-3">
