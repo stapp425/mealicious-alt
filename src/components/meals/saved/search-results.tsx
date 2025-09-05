@@ -2,8 +2,8 @@ import { db } from "@/db";
 import { Skeleton } from "@/components/ui/skeleton";
 import { meal, mealToRecipe, nutrition, recipe, recipeToNutrition } from "@/db/schema";
 import { and, eq, ilike, lte, sql } from "drizzle-orm";
-import { cn, MAX_MEAL_DISPLAY_LIMIT } from "@/lib/utils";
-import { Info, SearchX } from "lucide-react";
+import { MAX_MEAL_DISPLAY_LIMIT } from "@/lib/utils";
+import { SearchX } from "lucide-react";
 import { MealType } from "@/lib/types";
 import MealResult from "./meal-result";
 
@@ -90,29 +90,21 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
       <h2 className="font-bold text-2xl">
         Search Results ({count})
       </h2>
-      <div className="flex w-full items-center gap-2 text-sm">
-        <Info size={16}/>
-        You can click on a recipe&apos;s search icon to show more details.
-      </div>
-      <div className={cn(
-        meals.length > 0
-          ? "columns-xs *:break-inside-avoid space-y-3 sm:space-y-5"
-          : "bg-sidebar border border-border w-full flex flex-col justify-center items-center gap-6 py-10 px-8 rounded-md"
-      )}>
-        {
-          meals.length > 0 ? (
-            <>{meals.map((m) => <MealResult key={m.id} meal={m}/>)}</> 
-          ) : (
-            <>
+      {
+        meals.length > 0 ? (
+          <div className="columns-1 @min-2xl:columns-2 *:break-inside-avoid space-y-3 @min-2xl:space-y-5">
+            {meals.map((m) => <MealResult key={m.id} meal={m}/>)}
+          </div> 
+        ) : (
+          <div className="bg-sidebar border border-border w-full flex flex-col justify-center items-center gap-6 py-10 px-8 rounded-md">
             <SearchX size={60} className="stroke-muted-foreground"/>
             <div className="flex flex-col items-center gap-2">
               <h3 className="font-bold text-lg mt-auto">No Meal Found!</h3>
               <span className="font-semibold text-center text-muted-foreground">Try making another search or start creating one!</span>
             </div>
-            </>
-          )
-        }
-      </div>
+          </div>
+        )
+      }
     </div>
   );
 }
@@ -120,12 +112,12 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
 export function SearchResultsSkeleton() {
   return (
     <div className="flex-1 flex flex-col gap-3">
-      <Skeleton className="w-[225px] h-[35px] rounded-sm"/>
-      <Skeleton className="w-[325px] h-[25px] rounded-sm"/>
-      <div className="w-full grid lg:grid-cols-2 gap-3">
+      <Skeleton className="w-58 h-9 rounded-sm"/>
+      <Skeleton className="w-84 h-6 rounded-sm"/>
+      <div className="w-full grid @min-2xl:grid-cols-2 gap-3">
         {
           Array.from({ length: MAX_MEAL_DISPLAY_LIMIT }, (_, i) => i).map((i) => (
-            <Skeleton key={i} className="h-[475px] rounded-md"/>
+            <Skeleton key={i} className="h-124 rounded-md"/>
           ))
         }
       </div>

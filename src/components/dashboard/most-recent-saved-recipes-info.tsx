@@ -64,7 +64,7 @@ export default function MostRecentSavedRecipesInfo({ savedRecipes }: MostRecentS
                     fill
                     className="object-cover object-center"
                   />
-                  <div className="absolute size-full bg-linear-to-t from-slate-700/10 from-5% to-white/0 to-30%"/>
+                  <div className="absolute size-full bg-linear-to-t from-gray-700/10 from-5% to-white/0 to-30%"/>
                 </div>
                 <h3 className="font-bold hyphens-auto line-clamp-2">{r.title}</h3>
                 <p className="text-muted-foreground line-clamp-3 empty:hidden">{r.description}</p>

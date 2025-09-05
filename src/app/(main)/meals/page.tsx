@@ -3,13 +3,12 @@ import { db } from "@/db";
 import { meal, mealToRecipe, nutrition, recipe, recipeToNutrition } from "@/db/schema";
 import { redirect } from "next/navigation";
 import { and, count, eq, ilike, lte, sql } from "drizzle-orm";
-import { Separator } from "@/components/ui/separator";
 import Pagination from "@/components/meals/saved/pagination";
 import { Metadata } from "next";
 import { Suspense } from "react";
 import { nanoid } from "nanoid";
 import SearchResults, { SearchResultsSkeleton } from "@/components/meals/saved/search-results";
-import { createLoader, parseAsIndex, parseAsInteger, parseAsString, parseAsStringLiteral, SearchParams } from "nuqs/server";
+import { createLoader, parseAsIndex, parseAsInteger, parseAsString, parseAsStringLiteral } from "nuqs/server";
 import { mealTypes } from "@/lib/types";
 import SearchBar from "@/components/meals/saved/search-bar";
 import { MAX_MEAL_DISPLAY_LIMIT } from "@/lib/utils";
@@ -19,10 +18,6 @@ export const metadata: Metadata = {
   description: "View all your mealicious meals here!"
 };
 
-type PageProps = {
-  searchParams: Promise<SearchParams>;
-};
-
 const loadSearchParams = createLoader({
   page: parseAsIndex.withDefault(0),
   query: parseAsString.withDefault(""),
@@ -30,12 +25,11 @@ const loadSearchParams = createLoader({
   maxCalories: parseAsInteger.withDefault(0)
 });
 
-export default async function Page({ searchParams }: PageProps) {
+export default async function Page({ searchParams }: PageProps<"/meals">) {
   const { query, maxCalories, mealType, page } = await loadSearchParams(searchParams);
   const session = await auth();
   
-  if (!session?.user?.id)
-    redirect("/login");
+  if (!session?.user?.id) redirect("/login");
   
   const userId = session?.user?.id;
   const [{ count: mealCount }] = await db.select({ count: count() })
@@ -73,10 +67,9 @@ export default async function Page({ searchParams }: PageProps) {
     ));
   
   return (
-    <div className="flex-1 max-w-[1000px] w-full flex flex-col gap-3 mx-auto p-4">
+    <div className="flex-1 max-w-250 w-full grid gap-3 mx-auto p-4">
       <h1 className="font-bold text-4xl">All Meals</h1>
       <SearchBar />
-      <Separator />
       <Suspense key={nanoid()} fallback={<SearchResultsSkeleton />}>
         <SearchResults 
           userId={userId}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { deleteMeal } from "@/lib/actions/meal";
 import { cn } from "@/lib/utils";
-import { EllipsisVertical, Flame, Loader2, Pencil, Search, Trash2 } from "lucide-react";
+import { EllipsisVertical, Flame, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,18 +30,18 @@ type MealResultProps = {
 
 export default function MealResult({ meal }: MealResultProps) {
   const { refresh } = useRouter();
-  const { executeAsync, isExecuting } = useAction(deleteMeal, {
+  const { execute, isExecuting } = useAction(deleteMeal, {
     onSuccess: ({ data }) => {
+      toast.warning(data.message);
       refresh();
-      toast.warning(data?.message);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });
   
   return (
-    <div className="field-container flex flex-col justify-start gap-3">
-      <div className="flex justify-between items-start gap-3">
-        <h1 className="font-bold text-3xl line-clamp-2">{meal.title}</h1>
+    <div className="border border-mealicious-primary/75 grid gap-2.5 p-4 rounded-md">
+      <div className="overflow-hidden flex justify-between items-start gap-3">
+        <h1 className="font-bold text-2xl line-clamp-2 hyphens-auto -mb-1.5">{meal.title}</h1>
         <DropdownMenu>
           <DropdownMenuTrigger className="cursor-pointer mt-1.5">
             <EllipsisVertical />
@@ -73,12 +73,14 @@ export default function MealResult({ meal }: MealResultProps) {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel className="cursor-pointer rounded-sm shadow-none">
+                      Cancel
+                    </AlertDialogCancel>
                     <Button
-                      onClick={async () => await executeAsync({ mealId: meal.id })}
+                      onClick={() => execute({ mealId: meal.id })}
                       disabled={isExecuting}
                       variant="destructive"
-                      className="min-w-[75px] cursor-pointer"
+                      className="cursor-pointer min-w-18 rounded-sm shadow-none"
                     >
                       {isExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
                     </Button>
@@ -90,58 +92,52 @@ export default function MealResult({ meal }: MealResultProps) {
         </DropdownMenu>
       </div>
       <div className="font-semibold text-sm text-muted-foreground flex items-center gap-1">
-        <Flame size={16} fill="var(--muted-foreground)"/>
+        <Flame size={16} className="fill-muted-foreground"/>
         {Number(meal.calories).toLocaleString()} Calories
       </div>
-      {
-        meal.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {
-              meal.tags.map((t) => (
-                <div key={t} className="bg-mealicious-primary text-white text-xs font-semibold min-w-[50px] px-3 py-1 rounded-full">
-                  {t}
-                </div>
-              ))
-            }
-          </div>
-        )
-      }
+      <div className="flex flex-wrap gap-2 empty:hidden">
+        {
+          meal.tags.map((t) => (
+            <div key={t} className="bg-mealicious-primary text-white text-xs font-semibold min-w-12 flex justify-center items-center px-3 py-1 rounded-full">
+              {t}
+            </div>
+          ))
+        }
+      </div>
       <p className={cn(
-        meal.description ? "line-clamp-1" : "italic",
-        "text-muted-foreground"
+        !meal.description && "italic",
+        "text-muted-foreground hyphens-auto overflow-hidden"
       )}>
         {meal.description || "No description is available."}
       </p>
-      <div className="flex flex-col gap-2.5">
+      <div className="grid gap-2.5">
         {
           meal.recipes.map((r) => (
-            <div key={r.id} className="border border-border flex justify-between gap-4 p-3 rounded-md">
-              <div className="relative min-h-[50px] w-[100px]">
+            <Link 
+              key={r.id}
+              href={`/recipes/${r.id}`}
+              prefetch={false}
+              className="border border-border grid grid-cols-[96px_1fr] gap-4 p-3 rounded-md"
+            >
+              <div className="relative min-h-16">
                 <Image 
                   src={r.image}
                   alt={`Image of ${r.title}`}
                   fill
                   className="object-cover object-center rounded-sm"
                 />
+                <div className="absolute size-full bg-linear-to-t from-gray-700/10 from-5% to-white/0 to-30%"/>
               </div>
-              <div className="flex-1 flex flex-col items-start gap-1.5">
-                <div className="w-full flex justify-between items-start gap-2">
-                  <h2 className="font-bold line-clamp-2">{r.title}</h2>
-                  <Link
-                    href={`/recipes/${r.id}`}
-                    className="text-muted-foreground py-1 px-0.5"
-                  >
-                    <Search size={16}/>
-                  </Link>
-                </div>
+              <div className="flex flex-col items-start gap-0.5 overflow-hidden">
+                <h2 className="font-bold line-clamp-2 hyphens-auto">{r.title}</h2>
                 <p className={cn(
                   r.description ? "line-clamp-1" : "italic",
-                  "text-muted-foreground"
+                  "text-muted-foreground mt-auto"
                 )}>
                   {r.description || "No description is available."}
                 </p>
               </div>
-            </div>
+            </Link>
           ))
         }
       </div>
