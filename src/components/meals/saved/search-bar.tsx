@@ -4,20 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
-import { MealType, mealTypes } from "@/lib/types";
+import { useHydration } from "@/hooks/use-hydration";
+import { mealTypes } from "@/lib/types";
 import { MAX_MEAL_SEARCH_CALORIES, MealSearch, MealSearchSchema } from "@/lib/zod/meal";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Search } from "lucide-react";
 import { parseAsIndex, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
-import { memo, useEffect, useState } from "react";
+import { memo } from "react";
 import { Control, useForm, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form";
 import { useMediaQuery } from "usehooks-ts";
 
 export default function SearchBar() {
-  const [mounted, setMounted] = useState<boolean>(false);
+  const hydrated = useHydration();
   const matches = useMediaQuery("(min-width: 48rem)");
   const [,setParams] = useQueryStates({
     page: parseAsIndex.withDefault(0),
@@ -32,9 +32,7 @@ export default function SearchBar() {
     register,
     control,
     setValue,
-    handleSubmit,
-    reset,
-    watch
+    handleSubmit
   } = useForm({
     resolver: zodResolver(MealSearchSchema),
     defaultValues: {
@@ -49,10 +47,6 @@ export default function SearchBar() {
       page: 0
     });
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return (
     <Popover>
@@ -77,35 +71,16 @@ export default function SearchBar() {
             <Plus />
           </Button>
         </PopoverTrigger>
-        <PopoverContent asChild align={mounted && matches ? "start" : "center"} sideOffset={12.5} className="w-[clamp(300px,calc(100vw-30px),475px)] p-0">
+        <PopoverContent asChild align={hydrated && matches ? "start" : "center"} sideOffset={12.5} className="w-[clamp(300px,calc(100vw-30px),475px)] p-0">
           <div className="grid">
             <h1 className="font-bold text-lg p-4">Advanced Search Options</h1>
             <Separator />
             <div className="grid gap-3 p-4">
-              <MealTypeSelect
-                control={control}
-                setValue={setValue}
-              />
               <MaxCalories 
                 register={register}
                 control={control}
                 setValue={setValue}
               />
-              <Button 
-                variant="link"
-                type="button"
-                onClick={() => {
-                  reset({ query: watch("query"), maxCalories: 0 });
-                  setParams({
-                    page: 0,
-                    maxCalories: 0,
-                    mealType: null
-                  });
-                }}
-                className="size-fit cursor-pointer text-red-500 p-0"
-              >
-                Clear All Options
-              </Button>
             </div>
           </div>
         </PopoverContent>
@@ -113,41 +88,6 @@ export default function SearchBar() {
     </Popover>
   );
 }
-
-const MealTypeSelect = memo(({
-  control,
-  setValue
-}: {
-  control: Control<MealSearch>;
-  setValue: UseFormSetValue<MealSearch>;
-}) => {
-  const currentMealType = useWatch({ control, name: "mealType" });
-  
-  return (
-    <div className="grid gap-2">
-      <h2 className="font-bold text-lg">Meal Type</h2>
-      <Select value={currentMealType || ""} onValueChange={(val) => setValue("mealType", val as MealType)}>
-        <SelectTrigger className="capitalize w-full rounded-sm shadow-none">
-          <SelectValue placeholder="Select Meal Type..."/>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectLabel>Meal Types</SelectLabel>
-            {
-              mealTypes.map((m) => (
-                <SelectItem key={m} value={m} className="capitalize">
-                  {m}
-                </SelectItem>
-              ))
-            }
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-});
-
-MealTypeSelect.displayName = "MealTypeSelect";
 
 const MaxCalories = memo(({
   control,
@@ -162,7 +102,7 @@ const MaxCalories = memo(({
   
   return (
     <div className="grid gap-1.5">
-      <div className="flex justify-between items-center gap-3">
+      <div className="flex justify-between items-end gap-3">
         <h2 className="font-bold text-lg">Max Calories</h2>
         <Input 
           type="number"
@@ -170,7 +110,7 @@ const MaxCalories = memo(({
             setValueAs: (val) => Math.min(Math.max(0, Number(val)), MAX_MEAL_SEARCH_CALORIES)
           })}
           value={currentMaxCalories}
-          className="w-22 font-semibold border border-border flex bg-sidebar text-center text-sm py-1.5 mb-2 rounded-sm shadow-none"
+          className="w-22 font-semibold border border-border flex bg-sidebar text-center text-sm py-1.5 rounded-sm shadow-none"
         />
       </div>
       <Slider

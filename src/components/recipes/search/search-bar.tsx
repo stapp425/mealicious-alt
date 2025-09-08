@@ -12,9 +12,10 @@ import { Control, useForm, UseFormSetValue, useWatch } from "react-hook-form";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useContainerQuery } from "@/hooks/use-container-query";
+import { useHydration } from "@/hooks/use-hydration";
 
 type SearchBarProps = {
   cuisines: {
@@ -51,7 +52,7 @@ export default function SearchBar({
   hasDietPreferences,
   hasDishTypePreferences
 }: SearchBarProps) {
-  const [mounted, setMounted] = useState(false);
+  const hydrated = useHydration();
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
     condition: ({ width }) => width >= CONTAINER_4XL_BREAKPOINT
   });
@@ -191,10 +192,6 @@ export default function SearchBar({
     ),
     [setValue, dishTypes]
   );
-
-  useEffect(() => {
-    setMounted(true);
-  }, [setMounted]);
   
   return (
     <Popover modal>
@@ -353,7 +350,7 @@ export default function SearchBar({
           </button>
         </div>
         <PopoverContent 
-          align={mounted && matches ? "start" : "center"}
+          align={hydrated && matches ? "start" : "center"}
           sideOffset={12.5}
           className="w-[clamp(300px,calc(100vw-30px),475px)] p-0"
           asChild

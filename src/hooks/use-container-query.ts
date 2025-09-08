@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import { useIsomorphicLayoutEffect } from "usehooks-ts";
 
 type UseContainerQueryProps = {
@@ -10,7 +10,7 @@ export function useContainerQuery<T extends HTMLElement = HTMLElement>({
   initialValue = false,
   condition
 }: UseContainerQueryProps) {
-  const ref = useRef<T>(null);
+  const ref = React.useRef<T>(null);
   const [matches, setMatches] = React.useState(initialValue);
   
   useIsomorphicLayoutEffect(() => {

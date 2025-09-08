@@ -26,6 +26,7 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescript
 import { deletePlan } from "@/lib/actions/plan";
 import Link from "next/link";
 import { useSessionStorage } from "usehooks-ts";
+import { useQueryClient } from "@tanstack/react-query";
 
 type MorePlansResultProps = {
   view: MorePlansView;
@@ -35,14 +36,18 @@ type MorePlansResultProps = {
 const inUtc = { in: tz("UTC") };
 
 export default function MorePlansResult({ view, plan }: MorePlansResultProps) {
+  const queryClient = useQueryClient();
   const { refresh } = useRouter();
   const [,setLastRefresh] = useSessionStorage("lastPlanCalendarRefresh", Date.now());
   const [open, setOpen] = useState<boolean>(false);
   const { executeAsync, isExecuting } = useAction(deletePlan, {
     onSuccess: ({ data }) => {
-      toast.warning(data?.message || "Successfully deleted plan!");
+      queryClient.invalidateQueries({
+        queryKey: ["plan-form-calendar-plans"]
+      });
       setLastRefresh(Date.now());
       refresh();
+      toast.warning(data.message);
     },
     onError: () => toast.error("Failed to delete plan.")
   });

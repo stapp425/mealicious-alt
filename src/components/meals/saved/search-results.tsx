@@ -4,22 +4,23 @@ import { meal, mealToRecipe, nutrition, recipe, recipeToNutrition } from "@/db/s
 import { and, eq, ilike, lte, sql } from "drizzle-orm";
 import { MAX_MEAL_DISPLAY_LIMIT } from "@/lib/utils";
 import { SearchX } from "lucide-react";
-import { MealType } from "@/lib/types";
-import MealResult from "./meal-result";
+import MealResult from "@/components/meals/saved/meal-result";
 
 type SearchResultsProps = {
   count: number;
   userId: string;
-  searchParams: {
-    page: number;
-    query: string;
-    mealType: MealType | null;
-    maxCalories: number;
-  };
+  page: number;
+  query: string;
+  maxCalories: number;
 };
 
-export default async function SearchResults({ count, userId, searchParams }: SearchResultsProps) {
-  const { page, query, maxCalories } = searchParams;
+export default async function SearchResults({
+  count,
+  userId,
+  page,
+  query,
+  maxCalories
+}: SearchResultsProps) {
   const meals = await db.select({
     id: meal.id,
     title: meal.title,

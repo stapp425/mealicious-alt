@@ -2,8 +2,9 @@
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useHydration } from "@/hooks/use-hydration";
 import { cn } from "@/lib/utils";
-import { ComponentProps, useEffect, useState } from "react";
+import { ComponentProps, useState } from "react";
 import { useWakeLock } from "react-screen-wake-lock";
 
 export default function CookMode({
@@ -11,17 +12,13 @@ export default function CookMode({
   ...props
 }: Omit<ComponentProps<"label">, "children">) {
   const [isWakeLockEnabled, setIsWakeLockEnabled] = useState<boolean>(false);
-  const [mounted, setMounted] = useState<boolean>(false);
+  const hydrated = useHydration();
   const { isSupported, request, release } = useWakeLock({
     onRequest: () => setIsWakeLockEnabled(true),
     onRelease: () => setIsWakeLockEnabled(false)
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
   
-  if (!isSupported || !mounted)
+  if (!isSupported || !hydrated)
     return null;
  
   return (

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { deleteMeal } from "@/lib/actions/meal";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { EllipsisVertical, Flame, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import Image from "next/image";
@@ -29,9 +30,13 @@ type MealResultProps = {
 };
 
 export default function MealResult({ meal }: MealResultProps) {
+  const queryClient = useQueryClient();
   const { refresh } = useRouter();
   const { execute, isExecuting } = useAction(deleteMeal, {
     onSuccess: ({ data }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["plan-form-meal-results"]
+      });
       toast.warning(data.message);
       refresh();
     },

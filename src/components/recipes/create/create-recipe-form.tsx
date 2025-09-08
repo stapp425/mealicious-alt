@@ -16,7 +16,7 @@ import RecipeInstructions from "@/components/recipes/create/recipe-instructions"
 import { createRecipe, updateRecipeImage } from "@/lib/actions/recipe";
 import { toast } from "sonner";
 import axios, { AxiosError } from "axios";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import RecipeTitle from "@/components/recipes/create/recipe-title";
 import RecipeCuisine from "@/components/recipes/create/recipe-cuisine";
@@ -26,6 +26,7 @@ import RecipeNutrition from "@/components/recipes/create/recipe-nutrition";
 import { generatePresignedUrlForImageUpload } from "@/lib/actions/r2";
 import { useContainerQuery } from "@/hooks/use-container-query";
 import { useQueryClient } from "@tanstack/react-query";
+import { useHydration } from "@/hooks/use-hydration";
 
 const CONTAINER_4XL_BREAKPOINT = 896;
 
@@ -63,7 +64,7 @@ export default function CreateRecipeForm({
   const { replace } = useRouter();
   const queryClient = useQueryClient();
 
-  const [mounted, setMounted] = useState<boolean>(false);
+  const hydrated = useHydration();
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
     condition: ({ width }) => width > CONTAINER_4XL_BREAKPOINT
   });
@@ -140,10 +141,10 @@ export default function CreateRecipeForm({
 
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ["create-meal-form-recipes"]
+          queryKey: ["meal-form-recipes"]
         }),
         queryClient.invalidateQueries({
-          queryKey: ["edit-meal-form-recipes"]
+          queryKey: ["plan-form-calendar-plans"]
         })
       ]);
 
@@ -167,10 +168,6 @@ export default function CreateRecipeForm({
     }),
     [control, register, setValue]
   );
-  
-  useEffect(() => {
-    setMounted(true);
-  }, [setMounted]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -191,14 +188,14 @@ export default function CreateRecipeForm({
         <div className="flex flex-col @min-4xl/create-recipe:flex-row gap-6">
           <div className="w-full @min-4xl/create-recipe:w-9/20 flex flex-col gap-6">
             <RecipeImageUploader />
-            {mounted && !matches && <RecipeTitle />}
-            {mounted && !matches && <RecipeDescription />}
+            {hydrated && !matches && <RecipeTitle />}
+            {hydrated && !matches && <RecipeDescription />}
             <RecipeCuisine cuisines={cuisines}/>
             <RecipeDiets diets={diets}/>
             <RecipeDishTypes dishTypes={dishTypes}/>
             <RecipeTags />
             <RecipeSource />
-            {mounted && !matches && <RecipeTimes />}
+            {hydrated && !matches && <RecipeTimes />}
             <button
               disabled={isSubmitting || isValidating}
               type="submit" 
@@ -208,9 +205,9 @@ export default function CreateRecipeForm({
             </button>
           </div>
           <div className="w-full @min-4xl/create-recipe:w-11/20 flex flex-col gap-6">
-            {mounted && matches && <RecipeTitle />}
-            {mounted && matches && <RecipeTimes />}
-            {mounted && matches && <RecipeDescription />}
+            {hydrated && matches && <RecipeTitle />}
+            {hydrated && matches && <RecipeTimes />}
+            {hydrated && matches && <RecipeDescription />}
             <RecipeIngredients />
             <RecipeInstructions />
             <RecipeNutrition />

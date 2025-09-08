@@ -13,6 +13,7 @@ import MealRecipeSearch from "@/components/meals/edit/meal-recipes";
 import { Loader2 } from "lucide-react";
 import { updateMeal } from "@/lib/actions/meal";
 import { createContext, useContext, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 type EditMealFormProps = {
   userId: string;
@@ -48,6 +49,7 @@ export function useEditMealFormContext() {
 }
 
 export default function EditMealForm({ userId, meal }: EditMealFormProps) {
+  const queryClient = useQueryClient();
   const { replace } = useRouter();
   
   const {
@@ -72,9 +74,12 @@ export default function EditMealForm({ userId, meal }: EditMealFormProps) {
 
   const { execute, isExecuting } = useAction(updateMeal, {
     onSuccess: ({ data, input }) => {
-      toast.success(data.message);
+      queryClient.invalidateQueries({
+        queryKey: ["plan-form-meal-results"]
+      });
       reset(input);
       replace("/meals");
+      toast.success(data.message);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });

@@ -137,7 +137,7 @@ export async function getSavedMealsForPlanForm({ userId, query, limit, offset }:
   return db.select({
     id: meal.id,
     title: meal.title,
-    calories: sql<number>`"meal_to_recipe_sub"."total_calories"`.as("total_calories"),
+    calories: sql`"meal_to_recipe_sub"."total_calories"`.mapWith(Number),
     recipes: sql<{
       id: string;
       title: string;
@@ -192,12 +192,14 @@ export async function getSavedMealsForPlanForm({ userId, query, limit, offset }:
 }
 
 export async function getSavedMealsForPlanFormCount({ userId, query }: { userId: string, query: string }) {
-  return db.select({ count: count() })
+  const result = await db.select({ count: count() })
     .from(meal)
     .where(and(
       eq(meal.createdBy, userId),
       ilike(meal.title, `%${query}%`)
     ));
+
+  return result[0].count;
 }
 
 export async function getPreviewPlansInTimeFrame({ userId, startDate, endDate }: {

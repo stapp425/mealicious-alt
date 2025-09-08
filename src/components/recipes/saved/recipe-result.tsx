@@ -260,11 +260,18 @@ const DeleteOption = memo(({
   recipeId: string;
   onDelete?: () => void;
 }) => {
+  const queryClient = useQueryClient();
   const {
     execute: executeDeleteRecipe,
     isExecuting: isDeleteRecipeExecuting
   } = useAction(deleteRecipe, {
     onSuccess: ({ data }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["meal-form-recipes"]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["plan-form-calendar-plans"]
+      });
       toast.warning(data.message);
       onDelete?.();
     },
@@ -322,10 +329,10 @@ const UnsaveOption = memo(({
     onSuccess: ({ data }) => {
       toast.warning(data.message);
       queryClient.invalidateQueries({
-        queryKey: ["create-meal-form-recipes"]
+        queryKey: ["meal-form-recipes"]
       });
       queryClient.invalidateQueries({
-        queryKey: ["edit-meal-form-recipes"]
+        queryKey: ["plan-form-calendar-plans"]
       });
       onUnsave?.();
     },

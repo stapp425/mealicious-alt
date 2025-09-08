@@ -167,7 +167,7 @@ const MealRecipesResults = memo(({
     isLoading: recipeResultsCountLoading,
     isError: recipeResultsCountErrored
   } = useQuery({
-    queryKey: ["create-meal-form-recipes", { type: "count" }, query],
+    queryKey: ["meal-form-recipes", { type: "count" }, query],
     queryFn: () => getSavedRecipesForMealFormCount({
       userId,
       query
@@ -194,7 +194,7 @@ const MealRecipesResults = memo(({
     isLoading: recipeResultsLoading,
     isError: recipeResultsErrored
   } = useQuery({
-    queryKey: ["create-meal-form-recipes", query, currentPage],
+    queryKey: ["meal-form-recipes", query, currentPage],
     queryFn: () => getSavedRecipesForMealForm({
       userId,
       query,
@@ -211,7 +211,7 @@ const MealRecipesResults = memo(({
       <div className="min-h-8 p-4">
         <div className="error-label flex items-center gap-2 p-2">
           <Info size={16}/>
-          There was an error while fetching instructions content.
+          There was an error while fetching recipes content.
         </div>
       </div>
     );

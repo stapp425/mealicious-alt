@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createContext, useContext, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 type CreateMealFormProps = {
   userId: string;
@@ -33,6 +34,7 @@ export function useCreateMealFormContext() {
 }
 
 export default function CreateMealForm({ userId }: CreateMealFormProps) {
+  const queryClient = useQueryClient();
   const { replace } = useRouter();
   
   const {
@@ -58,9 +60,12 @@ export default function CreateMealForm({ userId }: CreateMealFormProps) {
 
   const { execute, isExecuting } = useAction(createMeal, {
     onSuccess: ({ data }) => {
-      toast.success(data.message);
+      queryClient.invalidateQueries({
+        queryKey: ["plan-form-meal-results"]
+      });
       reset();
       replace("/meals");
+      toast.success(data.message);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });

@@ -17,7 +17,7 @@ import RecipeInstructions from "@/components/recipes/edit/recipe-instructions";
 import { useRouter } from "next/navigation";
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import RecipeTitle from "@/components/recipes/edit/recipe-title";
 import RecipeCuisine from "@/components/recipes/edit/recipe-cuisine";
 import RecipeSource from "@/components/recipes/edit/recipe-source";
@@ -27,6 +27,7 @@ import { updateRecipe, updateRecipeImage } from "@/lib/actions/recipe";
 import { generatePresignedUrlForImageDelete, generatePresignedUrlForImageUpload } from "@/lib/actions/r2";
 import { useContainerQuery } from "@/hooks/use-container-query";
 import { useQueryClient } from "@tanstack/react-query";
+import { useHydration } from "@/hooks/use-hydration";
 
 const CONTAINER_4XL_BREAKPOINT = 896;
 
@@ -122,7 +123,7 @@ export default function EditRecipeForm({
   const queryClient = useQueryClient();
   const { replace } = useRouter();
 
-  const [mounted, setMounted] = useState<boolean>(false);
+  const hydrated = useHydration();
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
     condition: ({ width }) => width > CONTAINER_4XL_BREAKPOINT
   });
@@ -231,13 +232,13 @@ export default function EditRecipeForm({
 
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ["create-meal-form-recipes"]
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["edit-meal-form-recipes"]
+          queryKey: ["meal-form-recipes"]
         }),
         queryClient.invalidateQueries({
           queryKey: ["recipe-details", data.id]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["plan-form-calendar-plans"]
         })
       ]);
 
@@ -264,11 +265,6 @@ export default function EditRecipeForm({
     [control, register, setValue]
   );
 
-  useEffect(
-    () => setMounted(true),
-    [setMounted]
-  );
-
   useEffect(() => {
     if (!isDirty) return;
     
@@ -288,14 +284,14 @@ export default function EditRecipeForm({
         <div className="flex flex-col @min-4xl/edit-recipe:flex-row gap-6">
           <div className="w-full @min-4xl/edit-recipe:w-9/20 flex flex-col gap-6">
             <RecipeImageUploader recipeImageURL={recipe.image}/>
-            {mounted && !matches && <RecipeTitle />}
-            {mounted && !matches && <RecipeDescription />}
+            {hydrated && !matches && <RecipeTitle />}
+            {hydrated && !matches && <RecipeDescription />}
             <RecipeCuisine cuisines={cuisines}/>
             <RecipeDiets diets={diets}/>
             <RecipeDishTypes dishTypes={dishTypes}/>
             <RecipeTags />
             <RecipeSource />
-            {mounted && !matches && <RecipeTimes />}
+            {hydrated && !matches && <RecipeTimes />}
             <button
               disabled={isSubmitting || isValidating || !isDirty}
               type="submit" 
@@ -305,9 +301,9 @@ export default function EditRecipeForm({
             </button>
           </div>
           <div className="w-full @min-4xl/edit-recipe:w-11/20 flex flex-col gap-6">
-            {mounted && matches && <RecipeTitle />}
-            {mounted && matches && <RecipeTimes />}
-            {mounted && matches && <RecipeDescription />}
+            {hydrated && matches && <RecipeTitle />}
+            {hydrated && matches && <RecipeTimes />}
+            {hydrated && matches && <RecipeDescription />}
             <RecipeIngredients />
             <RecipeInstructions />
             <RecipeNutrition />

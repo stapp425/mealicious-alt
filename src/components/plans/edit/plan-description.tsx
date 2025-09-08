@@ -1,44 +1,39 @@
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { MAX_PLAN_DESCRIPTION_LENGTH, EditPlanForm } from "@/lib/zod/plan";
+import { MAX_PLAN_DESCRIPTION_LENGTH } from "@/lib/zod/plan";
 import { Info } from "lucide-react";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useFormState, useWatch } from "react-hook-form";
+import { useEditPlanFormContext } from "@/components/plans/edit/edit-plan-form";
 
 export default function PlanDescription() {
-  const {
-    control,
-    register,
-    formState: {
-      errors
-    }
-  } = useFormContext<EditPlanForm>();
+  const { control, register } = useEditPlanFormContext();
   const currentDescription = useWatch({ control, name: "description" });
+  const {
+    errors: {
+      description: descriptionError
+    }
+  } = useFormState({ control, name: "description" });
   
   return (
-    <div className="flex flex-col gap-3">
+    <div className="grid gap-1.5">
       <h1 className="text-2xl font-bold">Description</h1>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end md:gap-3">
-        <p className="text-muted-foreground font-semibold">
-          Add a brief description about your recipe here. (optional)
-        </p>
-        <span className={cn(currentDescription && currentDescription.length > MAX_PLAN_DESCRIPTION_LENGTH && "text-red-500", "shrink-0")}>
-          <b className="text-xl">{currentDescription?.length || 0}</b> / {MAX_PLAN_DESCRIPTION_LENGTH}
-        </span>
-      </div>
+      <p className="text-muted-foreground font-semibold text-sm">
+        Add a brief description about your recipe here. (optional)
+      </p>
       <Textarea
         {...register("description")}
         spellCheck={false}
-        placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Aliquam nulla facilisi cras fermentum odio eu feugiat pretium nibh."
+        placeholder="Description"
         autoComplete="off"
-        className="min-h-[100px] hyphens-auto flex rounded-md"
+        className="min-h-24 resize-none hyphens-auto flex rounded-sm shadow-none"
       />
-      {
-        errors.description?.message &&
-        <div className="error-text text-sm">
-          <Info size={16}/>
-          {errors.description?.message}
-        </div> 
-      }
+      <span className={cn("shrink-0 text-sm", currentDescription && currentDescription.length > MAX_PLAN_DESCRIPTION_LENGTH && "text-red-500", "shrink-0")}>
+        <b className="text-base">{currentDescription?.length || 0}</b> / {MAX_PLAN_DESCRIPTION_LENGTH}
+      </span>
+      <div className="error-text text-xs has-[>span:empty]:hidden">
+        <Info size={14}/>
+        <span>{descriptionError?.message}</span>
+      </div> 
     </div>
   );
 }

@@ -82,7 +82,7 @@ export function Saved({
 }) {
   const queryClient = useQueryClient();
   
-  const [isSaved, setIsSaved] = useState<boolean>(isRecipeSaved);
+  const [isSaved, setIsSaved] = useState(isRecipeSaved);
   const { executeAsync, isExecuting, isTransitioning } = useAction(toggleSavedListRecipe, {
     onSuccess: ({ data }) => {
       setIsSaved(data.isSaved);
@@ -90,10 +90,10 @@ export function Saved({
         queryKey: ["recipe-statistics", recipeId]
       });
       queryClient.invalidateQueries({
-        queryKey: ["create-meal-form-recipes"]
+        queryKey: ["meal-form-recipes"]
       });
       queryClient.invalidateQueries({
-        queryKey: ["edit-meal-form-recipes"]
+        queryKey: ["plan-form-calendar-plans"]
       });
 
       if (data.isSaved) toast.success("Successfully saved recipe!");

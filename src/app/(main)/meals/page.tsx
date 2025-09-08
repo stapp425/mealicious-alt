@@ -8,8 +8,7 @@ import { Metadata } from "next";
 import { Suspense } from "react";
 import { nanoid } from "nanoid";
 import SearchResults, { SearchResultsSkeleton } from "@/components/meals/saved/search-results";
-import { createLoader, parseAsIndex, parseAsInteger, parseAsString, parseAsStringLiteral } from "nuqs/server";
-import { mealTypes } from "@/lib/types";
+import { createLoader, parseAsIndex, parseAsInteger, parseAsString } from "nuqs/server";
 import SearchBar from "@/components/meals/saved/search-bar";
 import { MAX_MEAL_DISPLAY_LIMIT } from "@/lib/utils";
 
@@ -21,12 +20,11 @@ export const metadata: Metadata = {
 const loadSearchParams = createLoader({
   page: parseAsIndex.withDefault(0),
   query: parseAsString.withDefault(""),
-  mealType: parseAsStringLiteral(mealTypes),
   maxCalories: parseAsInteger.withDefault(0)
 });
 
 export default async function Page({ searchParams }: PageProps<"/meals">) {
-  const { query, maxCalories, mealType, page } = await loadSearchParams(searchParams);
+  const { query, maxCalories, page } = await loadSearchParams(searchParams);
   const session = await auth();
   
   if (!session?.user?.id) redirect("/login");
@@ -67,14 +65,16 @@ export default async function Page({ searchParams }: PageProps<"/meals">) {
     ));
   
   return (
-    <div className="flex-1 max-w-250 w-full grid gap-3 mx-auto p-4">
+    <div className="flex-1 max-w-250 w-full flex flex-col gap-3 mx-auto p-4">
       <h1 className="font-bold text-4xl">All Meals</h1>
       <SearchBar />
       <Suspense key={nanoid()} fallback={<SearchResultsSkeleton />}>
         <SearchResults 
           userId={userId}
           count={mealCount}
-          searchParams={{ query, maxCalories, mealType, page }}
+          query={query}
+          maxCalories={maxCalories}
+          page={page}
         />
       </Suspense>
       <Pagination totalPages={Math.ceil(mealCount / MAX_MEAL_DISPLAY_LIMIT)}/>
