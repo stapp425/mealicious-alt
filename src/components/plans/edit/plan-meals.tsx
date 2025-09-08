@@ -17,6 +17,7 @@ import { useEditPlanFormContext } from "@/components/plans/edit/edit-plan-form";
 import { useQuery } from "@tanstack/react-query";
 import { usePagination } from "@/hooks/use-pagination";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export type Meal = {
   id: string;
@@ -194,6 +195,7 @@ const PlanMealsBody = memo(({
   userId: string;
 }) => {
   const { setValue } = useEditPlanFormContext();
+  const [shouldShowMealRecipes, setShouldShowMealRecipes] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [selectedMealType, setSelectedMealType] = useState<MealType | null>(null);
   
@@ -282,6 +284,23 @@ const PlanMealsBody = memo(({
           <Info size={16}/>
           Select a meal type then include a meal.
         </div>
+        <div className="flex items-center gap-3 mt-2">
+          <Checkbox
+            id="show-recipes-checkbox"
+            checked={shouldShowMealRecipes}
+            onCheckedChange={(val) => setShouldShowMealRecipes(val === true)}
+            className={cn(
+              "rounded-xs shadow-none",
+              className
+            )}
+          />
+          <label
+            htmlFor="show-recipes-checkbox"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Show Meal Recipes
+          </label>
+        </div>
         <ul className="grid gap-3 my-3">
           {
             mealResults.map((m) => (
@@ -309,9 +328,9 @@ const PlanMealsBody = memo(({
                     <Flame size={16} className="fill-muted-foreground group-disabled:fill-muted"/>
                     <span>{Number(m.calories).toLocaleString()} Calories</span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5 empty:hidden">
                     {
-                      m.recipes.map((r) => (
+                      shouldShowMealRecipes && m.recipes.map((r) => (
                         <div key={r.id} className={cn(
                           "bg-mealicious-primary text-white font-semibold text-xs truncate rounded-full max-w-48 py-1 px-3",
                           "group-disabled/meal:bg-mealicious-primary-muted group-disabled/meal:dark:opacity-25"
@@ -425,7 +444,6 @@ const PlanMealsBody = memo(({
           </button>
         </div>
       </div>
-      
     </div>
   );
 });

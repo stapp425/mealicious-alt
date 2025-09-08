@@ -72,7 +72,7 @@ export default function PlanCalendar({ userId }: PlanCalendarProps) {
     isLoading: plansLoading,
     isError: plansErrored
   } = useQuery({
-    queryKey: ["plan-form-calendar-plans", userId],
+    queryKey: ["plan-form-calendar-plans", userId, startDate, endDate],
     queryFn: () => getPreviewPlansInTimeFrame({
       userId,
       startDate: new UTCDate(startDate),
