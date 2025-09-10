@@ -5,7 +5,6 @@ import { db } from "@/db";
 import { user as userTable } from "@/db/schema";
 import { authActionClient } from "@/safe-action";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { PasswordSchema } from "@/lib/zod/auth";
 import bcrypt from "bcryptjs";
 import z from "zod/v4";
@@ -20,15 +19,13 @@ export const editProfileAbout = authActionClient
   }) => {
     await db.update(userTable)
       .set({ about: newAbout || null })
-      .where(eq(userTable.id, user.id!));
-
-    revalidatePath(`/user/${user.id!}`);
+      .where(eq(userTable.id, user.id));
 
     return {
       success: true as const,
       message: "Successfully updated about section!",
       about: newAbout
-    }
+    };
   });
 
 export const changePassword = authActionClient

@@ -23,9 +23,9 @@ export function Favorite({
   
   const [isFavorite, setIsFavorite] = useState(isRecipeFavorite);
   const { executeAsync, isExecuting, isTransitioning } = useAction(toggleRecipeFavorite, {
-    onSuccess: ({ data }) => {
+    onSuccess: async ({ data }) => {
       setIsFavorite(data.isFavorite)
-      queryClient.invalidateQueries({
+      await queryClient.invalidateQueries({
         queryKey: ["recipe-statistics", recipeId]
       });
       onRecipeFavoriteToggle?.(data.isFavorite);
@@ -84,21 +84,16 @@ export function Saved({
   
   const [isSaved, setIsSaved] = useState(isRecipeSaved);
   const { executeAsync, isExecuting, isTransitioning } = useAction(toggleSavedListRecipe, {
-    onSuccess: ({ data }) => {
+    onSuccess: async ({ data }) => {
       setIsSaved(data.isSaved);
-      queryClient.invalidateQueries({
-        queryKey: ["recipe-statistics", recipeId]
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["meal-form-recipes"]
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["plan-form-calendar-plans"]
-      });
-
       if (data.isSaved) toast.success("Successfully saved recipe!");
       else toast.warning("Successfully removed recipe from saved list!");
-
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => 
+          queryKey[0] === "recipe-statistics" &&
+          queryKey[1] === recipeId || 
+          queryKey[0] === "meal-form-recipes"
+      });
       onRecipeSavedToggle?.(data.isSaved);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)

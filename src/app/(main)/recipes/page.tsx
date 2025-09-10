@@ -19,11 +19,16 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { SearchResultsSkeleton } from "@/components/recipes/saved/search-results";
 import { nanoid } from "nanoid";
+import { getCachedData } from "@/lib/actions/redis";
+import { CountSchema } from "@/lib/zod";
 
 export const metadata: Metadata = {
   title: "Saved Recipes | Mealicious",
   description: "View all your saved mealicious recipes here!"
 };
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const loadSearchParams = createLoader({
   query: parseAsString.withDefault(""),
@@ -38,30 +43,35 @@ export default async function Page({ searchParams }: PageProps<"/recipes">) {
   if (!session?.user?.id) redirect("/login");
   const userId = session.user.id;
   
-  const [{ count: savedRecipesCount }] = await db.select({ count: count() })
-    .from(savedRecipe)
-    .where(and(
-      eq(savedRecipe.userId, userId),
-      exists(
-        db.select({ id: recipe.id })
-          .from(recipe)
-          .where(and(
-            eq(savedRecipe.recipeId, recipe.id),
-            ilike(recipe.title, `%${query}%`),
-            filters.includes("created") ? eq(recipe.createdBy, userId) : undefined
-          ))
-      ),
-      filters.includes("favorited") ?
+  const savedRecipesCount = await getCachedData({
+    cacheKey: `user_${userId}_saved_recipes_count${filters.length > 0 ? `_filters_${filters.join(",")}` : ""}${query ? `_query_${query}` : ""}`,
+    timeToLive: 60 * 3, // 3 minutes
+    schema: CountSchema,
+    call: () => db.select({ count: count() })
+      .from(savedRecipe)
+      .where(and(
+        eq(savedRecipe.userId, userId),
         exists(
-          db.select()
-            .from(recipeFavorite)
+          db.select({ id: recipe.id })
+            .from(recipe)
             .where(and(
-              eq(savedRecipe.userId, recipeFavorite.userId),
-              eq(savedRecipe.recipeId, recipeFavorite.recipeId)
+              eq(savedRecipe.recipeId, recipe.id),
+              ilike(recipe.title, `%${query}%`),
+              filters.includes("created") ? eq(recipe.createdBy, userId) : undefined
             ))
-        )
-      : undefined
-    ));
+        ),
+        filters.includes("favorited") ?
+          exists(
+            db.select()
+              .from(recipeFavorite)
+              .where(and(
+                eq(savedRecipe.userId, recipeFavorite.userId),
+                eq(savedRecipe.recipeId, recipeFavorite.recipeId)
+              ))
+          )
+        : undefined
+      ))
+  });
 
   return (
     <div className="max-w-212 w-full flex-1 flex flex-col gap-2.5 mx-auto p-4">

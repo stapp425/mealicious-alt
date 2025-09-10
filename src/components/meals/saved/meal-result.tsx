@@ -11,6 +11,7 @@ import { useAction } from "next-safe-action/hooks";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { memo, useState } from "react";
 import { toast } from "sonner";
 
 type MealResultProps = {
@@ -30,18 +31,7 @@ type MealResultProps = {
 };
 
 export default function MealResult({ meal }: MealResultProps) {
-  const queryClient = useQueryClient();
   const { refresh } = useRouter();
-  const { execute, isExecuting } = useAction(deleteMeal, {
-    onSuccess: ({ data }) => {
-      queryClient.invalidateQueries({
-        queryKey: ["plan-form-meal-results"]
-      });
-      toast.warning(data.message);
-      refresh();
-    },
-    onError: ({ error: { serverError } }) => toast.error(serverError)
-  });
   
   return (
     <div className="border border-mealicious-primary/75 grid gap-2.5 p-4 rounded-md">
@@ -65,33 +55,10 @@ export default function MealResult({ meal }: MealResultProps) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <AlertDialog>
-                <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
-                  Delete
-                  <Trash2 size={16} className="text-muted-foreground"/>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Deleting this meal is an irreversible action! The recipes contained in this meal will still remain in the database.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="cursor-pointer rounded-sm shadow-none">
-                      Cancel
-                    </AlertDialogCancel>
-                    <Button
-                      onClick={() => execute({ mealId: meal.id })}
-                      disabled={isExecuting}
-                      variant="destructive"
-                      className="cursor-pointer min-w-18 rounded-sm shadow-none"
-                    >
-                      {isExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
-                    </Button>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <DeleteOption
+                mealId={meal.id}
+                onDelete={refresh}
+              />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -149,3 +116,59 @@ export default function MealResult({ meal }: MealResultProps) {
     </div>
   );
 }
+
+const DeleteOption = memo(({
+  mealId,
+  onDelete
+}: {
+  mealId: string;
+  onDelete?: () => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { execute, isExecuting } = useAction(deleteMeal, {
+    onSuccess: async ({ data }) => {
+      setOpen(false);
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => 
+          typeof queryKey[0] === "string" && 
+          ["plan-form-meal-results", "plan-calendar", "daily-plan", "more-plans"].includes(queryKey[0])
+      });
+      toast.warning(data.message);
+      onDelete?.();
+    },
+    onError: ({ error: { serverError } }) => toast.error(serverError)
+  });
+  
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
+        Delete
+        <Trash2 size={16} className="text-muted-foreground"/>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Deleting this meal is an irreversible action! The recipes contained in this meal will still remain in the database.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="cursor-pointer rounded-sm shadow-none">
+            Cancel
+          </AlertDialogCancel>
+          <Button
+            onClick={() => execute(mealId)}
+            disabled={isExecuting}
+            variant="destructive"
+            className="cursor-pointer min-w-18 rounded-sm shadow-none"
+          >
+            {isExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+});
+
+DeleteOption.displayName = "DeleteOption";

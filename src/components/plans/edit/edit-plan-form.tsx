@@ -46,7 +46,7 @@ export function useEditPlanFormContext() {
 }
 
 export default function EditPlanForm({ userId, planToEdit }: EditPlanFormProps) {
-  const { replace } = useRouter();
+  const { push } = useRouter();
   const queryClient = useQueryClient();
   
   const hydrated = useHydration();
@@ -79,12 +79,14 @@ export default function EditPlanForm({ userId, planToEdit }: EditPlanFormProps) 
   });
   
   const { execute, isExecuting } = useAction(updatePlan, {
-    onSuccess: ({ data, input }) => {
-      queryClient.invalidateQueries({
-        queryKey: ["plan-form-calendar-plans"]
+    onSuccess: async ({ data, input }) => {
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => 
+          typeof queryKey[0] === "string" && 
+          ["plan-form-calendar-plans", "plan-calendar", "daily-plan", "more-plans"].includes(queryKey[0])
       });
       reset(input);
-      replace("/plans");
+      push("/plans");
       toast.success(data.message);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)

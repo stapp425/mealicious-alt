@@ -22,37 +22,6 @@ export default async function MostRecentSavedRecipes({ userId }: MostRecentSaved
     .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
     .as("recipe_to_nutrition_sub");
 
-  // const savedRecipesSubQuery = db.select({
-  //   saveDate: savedRecipe.saveDate
-  // }).from(savedRecipe)
-  //   .where(and(
-  //     eq(savedRecipe.userId, userId),
-  //     eq(savedRecipe.recipeId, recipe.id),
-  //   ));
-  
-  // const savedRecipes = await db.select({
-  //   id: recipe.id,
-  //   title: recipe.title,
-  //   image: recipe.image,
-  //   description: recipe.description,
-  //   prepTime: recipe.prepTime,
-  //   calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith(Number)
-  // }).from(recipe)
-  //   .where(and(
-  //     exists(
-  //       db.select()
-  //         .from(savedRecipe)
-  //         .where(and(
-  //           eq(savedRecipe.userId, userId),
-  //           eq(savedRecipe.recipeId, recipe.id),
-  //         ))
-  //     ),
-  //     not(eq(recipe.createdBy, userId)) // ignore if current user is the author of the recipe
-  //   ))
-  //   .leftJoinLateral(caloriesSubQuery, sql`true`)
-  //   .orderBy()
-  //   .limit(MAX_SAVED_RECIPE_DISPLAY_LIMIT);
-
   const savedRecipesSubQuery = db.select({
     saveDate: savedRecipe.saveDate
   }).from(savedRecipe)

@@ -43,7 +43,7 @@ export default function RecipeIngredients({ className, ...props }: Omit<Componen
     amount: 0,
     unit: "g",
     isAllergen: false,
-    note: ""
+    note: undefined
   });
 
   const deleteIngredient = useCallback(
@@ -62,7 +62,7 @@ export default function RecipeIngredients({ className, ...props }: Omit<Componen
       amount: 0,
       unit: "g",
       isAllergen: false,
-      note: ""
+      note: undefined
     });
     setTouched(false);
   }, [setIngredient, setTouched]);
@@ -141,13 +141,13 @@ export default function RecipeIngredients({ className, ...props }: Omit<Componen
         />
       </div>
       <Input 
-        value={ingredient.note}
+        value={ingredient.note || ""}
         placeholder="Note (optional)"
         onChange={(e) => {
           setTouched(true);
           setIngredient((i) => ({
             ...i,
-            note: e.target.value
+            note: e.target.value || undefined
           }));
         }}
         className="rounded-sm shadow-none"

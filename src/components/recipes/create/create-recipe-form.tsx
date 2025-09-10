@@ -61,7 +61,7 @@ export default function CreateRecipeForm({
   diets,
   dishTypes
 }: CreateRecipeFormProps) {  
-  const { replace } = useRouter();
+  const { push } = useRouter();
   const queryClient = useQueryClient();
 
   const hydrated = useHydration();
@@ -139,18 +139,15 @@ export default function CreateRecipeForm({
       if (!updateRecipeImageResult?.data?.success)
         throw new Error("Failed to add image to the recipe.");
 
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["meal-form-recipes"]
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["plan-form-calendar-plans"]
-        })
-      ]);
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) =>
+          typeof queryKey[0] === "string" && 
+          ["meal-form-recipes", "quick-recipe-search-results", "search-recipes-results"].includes(queryKey[0])
+      });
 
       reset();
+      push(`/recipes/${recipeCreationResult.data.recipeId}`);
       toast.success("Recipe successfully created!");
-      replace(`/recipes/${recipeCreationResult.data.recipeId}`);
     } catch (err) {
       if (err instanceof AxiosError) {
         toast.error("Failed to upload the recipe image.");
@@ -158,7 +155,7 @@ export default function CreateRecipeForm({
         toast.error(err.message);
       }
     }
-  }), [handleSubmit, queryClient, reset, replace]);
+  }), [handleSubmit, queryClient, reset, push]);
 
   const providerProps = useMemo(
     () => ({ 

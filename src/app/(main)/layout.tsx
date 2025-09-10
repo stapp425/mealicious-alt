@@ -24,27 +24,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <SidebarProvider>
           <AppSidebar />
-            <main ref={ref} className="@container/main relative min-h-screen max-w-screen flex-1 flex flex-col">
-              <header className="h-20 print:hidden sticky border-b top-0 bg-background flex z-50 items-center gap-4 p-4">
-                <SidebarTrigger className="cursor-pointer"/>
-                <Image
-                  src={siteLogo}
-                  alt="Mealicious Logo"
-                  width={75}
-                  className="dark:invert"
-                  priority
+          <main ref={ref} className="@container/main relative min-h-screen max-w-screen flex-1 flex flex-col">
+            <header className="h-20 print:hidden sticky border-b top-0 bg-background flex z-50 items-center gap-4 p-4">
+              <SidebarTrigger className="cursor-pointer"/>
+              <Image
+                src={siteLogo}
+                alt="Mealicious Logo"
+                width={75}
+                className="dark:invert"
+                priority
+              />
+              <div className="flex-1">
+                <RecipeSearchBar 
+                  mode={matches ? "popover" : "dialog"}
+                  className="@max-3xl/main:ml-auto"
                 />
-                <div className="flex-1">
-                  <RecipeSearchBar 
-                    mode={matches ? "popover" : "dialog"}
-                    className="@max-3xl/main:ml-auto"
-                  />
-                </div>
-                <ProfileInfo />
-              </header>
-              {children}
-              <ScrollToTopButton />
-            </main>
+              </div>
+              <ProfileInfo />
+            </header>
+            {children}
+            <ScrollToTopButton />
+          </main>
         </SidebarProvider>
       </QueryClientProvider>
     </SessionProvider>

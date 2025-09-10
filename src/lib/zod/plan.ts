@@ -103,7 +103,7 @@ export const PreviewPlanSchema = z.array(z.object({
   }).nonempty({
     message: "Plan title cannot be empty."
   }),
-  date: z.date({
+  date: z.coerce.date({
     error: (issue) => typeof issue.input === "undefined"
       ? "A plan date is required."
       : "Expected a string, but received an invalid type."

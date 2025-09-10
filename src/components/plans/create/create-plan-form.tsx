@@ -43,7 +43,7 @@ export function useCreatePlanFormContext() {
 }
 
 export default function CreatePlanForm({ userId }: CreatePlanFormProps) {
-  const { replace } = useRouter();
+  const { push } = useRouter();
   const queryClient = useQueryClient();
 
   const hydrated = useHydration();
@@ -72,12 +72,14 @@ export default function CreatePlanForm({ userId }: CreatePlanFormProps) {
   });
   
   const { execute, isExecuting } = useAction(createPlan, {
-    onSuccess: ({ data }) => {
-      queryClient.invalidateQueries({
-        queryKey: ["plan-form-calendar-plans"]
+    onSuccess: async ({ data }) => {
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => 
+          typeof queryKey[0] === "string" && 
+          ["plan-form-calendar-plans", "plan-calendar", "more-plans"].includes(queryKey[0])
       });
       reset();
-      replace("/plans");
+      push("/plans");
       toast.success(data.message);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)

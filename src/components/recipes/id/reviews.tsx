@@ -79,7 +79,7 @@ export default function Reviews({
       limit: MAX_REVIEW_DISPLAY_LIMIT,
       offset: pageParam * MAX_REVIEW_DISPLAY_LIMIT
     }),
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes,
     refetchOnWindowFocus: false
   });
@@ -90,15 +90,12 @@ export default function Reviews({
   );
 
   const onDeleteReview = useCallback(async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: ["recipe-reviews", recipeId]
-      }),
-      queryClient.invalidateQueries({
-        queryKey: ["recipe-statistics", recipeId]
-      })
-    ]);
-
+    await queryClient.invalidateQueries({
+      predicate: ({ queryKey }) => 
+        typeof queryKey[0] === "string" &&
+        ["recipe-reviews", "recipe-statistics"].includes(queryKey[0]) &&
+        queryKey[1] === recipeId
+    });
     refresh();
   }, [queryClient, recipeId, refresh]);
 
@@ -484,7 +481,7 @@ const UserReview = memo(({
       recipeId,
       userId
     }),
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
   });
 

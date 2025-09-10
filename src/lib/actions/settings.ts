@@ -17,6 +17,7 @@ import bcrypt from "bcryptjs";
 import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
 import axios from "axios";
 import z from "zod/v4";
+import { removeCacheKeys } from "@/lib/actions/redis";
 
 export const updateProfilePicture = authActionClient
   .inputSchema(z.string({
@@ -164,6 +165,8 @@ export const updateCuisinePreferences = authActionClient
         })));
     }
 
+    await removeCacheKeys(`user_${user.id}_cuisine_preferences`);
+
     return {
       success: true as const,
       message: "Cuisine preferences successfully updated!"
@@ -189,6 +192,8 @@ export const updateDietPreferences = authActionClient
         })));
     }
 
+    await removeCacheKeys(`user_${user.id}_diet_preferences`);
+
     return {
       success: true as const,
       message: "Diet preferences successfully changed!"
@@ -213,6 +218,8 @@ export const updateDishTypePreferences = authActionClient
         preferenceScore: p.score
       })));
     }
+
+    await removeCacheKeys(`user_${user.id}_dish_type_preferences`);
 
     return {
       success: true as const,

@@ -172,8 +172,8 @@ export default function PlanMeals({ userId }: RecipeSearchProps) {
             <span className="font-semibold text-center text-muted-foreground">Try adding one!</span>
           </div>
         </div>
-        <div className="error-text text-sm has-[>span:empty]:hidden">
-          <Info size={16}/>
+        <div className="error-text text-xs has-[>span:empty]:hidden">
+          <Info size={14}/>
           <span>{mealsError?.message}</span>
         </div>
       </section>
@@ -209,7 +209,7 @@ const PlanMealsBody = memo(({
       userId,
       query
     }),
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false
   });
@@ -238,7 +238,7 @@ const PlanMealsBody = memo(({
       limit: MAX_MEAL_RESULT_DISPLAY_LIMIT,
       offset: currentPage * MAX_MEAL_RESULT_DISPLAY_LIMIT
     }),
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false
   });

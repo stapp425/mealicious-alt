@@ -48,12 +48,12 @@ export default function ChangeDietPreferencesForm({ dietPreferences }: ChangeDie
   const { fields } = useFieldArray({ control, name: "preferences" });
 
   const { executeAsync } = useAction(updateDietPreferences, {
-    onSuccess: ({ data, input }) => {
-      queryClient.invalidateQueries({
+    onSuccess: async ({ data, input }) => {
+      await queryClient.invalidateQueries({
         queryKey: ["search-recipes-results"]
       });
-      toast.success(data.message);
       reset(input);
+      toast.success(data.message);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });

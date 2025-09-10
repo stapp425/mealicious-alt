@@ -16,6 +16,9 @@ type PageProps = {
   searchParams: Promise<SearchParams>;
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const loadSearchParams = createLoader({
   recipesView: parseAsStringLiteral(userRecipesView)
     .withDefault("created")

@@ -78,7 +78,7 @@ export default function PlanCalendar({ userId }: PlanCalendarProps) {
       startDate: new UTCDate(startDate),
       endDate: new UTCDate(endDate)
     }),
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false
   });

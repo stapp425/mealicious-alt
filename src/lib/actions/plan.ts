@@ -2,13 +2,11 @@
 
 import { db } from "@/db";
 import { and, count, eq, gte, ilike, desc, lte, sql, asc } from "drizzle-orm";
-import { getCachedData, removeCacheKeys } from "@/lib/actions/redis";
+import { removeCacheKeys } from "@/lib/actions/redis";
 import { meal, mealToRecipe, nutrition, plan, planToMeal, recipe, recipeToNutrition } from "@/db/schema";
 import { ActionError, MealType } from "@/lib/types";
-import { DetailedPlanSchema, CreatePlanFormSchema, EditPlanFormSchema } from "@/lib/zod/plan";
+import { DetailedPlanSchema, CreatePlanFormSchema, EditPlanFormSchema, PreviewPlanSchema } from "@/lib/zod/plan";
 import { authActionClient } from "@/safe-action";
-import { getTime } from "date-fns";
-import { revalidatePath } from "next/cache";
 import { UTCDate } from "@date-fns/utc";
 import z from "zod/v4";
 import { CountSchema } from "@/lib/zod";
@@ -35,10 +33,7 @@ export const createPlan = authActionClient
       type: mt as MealType
     })));
 
-    await Promise.all([
-      removeCacheKeys(`user_${user.id}_plan*`),
-      removeCacheKeys(`user_${user.id}_upcoming_plan`)
-    ]);
+    await removeCacheKeys(`user_${user.id}_upcoming_plan`)
     
     return {
       success: true,
@@ -83,10 +78,7 @@ export const updatePlan = authActionClient
       type: mt as MealType
     })));
 
-    await Promise.all([
-      removeCacheKeys(`user_${user.id}_plan*`),
-      removeCacheKeys(`user_${user.id}_upcoming_plan`)
-    ]);
+    await removeCacheKeys(`user_${user.id}_upcoming_plan`);
 
     return {
       success: true as const,
@@ -119,13 +111,10 @@ export const deletePlan = authActionClient
     if (!foundPlan) throw new ActionError("Plan does not exist.");
     if (user.id !== foundPlan.createdBy) throw new ActionError("You are not authorized to delete this plan.");
     
-    await db.delete(plan).where(eq(plan.id, foundPlan.id));
     await Promise.all([
-      removeCacheKeys(`user_${user.id}_plan*`),
+      db.delete(plan).where(eq(plan.id, foundPlan.id)),
       removeCacheKeys(`user_${user.id}_upcoming_plan`)
     ]);
-    
-    revalidatePath("/plans");
 
     return {
       success: true as const,
@@ -220,34 +209,7 @@ export async function getPreviewPlansInTimeFrame({ userId, startDate, endDate }:
     }
   });
 
-  const plans = await getCachedData({
-    cacheKey: `user_${userId}_plans_preview_${getTime(startDate)}_to_${getTime(endDate)}`,
-    call: () => plansQuery,
-    timeToLive: 120,
-    schema: z.array(z.object({
-      id: z.string({
-        error: (issue) => typeof issue.input === "undefined"
-          ? "A plan id is required."
-          : "Expected a string, but received an invalid type."
-      }).nonempty({
-        error: "Plan ID cannot be empty."
-      }),
-      title: z.string({
-        error: (issue) => typeof issue.input === "undefined"
-          ? "A plan title is required."
-          : "Expected a string, but received an invalid type."
-      }).nonempty({
-        error: "Plan title cannot be empty."
-      }),
-      date: z.coerce.date({
-        error: (issue) => typeof issue.input === "undefined"
-          ? "A plan date is required."
-          : "Expected a date, but received an invalid type."
-      })
-    }))
-  });
-
-  return plans;
+  return PreviewPlanSchema.parse(await plansQuery);
 }
 
 export async function getPlansInTimeFrameCount({ userId, startDate, endDate, query }: { 
@@ -256,7 +218,7 @@ export async function getPlansInTimeFrameCount({ userId, startDate, endDate, que
   endDate?: Date;
   query?: string;
 }) {
-  const plansQuery = db.select({
+  const plansCountQuery = db.select({
     count: count()
   }).from(plan)
     .where(and(
@@ -266,12 +228,7 @@ export async function getPlansInTimeFrameCount({ userId, startDate, endDate, que
       query ? ilike(plan.title, query) : undefined
     ));
 
-  return await getCachedData({
-    cacheKey: `user_${userId}_plans_count${startDate ? `_${getTime(startDate)}` : ""}${endDate ? `_to_${getTime(endDate)}` : ""}${query ? `_query_${query}` : ""}`,
-    call: () => plansQuery,
-    schema: CountSchema,
-    timeToLive: 120
-  });
+  return CountSchema.parse(await plansCountQuery);
 }
 
 export async function getDetailedPlansInTimeFrame({ userId, planId, startDate, endDate, query, limit, offset }: { 
@@ -390,11 +347,6 @@ export async function getDetailedPlansInTimeFrame({ userId, planId, startDate, e
     .limit(limit ? limit : 10000)
     .offset(offset ? offset : 0)
     .orderBy(endDate && endDate < new Date() ? desc(plan.date) : asc(plan.date));
-  
-  return await getCachedData({
-    cacheKey: `user_${userId}_plans${planId ? planId : ""}_detailed${startDate ? `_${getTime(startDate)}` : ""}${endDate ? `_to_${getTime(endDate)}` : ""}${query ? `_query_${query}` : ""}${limit ? `_limit_${limit}` : ""}${offset ? `_offset_${offset}` : ""}`,
-    schema: DetailedPlanSchema,
-    call: () => plansQuery,
-    timeToLive: 120
-  });
+
+  return DetailedPlanSchema.parse(await plansQuery);
 }

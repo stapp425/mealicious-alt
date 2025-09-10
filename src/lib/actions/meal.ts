@@ -3,12 +3,12 @@
 import { authActionClient } from "@/safe-action";
 import { CreateMealFormSchema, EditMealFormSchema } from "@/lib/zod/meal";
 import { db } from "@/db";
-import { meal, mealToRecipe, recipe, savedRecipe } from "@/db/schema";
-import { revalidatePath } from "next/cache";
-import { and, count, desc, eq, exists, ilike, sql } from "drizzle-orm";
+import { meal, mealToRecipe, plan, planToMeal, recipe, savedRecipe } from "@/db/schema";
+import { and, count, desc, eq, exists, ilike, notExists, sql } from "drizzle-orm";
 import { ActionError } from "@/lib/types";
+import { CountSchema } from "@/lib/zod";
+import { removeCacheKeys } from "@/lib/actions/redis";
 import z from "zod/v4";
-import { CountSchema } from "../zod";
 
 export const createMeal = authActionClient
   .inputSchema(CreateMealFormSchema)
@@ -33,8 +33,7 @@ export const createMeal = authActionClient
         recipeId: r.id
       })));
 
-    revalidatePath("/meals");
-    revalidatePath("/plans");
+    await removeCacheKeys(`user_${user.id}_meals*`);
 
     return {
       success: true as const,
@@ -79,8 +78,7 @@ export const updateMeal = authActionClient
         recipeId: r.id
       })));
 
-    revalidatePath("/meals");
-    revalidatePath("/plans");
+    await removeCacheKeys(`user_${user.id}_meals*`);
 
     return {
       success: true as const,
@@ -89,18 +87,17 @@ export const updateMeal = authActionClient
   });
 
 export const deleteMeal = authActionClient
-  .inputSchema(z.object({
-    mealId: z.string({
+  .inputSchema(z.string({
       error: (issue) => typeof issue.input === "undefined"
         ? "A meal id is required."
         : "Expected a string, but received an invalid type."
     }).nonempty({
       error: "Meal ID cannot be empty."
     })
-  }))
+  )
   .action(async ({ 
     ctx: { user },
-    parsedInput: { mealId }
+    parsedInput: mealId
   }) => {
     const foundMeal = await db.query.meal.findFirst({
       where: (meal, { eq }) => eq(meal.id, mealId),
@@ -113,10 +110,21 @@ export const deleteMeal = authActionClient
     if (!foundMeal) throw new ActionError("Meal does not exist.");
     if (foundMeal.createdBy !== user.id) throw new ActionError("You are not authorized to delete this meal.");
 
-    await db.delete(meal).where(eq(meal.id, foundMeal.id));
+    const deleteMealsQuery = db.delete(meal).where(eq(meal.id, foundMeal.id));
+    
+    // There is a possibility that at least one plan could have no meals left when this meal is deleted
+    const deletePlansQuery = db.delete(plan).where(
+      notExists(
+        db.select({ id: planToMeal.planId })
+          .from(planToMeal)
+          .where(eq(planToMeal.planId, plan.id))
+      )
+    );
 
-    revalidatePath("/meals");
-    revalidatePath("/plans");
+    await Promise.all([
+      deleteMealsQuery.then(() => deletePlansQuery),
+      removeCacheKeys(`user_${user.id}_meals*`)
+    ]);
 
     return {
       success: true as const,

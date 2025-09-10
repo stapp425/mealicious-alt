@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   description: "Edit your mealicious plans here!"
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function Page({ params }: PageProps<"/plans/[plan_id]/edit">) {
   const { plan_id: planId } = await params;
   

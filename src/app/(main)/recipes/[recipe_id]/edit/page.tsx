@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   description: "Edit your mealicious recipes here!"
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function Page({ params }: { params: Promise<{ recipe_id: string; }> }) {
   const { recipe_id: recipeId } = await params;
   const session = await auth();

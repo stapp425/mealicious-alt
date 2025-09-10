@@ -3,7 +3,7 @@
 import { ActionError } from "@/lib/types";
 import { authActionClient } from "@/safe-action";
 import { db } from "@/db";
-import { and, asc, count, desc, eq, exists, ilike, isNotNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, ilike, isNotNull, notExists, sql } from "drizzle-orm";
 import { CreateRecipeFormSchema, EditRecipeFormSchema, CreateReviewFormSchema } from "@/lib/zod/recipe";
 import { 
   cuisine as cuisineTable,
@@ -11,7 +11,11 @@ import {
   dishType as dishTypeTable,
   ingredient,
   instruction,
+  meal,
+  mealToRecipe,
   nutrition,
+  plan,
+  planToMeal,
   recipe,
   recipeFavorite,
   recipeReview,
@@ -27,7 +31,6 @@ import {
   userToDishType
 } from "@/db/schema";
 import { deleteRecipeQueryIndex, insertRecipeQueryIndex } from "@/lib/actions/algolia";
-import { revalidatePath } from "next/cache";
 import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
 import { getRatingKey, MAX_GRID_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
 import axios from "axios";
@@ -127,8 +130,10 @@ export const createRecipe = authActionClient
       });
     }
 
-    await removeCacheKeys(`user_${user.id}_created_recipes_count`);
-    revalidatePath("/recipes");
+    await Promise.all([
+      removeCacheKeys(`user_${user.id}_created_recipes_count`),
+      removeCacheKeys(`user_${user.id}_saved_recipes*`)
+    ]);
 
     return {
       success: true as const,
@@ -252,12 +257,11 @@ export const updateRecipe = authActionClient
     } else {
       await deleteRecipeQueryIndex(foundRecipe.id);
     }
-    
-    revalidatePath("/recipes");
-    revalidatePath(`/recipes/${foundRecipe.id}`);
-    revalidatePath(`/recipes/${foundRecipe.id}/edit`);
-    revalidatePath("/meals");
-    revalidatePath("/plans");
+
+    await Promise.all([
+      removeCacheKeys(`user_${user.id}_meals*`),
+      removeCacheKeys(`user_${user.id}_saved_recipes*`)
+    ]);
 
     return {
       success: true as const,
@@ -289,10 +293,37 @@ export const deleteRecipe = authActionClient
     const deleteImageOperation = axios.delete(url);
     const deleteRecipeQuery = db.delete(recipe).where(eq(recipe.id, foundRecipe.id));
     const deleteRecipeQueryIndexOperation = deleteRecipeQueryIndex(foundRecipe.id);
-    const removeCacheKeyOperation = removeCacheKeys(`user_${user.id}_created_recipes_count`);
 
-    await Promise.all([deleteImageOperation, deleteRecipeQuery, deleteRecipeQueryIndexOperation, removeCacheKeyOperation]);
-    revalidatePath("/recipes");
+    await Promise.all([
+      deleteImageOperation,
+      deleteRecipeQuery,
+      deleteRecipeQueryIndexOperation
+    ]);
+
+    // There is an edge case where a plan only has one meal, and that meal only has one recipe
+    const deleteMealsQuery = db.delete(meal).where(
+      notExists(
+        db.select({ id: mealToRecipe.mealId })
+          .from(mealToRecipe)
+          .where(eq(mealToRecipe.mealId, meal.id))
+      )
+    );
+
+    const deletePlansQuery = db.delete(plan).where(
+      notExists(
+        db.select({ id: planToMeal.planId })
+          .from(planToMeal)
+          .where(eq(planToMeal.planId, plan.id))
+      )
+    );
+
+    await Promise.all([
+      deleteMealsQuery.then(() => deletePlansQuery),
+      removeCacheKeys(`user_${user.id}_created_recipes_count`),
+      removeCacheKeys(`user_${user.id}_upcoming_plan`),
+      removeCacheKeys(`user_${user.id}_meals*`),
+      removeCacheKeys(`user_${user.id}_saved_recipes*`)
+    ]);
 
     return {
       success: true as const,
@@ -338,7 +369,7 @@ export const toggleRecipeFavorite = authActionClient
     let isFavorite = false;
     const foundFavoritedRecipe = await db.query.recipeFavorite.findFirst({
       where: (recipeFavorite, { eq, and }) => and(
-        eq(recipeFavorite.userId, user.id!),
+        eq(recipeFavorite.userId, user.id),
         eq(recipeFavorite.recipeId, recipeId)
       ),
       columns: {
@@ -361,7 +392,7 @@ export const toggleRecipeFavorite = authActionClient
       isFavorite = false;
     } else {
       const insertRecipeFavoriteQuery = db.insert(recipeFavorite).values({
-        userId: user.id!,
+        userId: user.id,
         recipeId
       });
 
@@ -373,7 +404,10 @@ export const toggleRecipeFavorite = authActionClient
       isFavorite = true;
     }
 
-    await removeCacheKeys(`user_${user.id}_favorited_recipes_count`);
+    await Promise.all([
+      removeCacheKeys(`user_${user.id}_favorited_recipes_count`),
+      removeCacheKeys(`user_${user.id}_saved_recipes*`)
+    ]);
 
     return { 
       success: true as const,
@@ -394,7 +428,7 @@ export const toggleSavedListRecipe = authActionClient
     let isSaved = false;
     const foundSavedRecipe = await db.query.savedRecipe.findFirst({
       where: (savedRecipe, { eq, and }) => and(
-        eq(savedRecipe.userId, user.id!),
+        eq(savedRecipe.userId, user.id),
         eq(savedRecipe.recipeId, recipeId)
       ),
       columns: {
@@ -417,7 +451,7 @@ export const toggleSavedListRecipe = authActionClient
       isSaved = false;
     } else {
       const insertSavedRecipeQuery = db.insert(savedRecipe).values({
-        userId: user.id!,
+        userId: user.id,
         recipeId
       });
       
@@ -429,7 +463,7 @@ export const toggleSavedListRecipe = authActionClient
       isSaved = true;
     }
 
-    await removeCacheKeys(`user_${user.id}_saved_recipes_count`);
+    await removeCacheKeys(`user_${user.id}_saved_recipes*`);
 
     return {
       success: true as const,
@@ -654,14 +688,14 @@ export const createReview = authActionClient
     const foundReview = await db.query.recipeReview.findFirst({
       where: (review, { eq, and }) => and(
         eq(review.recipeId, recipeId),
-        eq(review.userId, user.id!)
+        eq(review.userId, user.id)
       )
     });
 
     if (foundReview) throw new ActionError("You have already created a review for this recipe!");
     const insertRecipeReviewQuery = db.insert(recipeReview).values({
       recipeId,
-      userId: user.id!,
+      userId: user.id,
       rating: review.rating,
       content: review.content || undefined,
     }).returning();
@@ -754,7 +788,7 @@ export const toggleReviewLike = authActionClient
       if (!foundReview) throw new ActionError("Review does not exist.");
       await db.insert(reviewLike).values({
         reviewId,
-        userId: user.id!
+        userId: user.id
       });
 
       const [{ likeCount: updatedLikeCount }] = await db.update(recipeReview)

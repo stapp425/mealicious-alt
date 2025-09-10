@@ -172,7 +172,7 @@ const MealRecipesResults = memo(({
       userId,
       query
     }),
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false
   });
@@ -201,7 +201,7 @@ const MealRecipesResults = memo(({
       limit: MAX_RECIPE_RESULT_DISPLAY_LIMIT,
       offset: currentPage * MAX_RECIPE_RESULT_DISPLAY_LIMIT
     }),
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false
   });

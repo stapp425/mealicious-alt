@@ -16,13 +16,12 @@ import { auth } from "@/auth";
 import AboutSection from "@/components/user/main/about-section";
 import Image from "next/image";
 
-type PageProps = {
-  params: Promise<{ user_id: string; }>;
-};
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const MAX_RECIPE_DISPLAY_LIMIT = 20;
 
-export async function generateMetadata({ params }: { params: Promise<{ user_id: string; }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/user/[user_id]">): Promise<Metadata> {
   const { user_id: userId } = await params;
   const foundUser = await getUserDetails(userId);
 
@@ -50,7 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ user_id: 
   };
 }
 
-export default async function Page({ params }: PageProps) {
+export default async function Page({ params }: PageProps<"/user/[user_id]">) {
   const { user_id: userId } = await params;
   const foundUser = await getUserDetails(userId);
 

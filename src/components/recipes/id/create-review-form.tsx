@@ -61,16 +61,14 @@ export default function CreateReviewForm({
     resolver: zodResolver(CreateReviewFormSchema)
   });
 
-  const { executeAsync, isExecuting } = useAction(createReview, {
+  const { execute, isExecuting } = useAction(createReview, {
     onSuccess: async ({ data }) => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["recipe-reviews", recipeId]
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["recipe-statistics", recipeId]
-        })
-      ]);
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => 
+          queryKey[0] === "string" && 
+          ["recipe-reviews", "recipe-statistics"].includes(queryKey[0]) &&
+          queryKey[1] === recipeId
+      });
 
       refresh();
       toast.success(data.message);
@@ -88,7 +86,7 @@ export default function CreateReviewForm({
 
   return (
     <form 
-      onSubmit={handleSubmit(async (data) => await executeAsync({ recipeId, review: data }))}
+      onSubmit={handleSubmit((data) => execute({ recipeId, review: data }))}
       className={cn("@container", className)}
       {...props}
     >

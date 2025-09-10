@@ -109,7 +109,7 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
   const [savedRecipesCount, savedRecipes] = await Promise.all([
     getCachedData({
       cacheKey: `saved_recipes_user_${userId}`,
-      timeToLive: 120,
+      timeToLive: 60 * 10, // 10 minutes
       call: () => savedRecipesCountQuery,
       schema: CountSchema
     }),

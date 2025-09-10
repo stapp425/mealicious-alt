@@ -2,30 +2,30 @@ import { auth } from "@/auth";
 import ChangeCuisinePreferencesForm from "@/components/settings/preferences/change-cuisine-preferences-form";
 import ChangeDietPreferencesForm from "@/components/settings/preferences/change-diet-preferences-form";
 import ChangeDishTypePreferencesForm from "@/components/settings/preferences/change-dish-type-preferences-form";
-// import ChangeNutritionPreferencesForm from "@/components/settings/preferences/change-nutrition-preferences-form";
 import { db } from "@/db";
 import { cuisine, diet, dishType, user, userToCuisine, userToDiet, userToDishType } from "@/db/schema";
+import { getCachedData } from "@/lib/actions/redis";
+import { IdSchema, UrlSchema } from "@/lib/zod";
+import { MAX_CUISINE_SCORE, MAX_DIET_SCORE, MAX_DISH_TYPE_SCORE } from "@/lib/zod/settings";
 import { asc, eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import z from "zod/v4";
 
 export default async function Page() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
-  const { id: userId } = session.user;
+  const userId = session.user.id;
 
-  // const nutritionPreferencesQuery = getUserNutritionPreferences(userId);
   const dietPreferencesQuery = getUserDietPreferences(userId);
   const dishTypePreferencesQuery = getUserDishTypePreferences(userId);
   const cuisinePreferencesQuery = getUserCuisinePreferences(userId);
 
   const [
-    // nutritionPreferences,
     dietPreferences,
     dishTypePreferences,
     cuisinePreferences
   ] = await Promise.all([
-    // nutritionPreferencesQuery,
     dietPreferencesQuery,
     dishTypePreferencesQuery,
     cuisinePreferencesQuery
@@ -33,9 +33,6 @@ export default async function Page() {
   
   return (
     <div className="grid gap-5">
-      {/* <ChangeNutritionPreferencesForm
-        nutritionPreferences={nutritionPreferences}
-      /> */}
       <ChangeCuisinePreferencesForm
         cuisinePreferences={cuisinePreferences}
       />
@@ -73,16 +70,46 @@ const getUserDietPreferences = cache(async (userId: string) => {
     .orderBy(asc(dietSubQuery.name))
     .as("user_to_diet_sub");
 
-  const userDietsQuery = db.select({
-    preferredDiets: sql<{
+  const userDietsQuery = getCachedData({
+    cacheKey: `user_${userId}_diet_preferences`,
+    timeToLive: 60 * 5, // 5 minutes
+    schema: z.array(
+      z.object({
+        preferredDiets: z.array(z.object({
+          id: IdSchema,
+          name: z.string().nonempty(),
+          description: z.string().nonempty(),
+          score: z.number()
+            .nonnegative({ abort: true })
+            .max(MAX_DIET_SCORE)
+        }))
+      })
+    ).length(1).transform((val) => val[0].preferredDiets.reduce((a, b) => {
+      a[b.name] = {
+        id: b.id,
+        name: b.name,
+        description: b.description,
+        score: b.score
+      };
+
+      return a;
+    }, {} as Record<string, {
       id: string;
       name: string;
       description: string;
       score: number;
-    }[]>`coalesce(json_agg(${userToDietSubQuery.data}), '[]'::json)`
-  }).from(user)
-    .where(eq(user.id, userId))
-    .innerJoinLateral(userToDietSubQuery, sql`true`);
+    }>)),
+    call: () => db.select({
+      preferredDiets: sql<{
+        id: string;
+        name: string;
+        description: string;
+        score: number;
+      }[]>`coalesce(json_agg(${userToDietSubQuery.data}), '[]'::json)`
+    }).from(user)
+      .where(eq(user.id, userId))
+      .innerJoinLateral(userToDietSubQuery, sql`true`)
+  });
 
   const defaultUserDietsQuery = db.select({
     id: diet.id,
@@ -91,26 +118,13 @@ const getUserDietPreferences = cache(async (userId: string) => {
   }).from(diet)
     .orderBy(asc(diet.name));
 
-  const [[userDiets], defaultUserDiets] = await Promise.all([userDietsQuery, defaultUserDietsQuery]);
-
-  const userDietsObject = userDiets?.preferredDiets.reduce((a, b) => {
-    a[b.name] = {
-      id: b.id,
-      name: b.name,
-      description: b.description,
-      score: b.score
-    };
-
-    return a;
-  }, {} as Record<string, {
-    id: string;
-    name: string;
-    description: string;
-    score: number;
-  }>) ?? {};
+  const [userDiets, defaultUserDiets] = await Promise.all([
+    userDietsQuery,
+    defaultUserDietsQuery
+  ]);
 
   const diffedUserDiets = defaultUserDiets.map((u) => {
-    const matchingUserDiet = userDietsObject[u.name];
+    const matchingUserDiet = userDiets[u.name];
     return matchingUserDiet ? {
       ...matchingUserDiet,
       name: u.name
@@ -149,16 +163,47 @@ const getUserDishTypePreferences = cache(async (userId: string) => {
     .orderBy(asc(dishTypeSubQuery.name))
     .as("user_to_dish_type_sub");
 
-  const userDishTypesQuery = db.select({
-    preferredDishTypes: sql<{
+  
+  const userDishTypesQuery = getCachedData({
+    cacheKey: `user_${userId}_dish_type_preferences`,
+    timeToLive: 60 * 5, // 5 minutes
+    schema: z.array(
+      z.object({
+        preferredDishTypes: z.array(z.object({
+          id: IdSchema,
+          name: z.string().nonempty(),
+          description: z.string().nonempty(),
+          score: z.number()
+            .nonnegative({ abort: true })
+            .max(MAX_DISH_TYPE_SCORE)
+        }))
+      })
+    ).length(1).transform((val) => val[0].preferredDishTypes.reduce((a, b) => {
+      a[b.name] = {
+        id: b.id,
+        name: b.name,
+        description: b.description,
+        score: b.score
+      };
+
+      return a;
+    }, {} as Record<string, {
       id: string;
       name: string;
       description: string;
       score: number;
-    }[]>`coalesce(json_agg(${userToDishTypeSubQuery.data}), '[]'::json)`
-  }).from(user)
-    .where(eq(user.id, userId))
-    .innerJoinLateral(userToDishTypeSubQuery, sql`true`);
+    }>)),
+    call: () => db.select({
+      preferredDishTypes: sql<{
+        id: string;
+        name: string;
+        description: string;
+        score: number;
+      }[]>`coalesce(json_agg(${userToDishTypeSubQuery.data}), '[]'::json)`
+    }).from(user)
+      .where(eq(user.id, userId))
+      .innerJoinLateral(userToDishTypeSubQuery, sql`true`)
+  });
 
   const defaultUserDishTypesQuery = db.select({
     id: dishType.id,
@@ -167,26 +212,10 @@ const getUserDishTypePreferences = cache(async (userId: string) => {
   }).from(dishType)
     .orderBy(asc(dishType.name));
 
-  const [[userDishTypes], defaultUserDishTypes] = await Promise.all([userDishTypesQuery, defaultUserDishTypesQuery]);
-
-  const userDishTypesObject = userDishTypes?.preferredDishTypes.reduce((a, b) => {
-    a[b.name] = {
-      id: b.id,
-      name: b.name,
-      description: b.description,
-      score: b.score
-    };
-
-    return a;
-  }, {} as Record<string, {
-    id: string;
-    name: string;
-    description: string;
-    score: number;
-  }>) ?? {};
+  const [userDishTypes, defaultUserDishTypes] = await Promise.all([userDishTypesQuery, defaultUserDishTypesQuery]);
 
   const diffedUserDishTypes = defaultUserDishTypes.map((u) => {
-    const matchingUserDishType = userDishTypesObject[u.name];
+    const matchingUserDishType = userDishTypes[u.name];
     return matchingUserDishType ? {
       ...matchingUserDishType,
       name: u.name
@@ -227,17 +256,34 @@ const getUserCuisinePreferences = cache(async (userId: string) => {
     .orderBy(asc(cuisineSubQuery.adjective))
     .as("user_to_cuisine_sub");
 
-  const [{ preferredCuisines }] = await db.select({
-    preferredCuisines: sql<{
-      id: string;
-      icon: string;
-      adjective: string;
-      description: string;
-      score: number;
-    }[]>`coalesce(json_agg(${userToCuisineSubQuery.data}), '[]'::json)`
-  }).from(user)
-    .where(eq(user.id, userId))
-    .innerJoinLateral(userToCuisineSubQuery, sql`true`);
+  const preferredCuisines = await getCachedData({
+    cacheKey: `user_${userId}_cuisine_preferences`,
+    timeToLive: 60 * 5, // 5 minutes
+    schema: z.array(
+      z.object({
+        preferredCuisines: z.array(z.object({
+          id: IdSchema,
+          icon: UrlSchema,
+          adjective: z.string().nonempty(),
+          description: z.string().nonempty(),
+          score: z.number()
+            .nonnegative()
+            .max(MAX_CUISINE_SCORE)
+        }))
+      })
+    ).length(1).transform((val) => val[0].preferredCuisines),
+    call: () => db.select({
+      preferredCuisines: sql<{
+        id: string;
+        icon: string;
+        adjective: string;
+        description: string;
+        score: number;
+      }[]>`coalesce(json_agg(${userToCuisineSubQuery.data}), '[]'::json)`
+    }).from(user)
+      .where(eq(user.id, userId))
+      .innerJoinLateral(userToCuisineSubQuery, sql`true`)
+  });
 
   return preferredCuisines;
 });

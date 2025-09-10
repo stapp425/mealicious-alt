@@ -35,7 +35,7 @@ export function useCreateMealFormContext() {
 
 export default function CreateMealForm({ userId }: CreateMealFormProps) {
   const queryClient = useQueryClient();
-  const { replace } = useRouter();
+  const { push } = useRouter();
   
   const {
     control,
@@ -59,12 +59,12 @@ export default function CreateMealForm({ userId }: CreateMealFormProps) {
   });
 
   const { execute, isExecuting } = useAction(createMeal, {
-    onSuccess: ({ data }) => {
-      queryClient.invalidateQueries({
+    onSuccess: async ({ data }) => {
+      await queryClient.invalidateQueries({
         queryKey: ["plan-form-meal-results"]
       });
       reset();
-      replace("/meals");
+      push("/meals");
       toast.success(data.message);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)

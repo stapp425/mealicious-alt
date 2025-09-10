@@ -23,7 +23,7 @@ export default async function UpcomingPlan() {
 
   const [upcomingPlan] = await getCachedData({
     cacheKey: `user_${userId}_upcoming_plan`,
-    timeToLive: 1200, // 20 minutes
+    timeToLive: 60 * 10, // 10 minutes
     schema: z.array(UpcomingPlanSchema).max(1),
     call: () => {
       const dietSubQuery = db.select({

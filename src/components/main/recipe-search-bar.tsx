@@ -170,7 +170,9 @@ const RecipeSearchBody = memo(({
     isLoading: searchResultsLoading
   } = useQuery({
     queryKey: ["quick-recipe-search-results", debouncedQuery, debouncedTouched],
-    queryFn: () => debouncedTouched ? searchForRecipesQueryIndices(debouncedQuery) : [],
+    queryFn: () => searchForRecipesQueryIndices(debouncedQuery),
+    enabled: debouncedTouched,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false
   });

@@ -137,10 +137,10 @@ export default function SidebarUser() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem
-                onClick={async () => await Promise.all([
-                  signOut(),
-                  queryClient.clear()
-                ])}
+                onClick={async () => {
+                  queryClient.clear();
+                  await signOut();
+                }}
                 className="cursor-pointer"
               >
                 <span>Log Out</span>

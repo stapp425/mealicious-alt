@@ -24,8 +24,6 @@ import Reviews from "@/components/recipes/id/reviews";
 import Statistics from "@/components/recipes/id/statistics";
 import { revalidatePath } from "next/cache";
 
-const MAX_NUTRIENT_PREVIEW_DISPLAY_LIMIT = 4;
-
 export async function generateMetadata({ params }: PageProps<"/recipes/[recipe_id]">): Promise<Metadata> {
   const { recipe_id: id } = await params;
   const session = await getSession();
@@ -49,6 +47,11 @@ export async function generateMetadata({ params }: PageProps<"/recipes/[recipe_i
     }
   };
 }
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const MAX_NUTRIENT_PREVIEW_DISPLAY_LIMIT = 4;
 
 export default async function Page({ params }: PageProps<"/recipes/[recipe_id]">) {
   const session = await auth();

@@ -44,10 +44,10 @@ export default function ProfileInfo({
     {
       label: "Log Out",
       icon: LogOut,
-      onClick: async () => await Promise.all([
-        signOut(),
-        queryClient.clear()
-      ])
+      onClick: async () => {
+        queryClient.clear();
+        await signOut();
+      }
     }
   ], [userInfo, push, queryClient]);
 

@@ -8,7 +8,7 @@ export const maxFileSize = {
 
 export const IdSchema = z.string({
   error: (issue) => typeof issue.input === "undefined"
-    ? "An id."
+    ? "An id is required."
     : "Expected a string, but received an invalid type."
 }).nonempty({
   error: "Id cannot be empty."

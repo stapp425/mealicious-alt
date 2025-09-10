@@ -16,6 +16,7 @@ export default async function RecipeCount({ userId }: RecipeCountProps) {
   const createdRecipesCountQuery = getCachedData({
     cacheKey: `user_${userId}_created_recipes_count`,
     schema: CountSchema,
+    timeToLive: 60 * 10, // 10 minutes
     call: () => db.select({ count: count() })
       .from(recipe)
       .where(eq(recipe.createdBy, userId))
@@ -24,6 +25,7 @@ export default async function RecipeCount({ userId }: RecipeCountProps) {
   const savedRecipesCountQuery = getCachedData({
     cacheKey: `user_${userId}_saved_recipes_count`,
     schema: CountSchema,
+    timeToLive: 60 * 10, // 10 minutes
     call: () => db.select({ count: count() })
       .from(recipe)
       .where(and(
@@ -42,6 +44,7 @@ export default async function RecipeCount({ userId }: RecipeCountProps) {
   const favoritedRecipesCountQuery = getCachedData({
     cacheKey: `user_${userId}_favorited_recipes_count`,
     schema: CountSchema,
+    timeToLive: 60 * 10, // 10 minutes
     call: () => db.select({ count: count() })
       .from(recipeFavorite)
       .where(eq(recipeFavorite.userId, userId))

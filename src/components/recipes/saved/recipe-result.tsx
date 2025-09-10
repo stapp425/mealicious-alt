@@ -62,11 +62,11 @@ export default function RecipeResult({
   };
 }) {
   const { refresh, push } = useRouter();
-  const [_isFavorite, _setIsFavorite] = useState(recipe.isFavorite);
+  const [isFavorite, setIsFavorite] = useState(recipe.isFavorite);
 
   const onToggleFavorite = useCallback(
-    (status: boolean) => _setIsFavorite(status),
-    [_setIsFavorite]
+    (status: boolean) => setIsFavorite(status),
+    [setIsFavorite]
   );
 
   return (
@@ -90,7 +90,7 @@ export default function RecipeResult({
         />
         <div className="absolute size-full bg-linear-to-t from-gray-700/25 from-5% to-white/0 to-50%"/>
         {
-          _isFavorite && (
+          isFavorite && (
             <div className="absolute bottom-2 left-2 flex justify-center items-center size-8 bg-rose-400 rounded-md">
               <Heart size={18} className="text-white"/>
             </div>
@@ -133,7 +133,7 @@ export default function RecipeResult({
               <DropdownMenuSeparator />
               <FavoriteOption
                 recipeId={recipe.id}
-                isFavorite={_isFavorite}
+                isFavorite={isFavorite}
                 onToggleFavorite={onToggleFavorite}
               />
               <DropdownMenuSeparator />
@@ -150,16 +150,23 @@ export default function RecipeResult({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DeleteOption 
-                    recipeId={recipe.id}
-                    onDelete={refresh}
-                  />
+                  <DropdownMenuItem 
+                    variant="destructive"
+                    asChild
+                  >
+                    <DeleteOption 
+                      recipeId={recipe.id}
+                      onDelete={refresh}
+                    />
+                  </DropdownMenuItem>
                   </>
                 ) : (
-                  <UnsaveOption 
-                    recipeId={recipe.id}
-                    onUnsave={refresh}
-                  />
+                  <DropdownMenuItem asChild>
+                    <UnsaveOption 
+                      recipeId={recipe.id}
+                      onUnsave={refresh}
+                    />
+                  </DropdownMenuItem>
                 )
               }
             </DropdownMenuContent>
@@ -231,22 +238,21 @@ const FavoriteOption = memo(({
   onToggleFavorite?: (status: boolean) => void;
 }) => {
   const {
-    execute: executeToggleFavorite,
-    isExecuting: isToggleFavoriteExecuting
+    execute: executeToggleFavorite
   } = useAction(toggleRecipeFavorite, {
+    onExecute: () => onToggleFavorite?.(!isFavorite), // optimistically change the favorite status
     onSuccess: ({ data }) => onToggleFavorite?.(data.isFavorite),
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });
   
   return (
     <DropdownMenuItem
-      disabled={isToggleFavoriteExecuting}
       onClick={() => executeToggleFavorite(recipeId)}
       onSelect={(e) => e.preventDefault()}
       className="cursor-pointer disabled:cursor-not-allowed"
     >
       {isFavorite ? "Unfavorite" : "Favorite"}
-      {isToggleFavoriteExecuting ? <Loader2 className="animate-spin"/> : <Heart fill={isFavorite ? "var(--foreground)" : "none"}/>}
+      <Heart fill={isFavorite ? "var(--foreground)" : "none"}/>
     </DropdownMenuItem>
   );
 });
@@ -260,17 +266,18 @@ const DeleteOption = memo(({
   recipeId: string;
   onDelete?: () => void;
 }) => {
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const {
     execute: executeDeleteRecipe,
     isExecuting: isDeleteRecipeExecuting
   } = useAction(deleteRecipe, {
-    onSuccess: ({ data }) => {
-      queryClient.invalidateQueries({
-        queryKey: ["meal-form-recipes"]
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["plan-form-calendar-plans"]
+    onSuccess: async ({ data }) => {
+      setOpen(false);
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => 
+          typeof queryKey[0] === "string" && 
+          ["meal-form-recipes", "plan-form-calendar-plans", "plan-calendar", "daily-plan", "more-plans"].includes(queryKey[0])
       });
       toast.warning(data.message);
       onDelete?.();
@@ -279,36 +286,31 @@ const DeleteOption = memo(({
   });
   
   return (
-    <DropdownMenuItem 
-      variant="destructive"
-      asChild
-    >
-      <AlertDialog>
-        <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
-          Delete
-          <Trash2 size={16} className="text-muted-foreground"/>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Deleting this recipe is an irreversible action! Other users who have this recipe saved will not be able to access this recipe permanently!
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
-            <Button
-              onClick={() => executeDeleteRecipe(recipeId)}
-              disabled={isDeleteRecipeExecuting}
-              variant="destructive"
-              className="min-w-[75px] cursor-pointer"
-            >
-              {isDeleteRecipeExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </DropdownMenuItem>
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
+        Delete
+        <Trash2 size={16} className="text-muted-foreground"/>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Deleting this recipe is an irreversible action! Other users who have this recipe saved will not be able to access this recipe permanently!
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+          <Button
+            onClick={() => executeDeleteRecipe(recipeId)}
+            disabled={isDeleteRecipeExecuting}
+            variant="destructive"
+            className="min-w-18 cursor-pointer"
+          >
+            {isDeleteRecipeExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 });
 
@@ -321,26 +323,27 @@ const UnsaveOption = memo(({
   recipeId: string;
   onUnsave?: () => void;
 }) => {
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const {
     execute: executeToggleSaved,
     isExecuting: isToggleSavedExecuting
   } = useAction(toggleSavedListRecipe, {
-    onSuccess: ({ data }) => {
+    onSuccess: async ({ data }) => {
+      setOpen(false);
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => 
+          typeof queryKey[0] === "string" && 
+          ["meal-form-recipes", "plan-form-calendar-plans"].includes(queryKey[0])
+      });
       toast.warning(data.message);
-      queryClient.invalidateQueries({
-        queryKey: ["meal-form-recipes"]
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["plan-form-calendar-plans"]
-      });
       onUnsave?.();
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });
   
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger className="hover:bg-accent cursor-pointer w-full flex justify-between items-center text-sm px-2 py-1.5 rounded-sm">
         Unsave
         <X size={16} className="text-muted-foreground"/>

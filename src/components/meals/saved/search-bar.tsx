@@ -7,12 +7,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { useHydration } from "@/hooks/use-hydration";
-import { mealTypes } from "@/lib/types";
 import { MAX_MEAL_SEARCH_CALORIES, MealSearch, MealSearchSchema } from "@/lib/zod/meal";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Search } from "lucide-react";
-import { parseAsIndex, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
-import { memo } from "react";
+import { parseAsIndex, parseAsInteger, parseAsString, useQueryStates } from "nuqs";
+import { memo, useMemo } from "react";
 import { Control, useForm, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form";
 import { useMediaQuery } from "usehooks-ts";
 
@@ -22,10 +21,7 @@ export default function SearchBar() {
   const [,setParams] = useQueryStates({
     page: parseAsIndex.withDefault(0),
     query: parseAsString.withDefault(""),
-    mealType: parseAsStringLiteral(mealTypes),
     maxCalories: parseAsInteger.withDefault(0)
-  }, {
-    shallow: false
   });
 
   const {
@@ -41,19 +37,23 @@ export default function SearchBar() {
     }
   });
 
-  const onSubmit = handleSubmit((data) => {
+  const onSubmit = useMemo(() => handleSubmit((data) => {
     setParams({
-      ...data,
+      query: data.query || null,
+      maxCalories: data.maxCalories || null,
       page: 0
+    }, {
+      shallow: false,
+      throttleMs: 500
     });
-  });
+  }), [handleSubmit, setParams]);
 
   return (
     <Popover>
       <form onSubmit={onSubmit} className="w-full flex flex-col items-start gap-3">
         <div className="w-full flex justify-between items-center gap-3">
           <Input 
-            placeholder="Meal Title"
+            placeholder="Meal Query"
             {...register("query")}
             className="rounded-sm shadow-none"
           />

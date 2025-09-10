@@ -121,7 +121,7 @@ export default function EditRecipeForm({
   nutrition
 }: EditRecipeFormProps) {  
   const queryClient = useQueryClient();
-  const { replace } = useRouter();
+  const { push } = useRouter();
 
   const hydrated = useHydration();
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
@@ -230,21 +230,15 @@ export default function EditRecipeForm({
           throw new Error("Failed to add image to the recipe.");
       }
 
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["meal-form-recipes"]
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["recipe-details", data.id]
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["plan-form-calendar-plans"]
-        })
-      ]);
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => 
+          typeof queryKey[0] === "string" && 
+          ["meal-form-recipes", "recipe-details", "plan-calendar", "daily-plan", "more-plans", "quick-recipe-search-results", "search-recipes-results"].includes(queryKey[0])
+      });
 
       reset(data);
       toast.success("Recipe successfully edited!");
-      replace(`/recipes/${data.id}`);
+      push(`/recipes/${data.id}`);
     } catch (err) {
       if (err instanceof AxiosError) {
         toast.error("Failed to upload the recipe image.");
@@ -254,7 +248,7 @@ export default function EditRecipeForm({
         return;
       }
     }
-  }), [handleSubmit, recipe.image, queryClient, reset, replace]);
+  }), [handleSubmit, recipe.image, queryClient, reset, push]);
 
   const providerProps = useMemo(
     () => ({ 

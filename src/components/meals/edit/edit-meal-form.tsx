@@ -50,7 +50,7 @@ export function useEditMealFormContext() {
 
 export default function EditMealForm({ userId, meal }: EditMealFormProps) {
   const queryClient = useQueryClient();
-  const { replace } = useRouter();
+  const { push } = useRouter();
   
   const {
     control,
@@ -73,12 +73,14 @@ export default function EditMealForm({ userId, meal }: EditMealFormProps) {
   });
 
   const { execute, isExecuting } = useAction(updateMeal, {
-    onSuccess: ({ data, input }) => {
-      queryClient.invalidateQueries({
-        queryKey: ["plan-form-meal-results"]
+    onSuccess: async ({ data, input }) => {
+      await queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => 
+          typeof queryKey[0] === "string" && 
+          ["plan-form-meal-results", "plan-calendar", "daily-plan", "more-plans"].includes(queryKey[0])
       });
       reset(input);
-      replace("/meals");
+      push("/meals");
       toast.success(data.message);
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)

@@ -107,7 +107,7 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
   const [favoritedRecipesCount, favoritedRecipes] = await Promise.all([
     getCachedData({
       cacheKey: `favorited_recipes_user_${userId}`,
-      timeToLive: 120,
+      timeToLive: 60 * 10, // 10 minutes
       call: () => favoritedRecipesCountQuery,
       schema: CountSchema
     }),
