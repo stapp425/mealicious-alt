@@ -2,41 +2,55 @@
 
 import { editProfileAbout } from "@/lib/actions/user";
 import { cn } from "@/lib/utils";
-import { useOptimisticAction } from "next-safe-action/hooks";
-import { useRef, useState } from "react";
+import { useAction } from "next-safe-action/hooks";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { SquarePen } from "lucide-react";
+import z from "zod/v4";
 
 type AboutSectionProps = {
   isSessionUser: boolean;
-  about: string | null;
+  initialAboutContent: string | null;
 };
 
 const MAX_ABOUT_LENGTH = 1000;
 
-export default function AboutSection({ isSessionUser, about }: AboutSectionProps) {
-  const aboutContent = useRef(about);
+export default function AboutSection({ isSessionUser, initialAboutContent }: AboutSectionProps) {
+  const aboutContent = useRef(initialAboutContent);
   const [editMode, setEditMode] = useState(false);
-  const [aboutInput, setAboutInput] = useState(about);
-  const { executeAsync, isExecuting, optimisticState } = useOptimisticAction(editProfileAbout, {
-    currentState: aboutContent.current,
-    updateFn: (_, data) => data.newAbout,
-    onExecute: () => {
-      setEditMode(false);
-    },
+  const [input, setInput] = useState(initialAboutContent);
+  const { execute, isExecuting } = useAction(editProfileAbout, {
+    onExecute: () => setEditMode(false),
     onSuccess: ({ data }) => {
-      setAboutInput(data?.about || null);
-      aboutContent.current = data?.about || null;
+      aboutContent.current = data.about;
+      setInput(aboutContent.current);
     },
-    onError: () => {
-      toast.error("There was an error updating the about me section.");
+    onError: ({ error: { serverError } }) => {
+      toast.error(serverError);
       setEditMode(false);
+      setInput(aboutContent.current);
     }
   });
+
+  const AboutInputSchema = useMemo(
+    () => z.string({
+      error: (issue) => typeof issue === "undefined"
+        ? "An about input is required."
+        : "Expected a string, but received an invalid type."
+    }).max(MAX_ABOUT_LENGTH, {
+      abort: true,
+      error: `About input cannot have more than ${MAX_ABOUT_LENGTH.toLocaleString()} characters.`
+    }).refine((val) => val !== aboutContent.current, {
+      error: "Old and new about inputs cannot be the same."
+    }),
+    []
+  );
+
+  const { error: aboutInputError } = AboutInputSchema.safeParse(input || "");
   
   return (
-    <section className="max-w-screen sm:max-w-none grid gap-3">
+    <section className="max-w-screen @min-2xl:max-w-full grid gap-1.5">
       <div className="flex items-center gap-2">
         <h2 className="font-bold text-xl">About</h2>
         {
@@ -52,49 +66,44 @@ export default function AboutSection({ isSessionUser, about }: AboutSectionProps
       {
         editMode ? (
           <form 
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault();
-              await executeAsync({ newAbout: aboutInput });
+              execute(input);
             }}
             className="flex flex-col gap-2"
           >
-            <span className={cn(aboutInput && aboutInput.length > MAX_ABOUT_LENGTH && "text-red-500")}>
-              <b className="text-xl">{aboutInput?.length || 0}</b> / {MAX_ABOUT_LENGTH}
-            </span>
             <Textarea 
-              value={aboutInput || ""}
-              onChange={(e) => setAboutInput(e.target.value)}
-              placeholder="Add an about here..."
-              className="min-h-[150px] resize-y line-clamp-3 hyphens-auto"
+              value={input || ""}
+              onChange={(e) => setInput(e.target.value || null)}
+              placeholder="About"
+              className="min-h-24 resize-none hyphens-auto rounded-sm shadow-none"
             />
-            <div className="flex justify-end items-center gap-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditMode(false);
-                  setAboutInput(aboutContent.current);
-                }}
-                className="cursor-pointer underline"
-              >
-                Cancel
-              </button>
+            <span className={cn("shrink-0 text-sm", input && input.length > MAX_ABOUT_LENGTH && "text-red-500")}>
+              <b className="text-base">{input?.length || 0}</b> / {MAX_ABOUT_LENGTH}
+            </span>
+            <div className="flex items-center gap-6">
               <button
                 type="submit"
-                disabled={
-                  isExecuting || 
-                  !aboutInput || 
-                  aboutInput.length > MAX_ABOUT_LENGTH || 
-                  aboutInput === optimisticState
-                }
+                disabled={isExecuting || !!aboutInputError}
                 className="mealicious-button font-semibold text-sm py-2 px-8 rounded-sm"
               >
                 Edit
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditMode(false);
+                  setInput(aboutContent.current);
+                }}
+                className="cursor-pointer text-sm underline"
+              >
+                Cancel
+              </button>
             </div>
           </form>
         ) : (
-          <p className={cn(!optimisticState && "italic", "wrap-break-word hyphens-auto text-muted-foreground")}>
-            {optimisticState || "No description available."}
+          <p className={cn(!input && "italic", "wrap-break-word hyphens-auto text-muted-foreground")}>
+            {input || "No description available."}
           </p>
         )
       }

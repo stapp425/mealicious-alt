@@ -7,7 +7,6 @@ import { cache, Suspense } from "react";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import defaultProfilePicture from "@/img/default/default-pfp.jpg";
-import { Separator } from "@/components/ui/separator";
 import CreatedRecipes from "@/components/user/main/created-recipes";
 import SavedRecipes from "@/components/user/main/saved-recipes";
 import FavoritedRecipes from "@/components/user/main/favorited-recipes";
@@ -15,6 +14,8 @@ import { CarouselSkeleton } from "@/components/user/main/user-info-carousel";
 import { auth } from "@/auth";
 import AboutSection from "@/components/user/main/about-section";
 import Image from "next/image";
+import { CountSchema } from "@/lib/zod";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -60,55 +61,67 @@ export default async function Page({ params }: PageProps<"/user/[user_id]">) {
   const { id, image, name, about, createdAt } = foundUser.user;
   const { created, favorited, saved } = foundUser.counts;
 
+  const statistics = [
+    {
+      label: "Created Recipes",
+      Icon: Pencil,
+      amount: created
+    },
+    {
+      label: "Saved Recipes",
+      Icon: ArrowDownToLine,
+      amount: saved
+    },
+    {
+      label: "Favorited Recipes",
+      Icon: Heart,
+      amount: favorited
+    }
+  ];
+
   return (
-    <div className="flex-1 relative max-w-screen lg:max-w-[750px] overflow-x-hidden flex flex-col gap-3 mx-auto p-4">
-      <section className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-8">
-        <div className="relative size-35 rounded-full overflow-hidden">
+    <div className="flex-1 relative w-full @min-4xl:max-w-250 overflow-x-hidden flex flex-col gap-6 mx-auto p-4">
+      <section className="flex flex-col @min-2xl:flex-row justify-between items-center @min-2xl:items-stretch gap-6">
+        <div className="relative size-36 @min-2xl:size-42 overflow-hidden">
           <Image 
             src={image || defaultProfilePicture}
             alt={`Profile picture of ${name}`}
             fill
-            className="object-cover object-center bg-slate-100"
+            className="bg-slate-100 object-cover object-center rounded-full"
           />
         </div>
-        <div className="flex-1 grid gap-2">
+        <div className="w-full flex-1 flex flex-col items-center @min-2xl:items-start gap-1">
           <h1 className="font-bold text-3xl">{name}</h1>
-          <div className="flex text-muted-foreground items-center gap-2">
-            <Calendar size={16}/>
-            <h2 className="font-semibold text-muted-foreground">
+          <span className="bg-mealicious-primary font-semibold text-white text-sm py-1.5 px-3 mb-0.75 rounded-sm">Mealicious User</span>
+          <div className="w-fit text-muted-foreground text-sm flex items-center gap-2">
+            <Calendar size={14}/>
+            <h2 className="font-semibold">
               Joined on {format(createdAt, "MMMM do, yyyy")}
             </h2>
           </div>
-          <div className="w-full sm:w-fit flex min-h-[50px] justify-between sm:justify-start items-start sm:items-center gap-3 sm:gap-5">
-            <div className="flex-1 sm:flex-none sm:min-w-[50px] flex flex-col items-center gap-0.5">
-              <div className="flex flex-col sm:flex-row items-center gap-1.5">
-                <span className="font-bold text-2xl">{created.toLocaleString()}</span>
-                <Pencil size={18}/>
-              </div>
-              <span className="text-center font-semibold">Created Recipes</span>
-            </div>
-            <Separator orientation="vertical"/>
-            <div className="flex-1 sm:flex-none sm:min-w-[50px] flex flex-col items-center gap-0.5">
-              <div className="flex flex-col sm:flex-row items-center gap-1.5">
-                <span className="font-bold text-2xl">{saved.toLocaleString()}</span>
-                <ArrowDownToLine size={18}/>
-              </div>
-              <span className="text-center font-semibold">Saved Recipes</span>
-            </div>
-            <Separator orientation="vertical"/>
-            <div className="flex-1 sm:flex-none sm:min-w-[50px] flex flex-col items-center gap-0.5">
-              <div className="flex flex-col sm:flex-row items-center gap-1.5">
-                <span className="font-bold text-2xl">{favorited.toLocaleString()}</span>
-                <Heart size={18} className="fill-foreground"/>
-              </div>
-              <span className="text-center font-semibold">Favorited Recipes</span>
-            </div>
+          <div className="w-full @min-2xl:w-fit flex min-h-12 justify-between @min-2xl:justify-start items-start @min-2xl:items-center gap-10 @min-2xl:gap-12 mt-4 @min-2xl:mt-auto">
+            {
+              statistics.map(({ Icon, amount, label }) => (
+                <div
+                  key={label}
+                  className={cn(
+                    "flex-1 @min-2xl:flex-none @min-2xl:min-w-12 flex flex-col items-center gap-0.5"
+                  )}
+                >
+                  <div className="flex items-center gap-1.5 @min-2xl:gap-2">
+                    <Icon className="hidden @min-2xl:block size-4.5 @min-2xl:size-5.5"/>
+                    <span className="font-bold text-2xl">{amount.toLocaleString()}</span>
+                  </div>
+                  <span className="font-semibold @min-2xl:font-normal text-sm text-muted-foreground text-center max-w-16 @min-lg:max-w-none">{label}</span>
+                </div>
+              ))
+            }
           </div>
         </div>
       </section>
       <AboutSection 
         isSessionUser={sessionUserId === id}
-        about={about}
+        initialAboutContent={about}
       />
       <Suspense fallback={<CarouselSkeleton />}>
         <CreatedRecipes
@@ -149,11 +162,13 @@ const getUserDetails = cache(async (userId: string) => {
     .where(and(
       eq(recipe.createdBy, userId),
       eq(recipe.isPublic, true)
-    ));
+    ))
+    .then((val) => CountSchema.parse(val));
 
   const favoritedRecipeCountQuery = db.select({ count: count() })
     .from(recipeFavorite)
-    .where(eq(recipeFavorite.userId, userId));
+    .where(eq(recipeFavorite.userId, userId))
+    .then((val) => CountSchema.parse(val));
 
   const savedRecipeCountQuery = db.select({ count: count() })
     .from(recipe)
@@ -168,13 +183,14 @@ const getUserDetails = cache(async (userId: string) => {
             eq(savedRecipe.userId, userId)
           ))
       )
-    ));
+    ))
+    .then((val) => CountSchema.parse(val));
 
   const [
     user,
-    [{ count: createdRecipeCount }],
-    [{ count: favoritedRecipeCount }],
-    [{ count: savedRecipeCount }]
+    createdRecipeCount,
+    favoritedRecipeCount,
+    savedRecipeCount
   ] = await Promise.all([userQuery, createdRecipeCountQuery, favoritedRecipeCountQuery, savedRecipeCountQuery]);
 
   return {

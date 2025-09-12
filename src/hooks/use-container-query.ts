@@ -1,16 +1,18 @@
 import React from "react";
 import { useIsomorphicLayoutEffect } from "usehooks-ts";
 
+
+
 type UseContainerQueryProps = {
   initialValue?: boolean;
   condition: (dimensions: { width: number; height: number; }) => boolean;
 };
 
-export function useContainerQuery<T extends HTMLElement = HTMLElement>({
+export function useContainerQuery<E extends HTMLElement = HTMLElement>({
   initialValue = false,
   condition
 }: UseContainerQueryProps) {
-  const ref = React.useRef<T>(null);
+  const ref = React.useRef<E>(null);
   const [matches, setMatches] = React.useState(initialValue);
   
   useIsomorphicLayoutEffect(() => {

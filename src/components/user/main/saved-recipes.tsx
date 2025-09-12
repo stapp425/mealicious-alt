@@ -15,7 +15,7 @@ const MAX_DIET_DISPLAY_LIMIT = 3;
 export default async function SavedRecipes({ userId, limit }: SavedRecipesProps) {
   const caloriesSubQuery = db.select({
     recipeId: recipeToNutrition.recipeId,
-    calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.mapWith((val) => Number(val)).as("calories")
+    calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
   }).from(recipeToNutrition)
     .where(and(
       eq(nutrition.name, "Calories"),
@@ -59,8 +59,8 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
     id: recipe.id,
     title: recipe.title,
     image: recipe.image,
-    prepTime: sql`${recipe.prepTime}`.mapWith((val) => Number(val)),
-    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith((val) => Number(val)),
+    prepTime: sql`${recipe.prepTime}`.mapWith(Number),
+    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith(Number),
     diets: sql<{
       id: string;
       name: string;
@@ -92,7 +92,7 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
   return (
     <UserInfoCarousel 
       header="Saved Recipes"
-      href={`/user/${userId}/recipes?option=saved` as Route}
+      href={`/user/${userId}/recipes/saved` as Route}
       items={savedRecipes.map((r) => (
         <SavedRecipesResult 
           key={r.id}

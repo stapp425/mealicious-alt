@@ -1,20 +1,26 @@
-import { db } from "@/db";
-import { diet, nutrition, recipe, recipeToDiet, recipeToNutrition, savedRecipe, user } from "@/db/schema";
-import { getCachedData } from "@/lib/actions/redis";
-import { sql, and, eq, exists, not, count } from "drizzle-orm";
-import { SearchX } from "lucide-react";
 import Pagination from "@/components/user/recipes/pagination";
 import SavedRecipesResult from "@/components/user/recipes/saved-recipes-result";
+import { db } from "@/db";
+import { diet, nutrition, recipe, recipeToDiet, recipeToNutrition, savedRecipe, user } from "@/db/schema";
+import { MAX_USER_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
 import { CountSchema } from "@/lib/zod";
+import { sql, and, eq, exists, count, not } from "drizzle-orm";
+import { SearchX } from "lucide-react";
+import { createLoader, parseAsIndex } from "nuqs/server";
 
-type SavedRecipesProps = {
-  userId: string;
-  limit: number;
-};
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const MAX_DIET_DISPLAY_LIMIT = 3;
 
-export default async function SavedRecipes({ userId, limit }: SavedRecipesProps) {
+const loadSearchParams = createLoader({
+  page: parseAsIndex.withDefault(0)
+});
+
+export default async function Page({ params, searchParams }: PageProps<"/user/[user_id]/recipes/saved">) {
+  const { user_id: userId } = await params;
+  const { page } = await loadSearchParams(searchParams);
+
   const caloriesSubQuery = db.select({
     recipeId: recipeToNutrition.recipeId,
     calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.mapWith((val) => Number(val)).as("calories")
@@ -104,15 +110,11 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
     .leftJoinLateral(caloriesSubQuery, sql`true`)
     .leftJoinLateral(recipeToDietSubQuery, sql`true`)
     .leftJoinLateral(userSubQuery, sql`true`)
-    .limit(limit);
+    .limit(MAX_USER_RECIPE_DISPLAY_LIMIT)
+    .offset(page * MAX_USER_RECIPE_DISPLAY_LIMIT);
 
   const [savedRecipesCount, savedRecipes] = await Promise.all([
-    getCachedData({
-      cacheKey: `saved_recipes_user_${userId}`,
-      timeToLive: 60 * 10, // 10 minutes
-      call: () => savedRecipesCountQuery,
-      schema: CountSchema
-    }),
+    savedRecipesCountQuery.then((val) => CountSchema.parse(val)),
     savedRecipesQuery
   ]);
 
@@ -120,7 +122,7 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
     return (
       <section className="flex flex-col justify-center gap-2">
         <h1 className="font-bold text-xl">Saved Recipes ({savedRecipesCount})</h1>
-        <div className="border border-border bg-sidebar min-h-[250px] flex flex-col justify-center items-center gap-4 py-12 rounded-md">
+        <div className="border border-border bg-sidebar min-h-72 flex flex-col justify-center items-center gap-4 py-12 rounded-md">
           <SearchX size={48} className="stroke-muted-foreground"/>
           <h3 className="font-bold text-lg">No saved recipes yet...</h3>
         </div>
@@ -131,7 +133,7 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
   return (
     <section className="flex-1 flex flex-col gap-3">
       <h1 className="font-bold text-xl">Saved Recipes ({savedRecipesCount})</h1>
-      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="flex-1 grid @min-lg:grid-cols-2 @min-4xl:grid-cols-3 content-start gap-4">
         {
           savedRecipes.map((r) => (
             <SavedRecipesResult 
@@ -141,7 +143,7 @@ export default async function SavedRecipes({ userId, limit }: SavedRecipesProps)
           ))
         }
       </div>
-      <Pagination totalPages={Math.ceil(savedRecipesCount / limit)}/>
+      <Pagination totalPages={Math.ceil(savedRecipesCount / MAX_USER_RECIPE_DISPLAY_LIMIT)}/>
     </section>
   );
 }

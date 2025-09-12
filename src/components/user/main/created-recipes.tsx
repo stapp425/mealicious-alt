@@ -15,7 +15,7 @@ const MAX_DIET_DISPLAY_LIMIT = 3;
 export default async function CreatedRecipes({ userId, limit }: CreatedRecipesProps) {
   const caloriesSubQuery = db.select({
     recipeId: recipeToNutrition.recipeId,
-    calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.mapWith((val) => Number(val)).as("calories")
+    calories: recipeToNutrition.amount
   }).from(recipeToNutrition)
     .where(and(
       eq(nutrition.name, "Calories"),
@@ -50,8 +50,8 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
     id: recipe.id,
     title: recipe.title,
     image: recipe.image,
-    prepTime: sql`${recipe.prepTime}`.mapWith((val) => Number(val)),
-    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith((val) => Number(val)),
+    prepTime: sql`${recipe.prepTime}`.mapWith(Number),
+    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith(Number),
     diets: sql<{
       id: string;
       name: string;
@@ -59,7 +59,10 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
     createdAt: recipe.createdAt,
     updatedAt: recipe.updatedAt
   }).from(recipe)
-    .where(and(eq(recipe.createdBy, userId), eq(recipe.isPublic, true)))
+    .where(and(
+      eq(recipe.createdBy, userId),
+      eq(recipe.isPublic, true)
+    ))
     .leftJoinLateral(caloriesSubQuery, sql`true`)
     .leftJoinLateral(recipeToDietSubQuery, sql`true`)
     .orderBy(desc(recipe.createdAt))
@@ -68,7 +71,7 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
   return (
     <UserInfoCarousel 
       header="Created Recipes"
-      href={`/user/${userId}/recipes?option=created` as Route}
+      href={`/user/${userId}/recipes/created` as Route}
       items={createdRecipes.map((r) => (
         <CreatedRecipesResult 
           key={r.id}

@@ -7,7 +7,7 @@ export default function RecipesSkeleton() {
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {
           Array.from({ length: 12 }, (_, i) => i).map((i) => (
-            <Skeleton key={i} className="h-[250px] rounded-md"/>
+            <Skeleton key={i} className="h-64 rounded-md"/>
           ))
         }
       </div>

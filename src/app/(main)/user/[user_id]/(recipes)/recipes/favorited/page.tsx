@@ -1,23 +1,29 @@
+import FavoritedRecipesResult from "@/components/user/recipes/favorited-recipes-result";
+import Pagination from "@/components/user/recipes/pagination";
 import { db } from "@/db";
 import { diet, nutrition, recipe, recipeFavorite, recipeToDiet, recipeToNutrition, user } from "@/db/schema";
-import { getCachedData } from "@/lib/actions/redis";
+import { MAX_USER_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
+import { CountSchema } from "@/lib/zod";
 import { sql, and, eq, exists, count } from "drizzle-orm";
 import { SearchX } from "lucide-react";
-import Pagination from "@/components/user/recipes/pagination";
-import FavoritedRecipesResult from "@/components/user/recipes/favorited-recipes-result";
-import { CountSchema } from "@/lib/zod";
+import { createLoader, parseAsIndex } from "nuqs/server";
 
-type FavoritedRecipesProps = {
-  userId: string;
-  limit: number;
-};
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const MAX_DIET_DISPLAY_LIMIT = 3;
 
-export default async function FavoritedRecipes({ userId, limit }: FavoritedRecipesProps) {
+const loadSearchParams = createLoader({
+  page: parseAsIndex.withDefault(0)
+});
+
+export default async function Page({ params, searchParams }: PageProps<"/user/[user_id]/recipes/favorited">) {
+  const { user_id: userId } = await params;
+  const { page } = await loadSearchParams(searchParams);
+
   const caloriesSubQuery = db.select({
     recipeId: recipeToNutrition.recipeId,
-    calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.mapWith((val) => Number(val)).as("calories")
+    calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
   }).from(recipeToNutrition)
     .where(and(
       eq(nutrition.name, "Calories"),
@@ -61,8 +67,8 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
     id: recipe.id,
     title: recipe.title,
     image: recipe.image,
-    prepTime: sql`${recipe.prepTime}`.mapWith((val) => Number(val)),
-    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith((val) => Number(val)),
+    prepTime: sql`${recipe.prepTime}`.mapWith(Number),
+    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith(Number),
     diets: sql<{
       id: string;
       name: string;
@@ -88,7 +94,8 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
     .leftJoinLateral(caloriesSubQuery, sql`true`)
     .leftJoinLateral(recipeToDietSubQuery, sql`true`)
     .leftJoinLateral(userSubQuery, sql`true`)
-    .limit(limit);
+    .limit(MAX_USER_RECIPE_DISPLAY_LIMIT)
+    .offset(page * MAX_USER_RECIPE_DISPLAY_LIMIT);
 
   const favoritedRecipesCountQuery = db.select({ count: count() })
     .from(recipe)
@@ -105,12 +112,7 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
     ));
   
   const [favoritedRecipesCount, favoritedRecipes] = await Promise.all([
-    getCachedData({
-      cacheKey: `favorited_recipes_user_${userId}`,
-      timeToLive: 60 * 10, // 10 minutes
-      call: () => favoritedRecipesCountQuery,
-      schema: CountSchema
-    }),
+    favoritedRecipesCountQuery.then((val) => CountSchema.parse(val)),
     favoritedRecipesQuery
   ]);
 
@@ -118,7 +120,7 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
     return (
       <section className="flex flex-col justify-center gap-2">
         <h1 className="font-bold text-xl">Favorited Recipes ({favoritedRecipesCount})</h1>
-        <div className="border border-border bg-sidebar min-h-[250px] flex flex-col justify-center items-center gap-4 py-12 rounded-md">
+        <div className="border border-border bg-sidebar min-h-72 flex flex-col justify-center items-center gap-4 py-12 rounded-md">
           <SearchX size={48} className="stroke-muted-foreground"/>
           <h3 className="font-bold text-lg">No favorited recipes yet...</h3>
         </div>
@@ -129,7 +131,7 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
   return (
     <section className="flex-1 flex flex-col gap-3">
       <h1 className="font-bold text-xl">Favorited Recipes ({favoritedRecipesCount})</h1>
-      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="flex-1 grid @min-lg:grid-cols-2 @min-4xl:grid-cols-3 content-start gap-4">
         {
           favoritedRecipes.map((r) => (
             <FavoritedRecipesResult 
@@ -139,7 +141,7 @@ export default async function FavoritedRecipes({ userId, limit }: FavoritedRecip
           ))
         }
       </div>
-      <Pagination totalPages={Math.ceil(favoritedRecipesCount / limit)}/>
+      <Pagination totalPages={Math.ceil(favoritedRecipesCount / MAX_USER_RECIPE_DISPLAY_LIMIT)}/>
     </section>
   );
 }

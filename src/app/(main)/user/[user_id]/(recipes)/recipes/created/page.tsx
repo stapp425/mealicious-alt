@@ -1,23 +1,29 @@
+import CreatedRecipesResult from "@/components/user/recipes/created-recipes-result";
+import Pagination from "@/components/user/recipes/pagination";
 import { db } from "@/db";
 import { diet, nutrition, recipe, recipeToDiet, recipeToNutrition } from "@/db/schema";
-import { getCachedData } from "@/lib/actions/redis";
-import { sql, and, eq, desc, count } from "drizzle-orm";
-import Pagination from "@/components/user/recipes/pagination";
-import { SearchX } from "lucide-react";
-import CreatedRecipesResult from "@/components/user/recipes/created-recipes-result";
+import { MAX_USER_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
 import { CountSchema } from "@/lib/zod";
+import { sql, and, eq, count, desc } from "drizzle-orm";
+import { SearchX } from "lucide-react";
+import { createLoader, parseAsIndex } from "nuqs/server";
 
-type CreatedRecipesProps = {
-  userId: string;
-  limit: number;
-};
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const MAX_DIET_DISPLAY_LIMIT = 3;
 
-export default async function CreatedRecipes({ userId, limit }: CreatedRecipesProps) {
+const loadSearchParams = createLoader({
+  page: parseAsIndex.withDefault(0)
+});
+
+export default async function Page({ params, searchParams }: PageProps<"/user/[user_id]/recipes/created">) {
+  const { user_id: userId } = await params;
+  const { page } = await loadSearchParams(searchParams);
+  
   const caloriesSubQuery = db.select({
     recipeId: recipeToNutrition.recipeId,
-    calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.mapWith((val) => Number(val)).as("calories")
+    calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
   }).from(recipeToNutrition)
     .where(and(
       eq(nutrition.name, "Calories"),
@@ -48,16 +54,12 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
     .groupBy(dietSubQuery.recipeId)
     .as("recipe_to_diet_sub");
   
-  const createdRecipesCountQuery = db.select({ count: count() })
-    .from(recipe)
-    .where(and(eq(recipe.createdBy, userId), eq(recipe.isPublic, true)));
-  
   const createdRecipesQuery = db.select({
     id: recipe.id,
     title: recipe.title,
     image: recipe.image,
-    prepTime: sql`${recipe.prepTime}`.mapWith((val) => Number(val)),
-    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith((val) => Number(val)),
+    prepTime: sql`${recipe.prepTime}`.mapWith(Number),
+    calories: sql`coalesce(${caloriesSubQuery.calories}, 0)`.mapWith(Number),
     diets: sql<{
       id: string;
       name: string;
@@ -69,15 +71,15 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
     .leftJoinLateral(caloriesSubQuery, sql`true`)
     .leftJoinLateral(recipeToDietSubQuery, sql`true`)
     .orderBy(desc(recipe.createdAt))
-    .limit(limit);
+    .limit(MAX_USER_RECIPE_DISPLAY_LIMIT)
+    .offset(page * MAX_USER_RECIPE_DISPLAY_LIMIT);
+
+  const createdRecipesCountQuery = db.select({ count: count() })
+    .from(recipe)
+    .where(and(eq(recipe.createdBy, userId), eq(recipe.isPublic, true)));
 
   const [createdRecipesCount, createdRecipes] = await Promise.all([
-    getCachedData({
-      cacheKey: `created_recipes_user_${userId}`,
-      timeToLive: 60 * 10, // 10 minutes
-      call: () => createdRecipesCountQuery,
-      schema: CountSchema
-    }),
+    createdRecipesCountQuery.then((val) => CountSchema.parse(val)),
     createdRecipesQuery
   ]);
 
@@ -85,7 +87,7 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
     return (
       <section className="flex flex-col justify-center gap-2">
         <h1 className="font-bold text-xl">Created Recipes ({createdRecipesCount})</h1>
-        <div className="border border-border bg-sidebar min-h-[250px] flex flex-col justify-center items-center gap-4 py-12 rounded-md">
+        <div className="border border-border bg-sidebar min-h-72 flex flex-col justify-center items-center gap-4 py-12 rounded-md">
           <SearchX size={48} className="stroke-muted-foreground"/>
           <h3 className="font-bold text-lg">No created recipes yet...</h3>
         </div>
@@ -96,7 +98,7 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
   return (
     <section className="flex-1 flex flex-col gap-3">
       <h1 className="font-bold text-xl">Created Recipes ({createdRecipesCount})</h1>
-      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="flex-1 grid @min-lg:grid-cols-2 @min-4xl:grid-cols-3 content-start gap-4">
         {
           createdRecipes.map((r) => (
             <CreatedRecipesResult 
@@ -106,7 +108,7 @@ export default async function CreatedRecipes({ userId, limit }: CreatedRecipesPr
           ))
         }
       </div>
-      <Pagination totalPages={Math.ceil(createdRecipesCount / limit)}/>
+      <Pagination totalPages={Math.ceil(createdRecipesCount / MAX_USER_RECIPE_DISPLAY_LIMIT)}/>
     </section>
   );
 }

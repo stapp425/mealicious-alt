@@ -10,11 +10,9 @@ import bcrypt from "bcryptjs";
 import z from "zod/v4";
 
 export const editProfileAbout = authActionClient
-  .inputSchema(z.object({
-    newAbout: z.nullable(z.string("Expected a string, but received an invalid type."))
-  }))
+  .inputSchema(z.nullable(z.string("Expected a string, but received an invalid type.")))
   .action(async ({
-    parsedInput: { newAbout },
+    parsedInput: newAbout,
     ctx: { user }
   }) => {
     await db.update(userTable)
