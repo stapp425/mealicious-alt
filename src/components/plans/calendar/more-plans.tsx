@@ -55,7 +55,7 @@ export default function MorePlans() {
   return (
     <div className="grid gap-2 mt-6">
       <h2 className="font-bold text-4xl capitalize mb-2">{view} Plans</h2>
-      <MorePlansSearchBar />
+      <MorePlansSearchBar initialQueryValue={query}/>
       <div className="grid gap-1.5">
         <h2 className="font-bold text-xl">Result Options</h2>
         <div className="flex items-center gap-2 mb-3">
@@ -118,8 +118,8 @@ export default function MorePlans() {
   );
 }
 
-const MorePlansSearchBar = memo(() => {
-  const [query, setQuery] = useState("");
+const MorePlansSearchBar = memo(({ initialQueryValue }: { initialQueryValue: string; }) => {
+  const [query, setQuery] = useState(initialQueryValue);
   const [,setOptions] = useMorePlansOptions();
 
   return (
@@ -135,7 +135,7 @@ const MorePlansSearchBar = memo(() => {
         className="rounded-sm shadow-none"
       />
       <button
-        onClick={() => setOptions({ page: 0 })}
+        onClick={() => setOptions({ query, page: 0 })}
         className="h-9 mealicious-button font-semibold text-sm flex items-center gap-2 px-4 rounded-sm"
       >
         <span className="hidden @min-2xl:inline">Search</span>
@@ -211,9 +211,16 @@ const MorePlansSearchResults = memo(({
     isLoading: plansCountLoading,
     isError: plansCountErrored
   } = useQuery({
-    queryKey: ["more-plans", { type: "count" }, userId, startDate, endDate],
+    queryKey: [
+      "more-plans",
+      { type: "count" },
+      userId,
+      query,
+      { startDate, endDate }
+    ],
     queryFn: () => getPlansInTimeFrameCount({
       userId: userId as string,
+      query,
       startDate: startDate ? new UTCDate(startDate) : undefined,
       endDate: endDate ? new UTCDate(addMilliseconds(endDate, -1, inUtc)) : undefined,
     }),
@@ -232,6 +239,7 @@ const MorePlansSearchResults = memo(({
       "more-plans",
       { mode: timeframe },
       userId,
+      query,
       { startDate, endDate },
       page
     ],

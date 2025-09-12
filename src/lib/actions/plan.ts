@@ -225,7 +225,7 @@ export async function getPlansInTimeFrameCount({ userId, startDate, endDate, que
       eq(plan.createdBy, userId),
       startDate ? gte(plan.date, startDate) : undefined,
       endDate ? lte(plan.date, endDate) : undefined,
-      query ? ilike(plan.title, query) : undefined
+      query ? ilike(plan.title, `%${query}%`) : undefined
     ));
 
   return CountSchema.parse(await plansCountQuery);
