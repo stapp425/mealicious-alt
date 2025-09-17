@@ -2,11 +2,7 @@ import PrintRecipe from "@/components/recipes/print/print-recipe";
 import { db } from "@/db";
 import { notFound } from "next/navigation";
 
-type PageProps = {
-  params: Promise<{ recipe_id: string; }>;
-};
-
-export default async function Page({ params }: PageProps) {
+export default async function Page({ params }: PageProps<"/recipes/[recipe_id]/print">) {
   const { recipe_id: recipeIdParam } = await params;
 
   const foundRecipe = await db.query.recipe.findFirst({

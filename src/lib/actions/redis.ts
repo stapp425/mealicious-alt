@@ -4,11 +4,6 @@ import { redis } from "@/lib/redis";
 import { differenceInSeconds } from "date-fns";
 import z from "zod/v4";
 
-export async function getDataFromKey<T>({ key, schema }: { key: string; schema: z.ZodType<T>; }) {
-  const result = await redis.get(key);
-  return result ? schema.parse(JSON.parse(result)) : result;
-}
-
 export async function getCachedData<T extends z.ZodType>({
   schema,
   cacheKey,
@@ -19,7 +14,7 @@ export async function getCachedData<T extends z.ZodType>({
   cacheKey: string;
   call: () => Promise<z.input<T>>;
   timeToLive?: number | Date;
-}): Promise<z.infer<T>> {
+}): Promise<z.output<T>> {
   const cachedResult = await redis.get(cacheKey);
 
   if (cachedResult) {

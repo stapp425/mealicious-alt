@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { meal, mealToRecipe, plan, planToMeal, recipe, savedRecipe } from "@/db/schema";
 import { and, count, desc, eq, exists, ilike, notExists, sql } from "drizzle-orm";
 import { ActionError } from "@/lib/types";
-import { CountSchema } from "@/lib/zod";
+import { CountSchema, IdSchema, UrlSchema } from "@/lib/zod";
 import { removeCacheKeys } from "@/lib/actions/redis";
 import z from "zod/v4";
 
@@ -143,7 +143,27 @@ export async function getSavedRecipesForMealForm({
   limit: number;
   offset: number;
 }) {
-  const [savedRecipes] = await db.select({
+  const savedRecipesSubQuery = db.select({ 
+    recipe: sql`
+      json_build_object(
+        'id', ${recipe.id},
+        'title', ${recipe.title},
+        'image', ${recipe.image},
+        'description', ${recipe.description}
+      )
+    `.as("recipe")
+  }).from(savedRecipe)
+    .where(and(
+      eq(savedRecipe.userId, userId),
+      ilike(recipe.title, `%${query}%`)
+    ))
+    .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
+    .limit(limit)
+    .offset(offset)
+    .orderBy(desc(savedRecipe.saveDate))
+    .as("saved_recipe_sub");
+  
+  const result = await db.select({
     recipes: sql<{
       id: string;
       title: string;
@@ -151,33 +171,26 @@ export async function getSavedRecipesForMealForm({
       description: string | null;
     }[]>`
       coalesce(
-        json_agg("saved_recipe_sub"."data"),
+        json_agg(${savedRecipesSubQuery.recipe}),
         '[]'::json
       )
     `.as("recipes")
-  }).from(
-      db.select({ 
-        data: sql`
-          json_build_object(
-            'id', ${recipe.id},
-            'title', ${recipe.title},
-            'image', ${recipe.image},
-            'description', ${recipe.description}
-          )
-        `.as("data")
-      }).from(savedRecipe)
-        .where(and(
-          eq(savedRecipe.userId, userId),
-          ilike(recipe.title, `%${query}%`)
-        ))
-        .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
-        .limit(limit)
-        .offset(offset)
-        .orderBy(desc(savedRecipe.saveDate))
-        .as("saved_recipe_sub")
-    );
+  }).from(savedRecipesSubQuery);
 
-  return savedRecipes?.recipes;
+  const SavedRecipeSchema = z.array(
+    z.object({
+      recipes: z.array(
+        z.object({
+          id: IdSchema,
+          title: z.string().nonempty(),
+          image: UrlSchema,
+          description: z.nullable(z.string().nonempty())
+        })
+      ).max(limit)
+    })
+  ).length(1).transform((val) => val[0].recipes);
+
+  return SavedRecipeSchema.parse(result);
 }
 
 export async function getSavedRecipesForMealFormCount({ userId, query }: { userId: string, query: string }) {

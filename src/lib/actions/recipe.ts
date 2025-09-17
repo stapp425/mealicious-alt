@@ -36,6 +36,7 @@ import { getRatingKey, MAX_GRID_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
 import axios from "axios";
 import { removeCacheKeys } from "@/lib/actions/redis";
 import z from "zod/v4";
+import { IdSchema } from "@/lib/zod";
 
 export const createRecipe = authActionClient
   .inputSchema(CreateRecipeFormSchema.omit({ image: true }))
@@ -270,12 +271,7 @@ export const updateRecipe = authActionClient
   });
 
 export const deleteRecipe = authActionClient
-  .inputSchema(
-    z.string()
-      .nonempty({
-        message: "Recipe ID must not be empty."
-      })
-  )
+  .inputSchema(IdSchema)
   .action(async ({ ctx: { user }, parsedInput: recipeId }) => {
     const foundRecipe = await db.query.recipe.findFirst({
       where: (recipe, { eq }) => eq(recipe.id, recipeId),
@@ -290,14 +286,20 @@ export const deleteRecipe = authActionClient
     if (user.id !== foundRecipe.createdBy) throw new ActionError("You are not authorized to delete this recipe.");
 
     const { url } = await generatePresignedUrlForImageDelete(foundRecipe.image);
-    const deleteImageOperation = axios.delete(url);
+    
     const deleteRecipeQuery = db.delete(recipe).where(eq(recipe.id, foundRecipe.id));
+    const deleteCreatorSavedRecipeQuery = db.delete(savedRecipe).where(and(
+      eq(savedRecipe.userId, user.id),
+      eq(savedRecipe.recipeId, foundRecipe.id)
+    ));
+
+    const deleteImageOperation = axios.delete(url);
     const deleteRecipeQueryIndexOperation = deleteRecipeQueryIndex(foundRecipe.id);
 
     await Promise.all([
       deleteImageOperation,
-      deleteRecipeQuery,
-      deleteRecipeQueryIndexOperation
+      deleteRecipeQueryIndexOperation,
+      deleteCreatorSavedRecipeQuery.then(() => deleteRecipeQuery)
     ]);
 
     // There is an edge case where a plan only has one meal, and that meal only has one recipe
@@ -333,13 +335,7 @@ export const deleteRecipe = authActionClient
 
 export const updateRecipeImage = authActionClient
   .inputSchema(z.object({
-    recipeId: z.string({
-      error: (issue) => typeof issue.input === "undefined"
-        ? "A recipe id is required."
-        : "Expected a string, but received an invalid type."
-    }).nonempty({
-        error: "Recipe id must not be empty."
-      }),
+    recipeId: IdSchema,
     imageName: z.string({
       error: (issue) => typeof issue.input === "undefined"
         ? "An image name is required."
@@ -358,13 +354,7 @@ export const updateRecipeImage = authActionClient
   });
 
 export const toggleRecipeFavorite = authActionClient
-  .inputSchema(z.string({
-    error: (issue) => typeof issue.input === "undefined"
-      ? "A recipe id is required."
-      : "Expected a string, but received an invalid type."
-  }).nonempty({
-    message: "Recipe id cannot be empty."
-  }))
+  .inputSchema(IdSchema)
   .action(async ({ ctx: { user }, parsedInput: recipeId }) => {
     let isFavorite = false;
     const foundFavoritedRecipe = await db.query.recipeFavorite.findFirst({
@@ -415,21 +405,43 @@ export const toggleRecipeFavorite = authActionClient
     };
   });
 
-export const toggleSavedListRecipe = authActionClient
-  .inputSchema(z.string({
-      error: (issue) => typeof issue.input === "undefined"
-        ? "A recipe id is required."
-        : "Expected a string, but received an invalid type."
-    }).nonempty({
-      error: "Recipe id cannot be empty."
-    })
-  )
-  .action(async ({ ctx: { user }, parsedInput: recipeId }) => {
-    let isSaved = false;
+export const addRecipeToSavedList = authActionClient
+  .inputSchema(IdSchema)
+  .action(async ({
+    ctx: { user },
+    parsedInput: recipeId
+  }) => {
+    const insertSavedRecipeQuery = db.insert(savedRecipe).values({
+      userId: user.id,
+      recipeId
+    });
+    
+    const updateRecipeStatisticsQuery = db.update(recipeStatistics)
+      .set({ savedCount: sql`${recipeStatistics.savedCount} + 1` })
+      .where(eq(recipeStatistics.recipeId, recipeId));
+
+    await Promise.all([
+      insertSavedRecipeQuery,
+      updateRecipeStatisticsQuery,
+      removeCacheKeys(`user_${user.id}_saved_recipes*`)
+    ]);
+
+    return {
+      success: true as const,
+      message: "Recipe successfully saved!",
+    };
+  });
+
+export const deleteRecipeFromSavedList = authActionClient
+  .inputSchema(IdSchema)
+  .action(async ({
+    ctx: { user },
+    parsedInput: recipeId
+  }) => {
     const foundSavedRecipe = await db.query.savedRecipe.findFirst({
       where: (savedRecipe, { eq, and }) => and(
+        eq(savedRecipe.recipeId, recipeId),
         eq(savedRecipe.userId, user.id),
-        eq(savedRecipe.recipeId, recipeId)
       ),
       columns: {
         userId: true,
@@ -437,38 +449,63 @@ export const toggleSavedListRecipe = authActionClient
       }
     });
 
-    if (foundSavedRecipe) {
-      const deleteSavedRecipeQuery = db.delete(savedRecipe).where(and(
-        eq(savedRecipe.userId, foundSavedRecipe.userId),
-        eq(savedRecipe.recipeId, foundSavedRecipe.recipeId)
-      ));
+    if (!foundSavedRecipe) throw new ActionError("Saved recipe does not exist.");
+    if (foundSavedRecipe.userId !== user.id) throw new ActionError("You are not authorized to delete this saved recipe.");
 
-      const updateRecipeStatisticsQuery = db.update(recipeStatistics)
+    const deleteSavedRecipeQuery = db.delete(savedRecipe).where(and(
+      eq(savedRecipe.userId, user.id),
+      eq(savedRecipe.recipeId, recipeId)
+    ));
+
+    const updateRecipeStatisticsQuery = db.update(recipeStatistics)
+      .set({ savedCount: sql`${recipeStatistics.savedCount} - 1` })
+      .where(eq(recipeStatistics.recipeId, recipeId));
+
+    await Promise.all([
+      deleteSavedRecipeQuery,
+      updateRecipeStatisticsQuery,
+      removeCacheKeys(`user_${user.id}_saved_recipes*`)
+    ]);
+
+    return {
+      success: true as const,
+      message: "Recipe successfully removed from saved list!"
+    };
+  });
+
+export const deleteSavedRecipeWithMissingContent = authActionClient
+  .inputSchema(IdSchema)
+  .action(async ({
+    ctx: { user },
+    parsedInput: savedRecipeId
+  }) => {
+    const foundSavedRecipe = await db.query.savedRecipe.findFirst({
+      where: (savedRecipe, { eq, and }) => and(
+        eq(savedRecipe.id, savedRecipeId),
+        eq(savedRecipe.userId, user.id),
+      ),
+      columns: {
+        userId: true,
+        recipeId: true
+      }
+    });
+
+    if (!foundSavedRecipe) throw new ActionError("Saved recipe does not exist.");
+
+    await db.delete(savedRecipe)
+      .where(eq(savedRecipe.id, savedRecipeId));
+
+    if (foundSavedRecipe.recipeId) {
+      await db.update(recipeStatistics)
         .set({ savedCount: sql`${recipeStatistics.savedCount} - 1` })
         .where(eq(recipeStatistics.recipeId, foundSavedRecipe.recipeId));
-
-      await Promise.all([deleteSavedRecipeQuery, updateRecipeStatisticsQuery]);
-      isSaved = false;
-    } else {
-      const insertSavedRecipeQuery = db.insert(savedRecipe).values({
-        userId: user.id,
-        recipeId
-      });
-      
-      const updateRecipeStatisticsQuery = db.update(recipeStatistics)
-        .set({ savedCount: sql`${recipeStatistics.savedCount} + 1` })
-        .where(eq(recipeStatistics.recipeId, recipeId));
-
-      await Promise.all([insertSavedRecipeQuery, updateRecipeStatisticsQuery]);
-      isSaved = true;
     }
 
     await removeCacheKeys(`user_${user.id}_saved_recipes*`);
 
     return {
       success: true as const,
-      message: isSaved ? "Recipe successfully saved!" : "Recipe successfully removed from saved list!",
-      isSaved
+      message: "Recipe successfully removed from saved list!"
     };
   });
 

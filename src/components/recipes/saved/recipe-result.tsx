@@ -1,11 +1,11 @@
 "use client";
 
-import { Clock, Earth, EllipsisVertical, Flame, Heart, Loader2, Medal, Pencil, Trash2, X } from "lucide-react";
+import { Clock, Earth, EllipsisVertical, Flame, Heart, Loader2, Medal, Pencil, SearchX, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { cn, getDateDifference } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ComponentProps, memo, useCallback, useState } from "react";
+import { memo, useState } from "react";
 import { useAction } from "next-safe-action/hooks";
 import { toast } from "sonner";
 import { 
@@ -29,15 +29,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { deleteRecipe, toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/recipe";
+import {
+  deleteRecipe,
+  deleteRecipeFromSavedList,
+  deleteSavedRecipeWithMissingContent,
+  toggleRecipeFavorite
+} from "@/lib/actions/recipe";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function RecipeResult({
-  recipe,
-  className,
-  onClick,
-  ...props
-}: Omit<ComponentProps<"div">, "children"> & {
+type RecipeResultProps = {
+  saveDate: Date;
   recipe: {
     id: string;
     title: string;
@@ -56,30 +57,19 @@ export default function RecipeResult({
     } | null;
     sourceName: string | null;
     sourceUrl: string | null;
-    saveDate: Date;
     isFavorite: boolean;
     isAuthor: boolean;
   };
-}) {
-  const { refresh, push } = useRouter();
-  const [isFavorite, setIsFavorite] = useState(recipe.isFavorite);
+};
 
-  const onToggleFavorite = useCallback(
-    (status: boolean) => setIsFavorite(status),
-    [setIsFavorite]
-  );
+export function RecipeResult({ saveDate, recipe }: RecipeResultProps) {
+  const { refresh, push } = useRouter();
+  const [isFavorite, setIsFavorite] = useState(recipe?.isFavorite || false);
 
   return (
     <div 
-      onClick={(e) => {
-        push(`/recipes/${recipe.id}`);
-        onClick?.(e);
-      }}
-      className={cn(
-        "overflow-x-hidden cursor-pointer dark:bg-sidebar grid @min-3xl:grid-cols-[256px_1fr] gap-4 border border-border p-4 rounded-md transition-colors",
-        className
-      )}
-      {...props}
+      onClick={() => push(`/recipes/${recipe.id}`)}
+      className="overflow-x-hidden cursor-pointer dark:bg-sidebar grid @min-3xl:grid-cols-[256px_1fr] gap-4 border border-border p-4 rounded-md transition-colors"
     >
       <div className="shrink-0 group relative w-full h-64 min-h-48 @min-3xl:h-auto rounded-sm overflow-hidden">
         <Image 
@@ -134,7 +124,7 @@ export default function RecipeResult({
               <FavoriteOption
                 recipeId={recipe.id}
                 isFavorite={isFavorite}
-                onToggleFavorite={onToggleFavorite}
+                onToggleFavorite={setIsFavorite}
               />
               <DropdownMenuSeparator />
               {
@@ -206,7 +196,7 @@ export default function RecipeResult({
         </div>
         <div className="flex flex-col-reverse @min-3xl:flex-row justify-between items-start @min-3xl:items-end gap-2 mt-auto">
           <span className="text-muted-foreground text-sm">
-            Saved {getDateDifference({ earlierDate: recipe.saveDate })} ago
+            Saved {getDateDifference({ earlierDate: saveDate })} ago
           </span>
           {
             (recipe.sourceName && recipe.sourceUrl) && (
@@ -328,7 +318,7 @@ const UnsaveOption = memo(({
   const {
     execute: executeToggleSaved,
     isExecuting: isToggleSavedExecuting
-  } = useAction(toggleSavedListRecipe, {
+  } = useAction(deleteRecipeFromSavedList, {
     onSuccess: async ({ data }) => {
       setOpen(false);
       await queryClient.invalidateQueries({
@@ -375,3 +365,47 @@ const UnsaveOption = memo(({
 });
 
 UnsaveOption.displayName = "UnsaveOption";
+
+type RecipeNotFoundProps = {
+  savedRecipeId: string;
+};
+
+export function RecipeNotFound({ savedRecipeId }: RecipeNotFoundProps) {
+  const { refresh } = useRouter();
+  const { execute, isExecuting } = useAction(deleteSavedRecipeWithMissingContent, {
+    onSuccess: ({ data }) => {
+      toast.warning(data.message);
+      refresh();
+    },
+    onError: ({ error: { serverError } }) => toast.error(serverError)
+  });
+  
+  return (
+    <div className="bg-sidebar min-h-84 @min-3xl:min-h-56 flex flex-col justify-center items-center gap-4 border border-border p-4 rounded-md transition-colors">
+      <SearchX
+        size={60}
+        className="stroke-muted-foreground"
+      />
+      <span className="text-lg font-semibold">Recipe Not Found!</span>
+      <button 
+        disabled={isExecuting}
+        onClick={() => execute(savedRecipeId)}
+        className={cn(
+          "cursor-pointer disabled:cursor-not-allowed h-8.5 w-22 flex justify-center items-center gap-2 rounded-sm transition-colors",
+          "bg-red-500 hover:bg-red-700 disabled:bg-red-400 text-white [&>svg]:shrink-0"
+        )}
+      >
+        {
+          isExecuting ? (
+            <Loader2 size={16} className="animate-spin"/>
+          ) : (
+            <>
+            <Trash2 size={16}/>
+            <span className="font-semibold text-sm -mb-0.25">Delete</span>
+            </>
+          )
+        }
+      </button>
+    </div>
+  );
+}

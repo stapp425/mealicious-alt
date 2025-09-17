@@ -18,6 +18,7 @@ import { generatePresignedUrlForImageDelete } from "@/lib/actions/r2";
 import axios from "axios";
 import z from "zod/v4";
 import { removeCacheKeys } from "@/lib/actions/redis";
+import { CountSchema } from "@/lib/zod";
 
 export const updateProfilePicture = authActionClient
   .inputSchema(z.string({
@@ -78,9 +79,9 @@ export const updateUsername = authActionClient
   });
 
 export const updateEmail = authActionClient
-  .inputSchema(ChangeEmailFormSchema)
+  .inputSchema(ChangeEmailFormSchema.shape.email)
   .action(async ({
-    parsedInput: { email },
+    parsedInput: email,
     ctx: { user }
   }) => {
     const foundEmail = await db.query.user.findFirst({
@@ -241,7 +242,9 @@ export async function getCuisines({ query, limit, offset }: { query: string; lim
 }
 
 export async function getCuisinesCount(query: string) {
-  return db.select({ count: count() })
+  const result = await db.select({ count: count() })
     .from(cuisine)
     .where(ilike(cuisine.adjective, `%${query}%`));
+
+  return CountSchema.parse(result);
 }

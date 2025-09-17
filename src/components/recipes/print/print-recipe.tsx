@@ -17,7 +17,7 @@ type PrintRecipeProps = {
     creator: {
       id: string;
       name: string;
-    } | null;
+    };
     nutritionalFacts: {
       amount: number;
       unit: string;
@@ -69,7 +69,7 @@ export default function PrintRecipe({ recipe }: PrintRecipeProps) {
           )
         }
         <h2 className="font-semibold text-sm">
-          Created by {recipe.creator?.id ? recipe.creator.name : "[deleted]"} | Made on {format(recipe.createdAt, "MMM d, yyyy")}
+          Created by {recipe.creator.name} | Made on {format(recipe.createdAt, "MMM d, yyyy")}
         </h2>
       </section>
       <section className="flex flex-col gap-2">

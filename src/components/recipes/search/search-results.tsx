@@ -118,7 +118,7 @@ export default function SearchResults({
 
   if (searchedRecipes.length <= 0) {
     return (
-      <div className="flex-1 w-full bg-sidebar border border-border rounded-md flex flex-col justify-center items-center gap-8 p-4 mx-auto">
+      <div className="flex-1 @min-2xl:flex-none w-full bg-sidebar border border-border rounded-md flex flex-col justify-center items-center gap-8 px-4 py-12 mx-auto">
         <SearchX size={60} className="stroke-muted-foreground"/>
         <div className="flex flex-col items-center gap-2">
           <h3 className="font-bold text-lg mt-auto">No Recipe Found!</h3>

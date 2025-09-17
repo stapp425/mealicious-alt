@@ -27,7 +27,6 @@ export default async function Page({ params }: PageProps<"/meals/[meal_id]/edit"
     },
     with: {
       includedRecipes: {
-        columns: {},
         with: {
           recipe: {
             columns: {

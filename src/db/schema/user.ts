@@ -9,7 +9,7 @@ import { nanoid } from "nanoid";
 export const user = pgTable("user", (t) => ({
   id: t.text("user_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   name: t.text("user_name")
     .unique()
     .notNull(),

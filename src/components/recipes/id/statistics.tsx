@@ -39,8 +39,8 @@ export default function Statistics({
       Icon: ArrowDownToLine,
       iconClassName: "size-5 stroke-green-500",
       value: statistics?.savedCount || 0,
-      label: "Saved",
-      pluralLabel: "Saved"
+      label: "Save",
+      pluralLabel: "Saves"
     },
     {
       Icon: Star,

@@ -55,7 +55,6 @@ export type ChangeUsernameForm = z.infer<typeof ChangeUsernameFormSchema>;
 export const ChangeEmailFormSchema = z.object({
   email: EmailSchema.check(async (ctx) => {
     const foundEmail = await getMatchingEmail(ctx.value);
-
     if (foundEmail) {
       ctx.issues.push({
         code: "custom",
@@ -82,9 +81,9 @@ export const ChangePasswordFormSchema = z.object({
       ? "A confirm password input is required."
       : "Expected a string, but received an invalid type."
   }).nonempty({
-    message: "Confirm password input cannot be empty."
+    error: "Confirm password input cannot be empty."
   })
-}).check(async (ctx) => {
+}).check((ctx) => {
   const { currentPassword, newPassword, confirmPassword } = ctx.value;
   if (currentPassword === newPassword) {
     ctx.issues.push({

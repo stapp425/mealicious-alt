@@ -8,7 +8,7 @@ import { nanoid } from "nanoid";
 export const recipe = pgTable("recipe", (t) => ({
   id: t.text("recipe_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   title: t.varchar("recipe_title", { length: 100 }).notNull(),
   image: t.text("recipe_image")
     .notNull()
@@ -37,9 +37,11 @@ export const recipe = pgTable("recipe", (t) => ({
     precision: 6,
     scale: 2
   }).notNull(),
-  createdBy: t.text("recipe_created_by").references(() => user.id, {
-    onDelete: "set null"
-  }),
+  createdBy: t.text("recipe_created_by")
+    .notNull()
+    .references(() => user.id, {
+      onDelete: "cascade"
+    }),
   cuisineId: t.text("recipe_cuisine").references(() => cuisine.id, {
     onDelete: "set null"
   }),
@@ -102,7 +104,7 @@ export const recipeStatistics = pgTable("recipe_stats", (t) => ({
 export const instruction = pgTable("instruction", (t) => ({
   id: t.text("inst_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   title: t.text("inst_title").notNull(),
   time: t.integer("inst_time").notNull(),
   description: t.text("inst_desc").notNull(),
@@ -121,7 +123,7 @@ export const instruction = pgTable("instruction", (t) => ({
 export const nutrition = pgTable("nutrition", (t) => ({
   id: t.text("nutr_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   name: t.varchar("nutr_name", { length: 100 })
   .notNull().unique(),
   description: t.text("nutr_desc").notNull(),
@@ -162,7 +164,7 @@ export const recipeToNutrition = pgTable("recipe_to_nutrition", (t) => ({
 export const ingredient = pgTable("ingredient", (t) => ({
   id: t.text("ing_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   name: t.varchar("ing_name", { length: 100 }).notNull(),
   isAllergen: t.boolean("ing_is_allergen")
     .notNull()
@@ -188,7 +190,7 @@ export const ingredient = pgTable("ingredient", (t) => ({
 export const dishType = pgTable("dish_type", (t) => ({
   id: t.text("dt_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   name: t.varchar("dt_name", { length: 100 })
     .notNull()
     .unique(),
@@ -215,7 +217,7 @@ export const recipeToDishType = pgTable("recipe_to_dish_type", (t) => ({
 export const diet = pgTable("diet", (t) => ({
   id: t.text("diet_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   name: t.varchar("diet_name", { length: 100 })
     .notNull()
     .unique(),
@@ -242,7 +244,7 @@ export const recipeToDiet = pgTable("recipe_to_diet", (t) => ({
 export const cuisine = pgTable("cuisine", (t) => ({
   id: t.text("cuisine_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   adjective: t.varchar("cuisine_adjective", {
     length: 50
   }).notNull(),
@@ -254,7 +256,7 @@ export const cuisine = pgTable("cuisine", (t) => ({
 export const recipeReview = pgTable("recipe_review", (t) => ({
   id: t.text("review_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   recipeId: t.text("recipe_id")
     .notNull()
     .references(() => recipe.id, {
@@ -320,15 +322,17 @@ export const recipeFavorite = pgTable("recipe_favorite", (t) => ({
 ]);
 
 export const savedRecipe = pgTable("saved_recipe", (t) => ({
+  id: t.text("saved_recipe_id")
+    .primaryKey()
+    .$default(nanoid),
   userId: t.text("user_id")
     .notNull()
     .references(() => user.id, {
       onDelete: "cascade"
     }),
   recipeId: t.text("recipe_id")
-    .notNull()
     .references(() => recipe.id, {
-      onDelete: "cascade"
+      onDelete: "set null"
     }),
   saveDate: t.timestamp("save_recipe_date", {
     precision: 0,
@@ -336,7 +340,7 @@ export const savedRecipe = pgTable("saved_recipe", (t) => ({
   }).notNull()
     .defaultNow()
 }), (t) => [
-  primaryKey({ columns: [t.userId, t.recipeId] })
+  unique().on(t.userId, t.recipeId)
 ]);
 
 export const recipeRelations = relations(recipe, ({ one, many }) => ({

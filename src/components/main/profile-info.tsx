@@ -68,7 +68,7 @@ export default function ProfileInfo({
   }
   
   return (
-    <Popover>
+    <Popover modal>
       <div 
         {...props}
         className={cn(

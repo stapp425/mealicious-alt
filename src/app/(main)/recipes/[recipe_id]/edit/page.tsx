@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function Page({ params }: { params: Promise<{ recipe_id: string; }> }) {
+export default async function Page({ params }: PageProps<"/recipes/[recipe_id]/edit">) {
   const { recipe_id: recipeId } = await params;
   const session = await auth();
   const userId = session?.user?.id;

@@ -1,13 +1,13 @@
 import { db } from "@/db";
 import { Skeleton } from "@/components/ui/skeleton";
 import { meal, mealToRecipe, nutrition, recipe, recipeToNutrition } from "@/db/schema";
-import { and, eq, ilike, lte, sql } from "drizzle-orm";
+import { and, eq, ilike, lte, sql, sum } from "drizzle-orm";
 import { MAX_MEAL_DISPLAY_LIMIT } from "@/lib/utils";
 import { SearchX } from "lucide-react";
 import MealResult from "@/components/meals/saved/meal-result";
-import { getCachedData } from "@/lib/actions/redis";
 import z from "zod/v4";
 import { IdSchema, UrlSchema } from "@/lib/zod";
+import { cache } from "react";
 
 type SearchResultsProps = {
   count: number;
@@ -24,90 +24,12 @@ export default async function SearchResults({
   query,
   maxCalories
 }: SearchResultsProps) {
-  const meals = await getCachedData({
-    timeToLive: 60 * 3, // 3 minutes
-    cacheKey: `user_${userId}_meals${query ? `_query_${query}`: ""}${maxCalories > 0 ? `_max_calories_${maxCalories}` : ""}_page_${page}`,
-    schema: z.array(
-      z.object({
-        id: IdSchema,
-        title: z.string().nonempty(),
-        description: z.nullable(z.string().nonempty()),
-        tags: z.array(z.string().nonempty()),
-        calories: z.number().nonnegative(),
-        recipes: z.array(
-          z.object({
-            id: IdSchema,
-            title: z.string().nonempty(),
-            image: UrlSchema,
-            description: z.nullable(z.string().nonempty())
-          })
-        )
-      })
-    ),
-    call: () => db.select({
-      id: meal.id,
-      title: meal.title,
-      description: meal.description,
-      tags: meal.tags,
-      calories: sql`"meal_to_recipe_sub"."total_calories"`.mapWith(Number),
-      recipes: sql<{
-        id: string;
-        title: string;
-        image: string;
-        description: string | null;
-      }[]>`"meal_to_recipe_sub"."data"`
-    }).from(meal)
-      .where(and(
-        eq(meal.createdBy, userId),
-        query ? ilike(meal.title, `%${query}%`) : undefined,
-        maxCalories > 0 ? lte(sql`"meal_to_recipe_sub"."total_calories"`, maxCalories) : undefined
-      ))
-      .innerJoinLateral(
-        db.select({
-          sum: sql`sum("recipe_sub"."calories")`.as("total_calories"),
-          data: sql`
-            coalesce(
-              json_agg("recipe_sub"."data"),
-              '[]'::json
-            )
-          `.as("data")
-        }).from(mealToRecipe)
-        .where(eq(mealToRecipe.mealId, meal.id))
-        .leftJoinLateral(
-          db.select({
-            calories: sql`"recipe_to_nutrition_sub"."calories"`.as("calories"),
-            data: sql`
-              json_build_object(
-                'id', ${recipe.id},
-                'title', ${recipe.title},
-                'image', ${recipe.image},
-                'description', ${recipe.description}
-              )
-            `.as("data")
-          }).from(recipe)
-            .where(eq(mealToRecipe.recipeId, recipe.id))
-            .innerJoinLateral(
-              db.select({
-                calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
-              }).from(recipeToNutrition)
-                .where(
-                  and(
-                    eq(recipeToNutrition.recipeId, recipe.id),
-                    eq(nutrition.name, "Calories")
-                  )
-                )
-                .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
-                .as("recipe_to_nutrition_sub"),
-              sql`true`
-            )
-            .as("recipe_sub"),
-          sql`true`
-        )
-        .as("meal_to_recipe_sub"),
-        sql`true`
-      )
-      .limit(MAX_MEAL_DISPLAY_LIMIT)
-      .offset(page * MAX_MEAL_DISPLAY_LIMIT)
+  const meals = await getMealResults({
+    query,
+    userId,
+    maxCalories,
+    limit: MAX_MEAL_DISPLAY_LIMIT,
+    offset: page * MAX_MEAL_DISPLAY_LIMIT
   });
   
   return (
@@ -149,3 +71,94 @@ export function SearchResultsSkeleton() {
     </div>
   );
 }
+
+const getMealResults = cache(async ({
+  query = "",
+  userId,
+  maxCalories = 0,
+  limit,
+  offset
+}: {
+  query?: string;
+  userId: string;
+  maxCalories?: number;
+  limit: number;
+  offset: number;
+}) => {
+  const recipeToNutritionSubQuery = db.select({
+    calories: recipeToNutrition.amount
+  }).from(recipeToNutrition)
+    .where(and(
+      eq(recipeToNutrition.recipeId, recipe.id),
+      eq(nutrition.name, "Calories")
+    ))
+    .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
+    .as("recipe_to_nutrition_sub");
+
+  const recipeSubQuery = db.select({
+    calories: recipeToNutritionSubQuery.calories,
+    recipe: sql`
+      json_build_object(
+        'id', ${recipe.id},
+        'title', ${recipe.title},
+        'image', ${recipe.image},
+        'description', ${recipe.description}
+      )
+    `.as("recipe")
+  }).from(recipe)
+    .where(eq(mealToRecipe.recipeId, recipe.id))
+    .innerJoinLateral(recipeToNutritionSubQuery, sql`true`)
+    .as("recipe_sub");
+
+  const mealToRecipeSubQuery = db.select({
+    totalCalories: sum(recipeSubQuery.calories).mapWith(Number).as("total_calories"),
+    recipes: sql`
+      coalesce(
+        json_agg(${recipeSubQuery.recipe}),
+        '[]'::json
+      )
+    `.as("recipes")
+  }).from(mealToRecipe)
+  .where(eq(mealToRecipe.mealId, meal.id))
+  .leftJoinLateral(recipeSubQuery, sql`true`)
+  .as("meal_to_recipe_sub");
+
+  const MealResultsSchema = z.array(
+    z.object({
+      id: IdSchema,
+      title: z.string().nonempty(),
+      description: z.nullable(z.string().nonempty()),
+      tags: z.array(z.string().nonempty()),
+      calories: z.coerce.number()
+        .nonnegative()
+        .transform(Math.round),
+      recipes: z.array(
+        z.object({
+          id: IdSchema,
+          title: z.string().nonempty(),
+          image: UrlSchema,
+          description: z.nullable(z.string().nonempty())
+        })
+      )
+    })
+  );
+
+  const result = await db.select({
+    id: meal.id,
+    title: meal.title,
+    description: meal.description,
+    tags: meal.tags,
+    calories: mealToRecipeSubQuery.totalCalories,
+    recipes: mealToRecipeSubQuery.recipes,
+  }).from(meal)
+    .where(and(
+      eq(meal.createdBy, userId),
+      query ? ilike(meal.title, `%${query}%`) : undefined,
+      maxCalories > 0 ? lte(mealToRecipeSubQuery.totalCalories, maxCalories) : undefined
+    ))
+    .innerJoinLateral(mealToRecipeSubQuery, sql`true`)
+    .limit(limit)
+    .offset(offset);
+
+  return MealResultsSchema.parse(result);
+});

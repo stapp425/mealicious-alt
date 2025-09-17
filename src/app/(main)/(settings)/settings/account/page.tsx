@@ -28,7 +28,7 @@ export default async function Page() {
   const canEdit = !!foundUser.password;
   
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-6">
       <ChangeProfilePictureForm
         key={foundUser.image}
         id={foundUser.id}

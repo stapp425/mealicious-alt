@@ -21,12 +21,12 @@ type MealResultProps = {
     description: string | null;
     tags: string[];
     calories: number;
-    recipes: {
+    recipes: ({
       id: string;
       title: string;
       image: string;
       description: string | null;
-    }[];
+    } | null)[];
   };
 };
 
@@ -84,8 +84,8 @@ export default function MealResult({ meal }: MealResultProps) {
       </p>
       <div className="grid gap-2.5">
         {
-          meal.recipes.map((r) => (
-            <Link 
+          meal.recipes.map((r, index) => r ? (
+            <Link
               key={r.id}
               href={`/recipes/${r.id}`}
               prefetch={false}
@@ -110,6 +110,14 @@ export default function MealResult({ meal }: MealResultProps) {
                 </p>
               </div>
             </Link>
+          ) : (
+            <div
+              key={`recipe-not-found-${index}`}
+              className="border border-border min-h-20 text-muted-foreground flex justify-center items-center gap-4 p-3 rounded-md"
+            >
+              <Trash2 />
+              <h2 className="font-semibold text-lg -mb-0.5">Recipe Not Found!</h2>
+            </div>
           ))
         }
       </div>

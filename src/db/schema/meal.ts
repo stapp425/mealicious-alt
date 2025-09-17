@@ -8,7 +8,7 @@ import { nanoid } from "nanoid";
 export const meal = pgTable("meal", (t) => ({
   id: t.text("meal_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   title: t.varchar("meal_title", { length: 100 }).notNull(),
   description: t.text("meal_desc"),
   tags: t.json("meal_tags")

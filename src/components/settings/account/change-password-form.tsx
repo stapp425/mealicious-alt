@@ -5,119 +5,101 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { LoaderCircle, SquarePen } from "lucide-react";
+import { Info, LoaderCircle, SquarePen } from "lucide-react";
 import PasswordInput from "@/components/auth/password-input";
-import { Button } from "../../ui/button";
+import { Button } from "@/components/ui/button";
 import { useAction } from "next-safe-action/hooks";
 import { updatePassword } from "@/lib/actions/settings";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
 type ChangePasswordFormProps = {
   canEdit: boolean;
 };
 
 export default function ChangePasswordForm({ canEdit }: ChangePasswordFormProps) {
-  const { refresh } = useRouter();
   const [editMode, setEditMode] = useState(false);
   const {
     register,
     handleSubmit,
+    reset,
     formState: {
-      isSubmitting,
       errors
     }
-  } = useForm<ChangePasswordForm>({
+  } = useForm({
     resolver: zodResolver(ChangePasswordFormSchema),
     mode: "onSubmit",
     reValidateMode: "onSubmit"
   });
 
-  const { executeAsync } = useAction(updatePassword, {
+  const { execute, isExecuting } = useAction(updatePassword, {
     onSuccess: ({ data }) => {
-      if (!data) return;
+      reset();
+      setEditMode(false);
       toast.success(data.message);
-      refresh();
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });
-
-  const onSubmit = handleSubmit(async (data) => {
-    await executeAsync(data);
-  });
   
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-1.5">
+    <form onSubmit={handleSubmit(execute)} className="grid gap-1.5">
       <h1 className="font-bold text-xl">Password</h1>
       <p className="text-muted-foreground mb-1">Change your current password here.</p>
       {
         editMode ? (
-          <div className="flex flex-col gap-3">
-            <div className="grid gap-1.5">
-              {
-                errors.currentPassword?.message && (
-                  <div className="flex items-center gap-1.5 text-red-500 text-xs">
-                    {errors.currentPassword.message}
-                  </div>
-                )
-              }
-              <PasswordInput
-                id="current-password"
-                {...register("currentPassword")}
-                placeholder="Current Password"
-                className="shadow-none rounded-sm"
-              />
+          <div className="grid gap-2.5">
+            <div className="error-text text-xs has-[>span:empty]:hidden">
+              <Info size={14}/>
+              <span>{errors.currentPassword?.message}</span>
             </div>
-            <div className="grid gap-1.5">
-              {
-                errors.newPassword?.message && (
-                  <div className="flex items-center gap-1.5 text-red-500 text-xs">
-                    {errors.newPassword.message}
-                  </div>
-                )
-              }
-              <PasswordInput
-                id="new-password"
-                {...register("newPassword")}
-                placeholder="New Password"
-                className="shadow-none rounded-sm"
-              />
+            <PasswordInput
+              id="current-password"
+              {...register("currentPassword")}
+              placeholder="Current Password"
+              className="shadow-none rounded-sm"
+            />
+            <div className="error-text text-xs has-[>span:empty]:hidden">
+              <Info size={14}/>
+              <span>{errors.newPassword?.message}</span>
             </div>
-            <div className="grid gap-1.5">
-              {
-                errors.confirmPassword?.message && (
-                  <div className="flex items-center gap-1.5 text-red-500 text-xs">
-                    {errors.confirmPassword.message}
-                  </div>
-                )
-              }
-              <PasswordInput
-                id="confirm-password"
-                {...register("confirmPassword")}
-                placeholder="Confirm Password"
-                className="shadow-none rounded-sm"
-              />
+            <PasswordInput
+              id="new-password"
+              {...register("newPassword")}
+              placeholder="New Password"
+              className="shadow-none rounded-sm"
+            />
+            <div className="error-text text-xs has-[>span:empty]:hidden">
+              <Info size={14}/>
+              <span>{errors.confirmPassword?.message}</span>
             </div>
-            <div className="w-fit flex items-center gap-4 ml-auto">
+            <PasswordInput
+              id="confirm-password"
+              {...register("confirmPassword")}
+              placeholder="Confirm Password"
+              className="shadow-none rounded-sm"
+            />
+            <div className="w-fit flex items-center gap-2.5">
+              <button 
+                type="submit"
+                disabled={isExecuting}
+                className="w-18 h-full mealicious-button text-sm flex justify-center items-center font-semibold py-2 px-4 rounded-sm"
+              >
+                {isExecuting ? <LoaderCircle size={18} className="animate-spin"/> : "Enter"}
+              </button>
               <Button 
                 type="button"
                 variant="secondary"
-                onClick={() => setEditMode(false)}
-                className="cursor-pointer"
+                onClick={() => {
+                  setEditMode(false);
+                  reset();
+                }}
+                className="cursor-pointer rounded-sm"
               >
                 Cancel
               </Button>
-              <button 
-                type="submit"
-                disabled={isSubmitting}
-                className="w-18 h-full mealicious-button text-sm flex justify-center items-center font-semibold py-2 px-4 rounded-md"
-              >
-                {isSubmitting ? <LoaderCircle size={18} className="animate-spin"/> : "Enter"}
-              </button>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <Input 
               type="password"
               disabled

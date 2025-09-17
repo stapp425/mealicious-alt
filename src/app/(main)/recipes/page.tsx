@@ -45,7 +45,7 @@ export default async function Page({ searchParams }: PageProps<"/recipes">) {
   
   const savedRecipesCount = await getCachedData({
     cacheKey: `user_${userId}_saved_recipes_count${filters.length > 0 ? `_filters_${filters.join(",")}` : ""}${query ? `_query_${query}` : ""}`,
-    timeToLive: 60 * 3, // 3 minutes
+    timeToLive: 60 * 10, // 3 minutes
     schema: CountSchema,
     call: () => db.select({ count: count() })
       .from(savedRecipe)

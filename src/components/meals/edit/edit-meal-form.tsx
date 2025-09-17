@@ -34,13 +34,13 @@ type EditMealFormProps = {
   };
 };
 
-type CreateMealFormContextProps<T extends EditMealForm = EditMealForm> = {
+type EditMealFormContextProps<T extends EditMealForm = EditMealForm> = {
   control: Control<T>;
   register: UseFormRegister<T>;
   setValue: UseFormSetValue<T>;
 };
 
-const EditMealFormContext = createContext<CreateMealFormContextProps | null>(null);
+const EditMealFormContext = createContext<EditMealFormContextProps | null>(null);
 
 export function useEditMealFormContext() {
   const context = useContext(EditMealFormContext);

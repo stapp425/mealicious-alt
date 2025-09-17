@@ -11,13 +11,13 @@ import {
   recipeToNutrition, 
   savedRecipe
 } from "@/db/schema";
-import { eq, and, ilike, sql, asc, desc, SQL, isNotNull } from "drizzle-orm";
-import RecipeResult from "@/components/recipes/saved/recipe-result";
+import { eq, and, ilike, sql, asc, desc, SQL, exists } from "drizzle-orm";
+import { RecipeResult, RecipeNotFound } from "@/components/recipes/saved/recipe-result";
 import { MAX_LIST_RECIPE_DISPLAY_LIMIT } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCachedData } from "@/lib/actions/redis";
 import { z } from "zod/v4";
 import { IdSchema, UrlSchema } from "@/lib/zod";
+import { cache } from "react";
 
 type SearchResultsProps = {
   count: number;
@@ -34,146 +34,14 @@ const MAX_DIET_DISPLAY_LIMIT = 3;
 
 export default async function SearchResults({ count, userId, searchParams }: SearchResultsProps) {
   const { query, sort, filters, page } = searchParams;
-  
-  const savedRecipes = await getCachedData({
-    cacheKey: `user_${userId}_saved_recipes${filters.length > 0 ? `_filters_${filters.join(",")}` : ""}${query ? `_query_${query}` : ""}_page_${page}${sort ? `_sort_${sort}`: ""}`,
-    timeToLive: 60 * 3, // 3 minutes
-    schema: z.array(
-      z.object({
-        id: IdSchema,
-        title: z.string().nonempty(),
-        description: z.nullable(z.string().nonempty()),
-        image: UrlSchema,
-        calories: z.number().nonnegative(),
-        prepTime: z.number().nonnegative(),
-        diets: z.array(
-          z.object({
-            id: IdSchema,
-            name: z.string().nonempty()
-          })
-        ),
-        cuisine: z.nullable(
-          z.object({
-            id: IdSchema,
-            adjective: z.string().nonempty(),
-            icon: UrlSchema
-          })
-        ),
-        sourceName: z.nullable(z.string().nonempty()),
-        sourceUrl: z.nullable(UrlSchema),
-        saveDate: z.coerce.date(),
-        isFavorite: z.coerce.boolean(),
-        isAuthor: z.coerce.boolean()
-      })
-    ),
-    call: () => {
-      const orderByClauses: Record<Sort, SQL[]> = {
-        title: [asc(recipe.title), asc(recipe.id)],
-        calories: [asc(sql`"recipe_to_nutrition_sub"."calories"`), asc(recipe.title), asc(recipe.id)],
-        prepTime: [asc(recipe.prepTime), asc(recipe.title), asc(recipe.id)],
-        saveDate: [desc(savedRecipe.saveDate), asc(recipe.title), asc(recipe.id)]
-      };
-      
-      const filterClauses: Record<Filter, SQL> = {
-        created: eq(recipe.createdBy, userId),
-        favorited: isNotNull(sql`"favorite_sub"."is_favorite"`)
-      };
 
-      return db.select({
-        id: recipe.id,
-        title: recipe.title,
-        description: recipe.description,
-        image: recipe.image,
-        calories: sql`"recipe_to_nutrition_sub"."calories"`.mapWith(Number),
-        prepTime: recipe.prepTime,
-        diets: sql<{
-          id: string;
-          name: string;
-        }[]>`"recipe_to_diet_sub"."data"`.as("diets"),
-        cuisine: sql<{
-          id: string;
-          adjective: string;
-          icon: string;
-        } | null>`"cuisine_sub"."data"`,
-        sourceName: recipe.sourceName,
-        sourceUrl: recipe.sourceUrl,
-        saveDate: savedRecipe.saveDate,
-        isFavorite: sql`"favorite_sub"."is_favorite"`.as("is_favorite"),
-        isAuthor: sql`CASE WHEN ${recipe.createdBy} = ${userId} THEN TRUE ELSE FALSE END`.as("is_author")
-      }).from(savedRecipe)
-        .where(and(
-          eq(savedRecipe.userId, userId),
-          query ? ilike(recipe.title, `%${query}%`) : undefined,
-          ...filters.map((f) => filterClauses[f])
-        ))
-        .innerJoin(recipe, eq(savedRecipe.recipeId, recipe.id))
-        .leftJoinLateral(
-          db.select({
-            data: sql`
-              json_build_object(
-                'id', ${cuisine.id}, 
-                'adjective', ${cuisine.adjective}, 
-                'icon', ${cuisine.icon}
-              )
-            `.as("data")
-          }).from(cuisine)
-            .where(eq(cuisine.id, recipe.cuisineId))
-            .as("cuisine_sub"),
-          sql`true`
-        )
-        .leftJoinLateral(
-          db.select({
-            diets: sql`
-              coalesce(
-                json_agg("diets_sub"."data"),
-                '[]'::json
-              )
-            `.as("data")
-          }).from(
-            db.select({
-              data: sql`
-                json_build_object(
-                  'id', ${diet.id},
-                  'name', ${diet.name}
-                )
-              `.as("data")
-            }).from(recipeToDiet)
-              .where(eq(recipeToDiet.recipeId, recipe.id))
-              .innerJoin(diet, eq(recipeToDiet.dietId, diet.id))
-              .limit(MAX_DIET_DISPLAY_LIMIT)
-              .as("diets_sub")
-          ).as("recipe_to_diet_sub"),
-          sql`true`
-        )
-        .leftJoinLateral(
-          db.select({
-            calories: sql`coalesce(${recipeToNutrition.amount}, 0)`.as("calories")
-          }).from(recipeToNutrition)
-            .where(and(
-              eq(recipeToNutrition.recipeId, recipe.id),
-              eq(nutrition.name, "Calories")
-            ))
-            .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
-            .as("recipe_to_nutrition_sub"),
-          sql`true`
-        )
-        .leftJoinLateral(
-          db.select({
-            isFavorite: sql`
-              CASE WHEN ${recipeFavorite.userId} IS NOT NULL AND ${recipeFavorite.recipeId} IS NOT NULL THEN TRUE ELSE FALSE END
-            `.as("is_favorite")
-          }).from(recipeFavorite)
-            .where(and(
-              eq(savedRecipe.userId, recipeFavorite.userId),
-              eq(savedRecipe.recipeId, recipeFavorite.recipeId)
-            ))
-            .as("favorite_sub"),
-          sql`true`
-        )
-        .limit(MAX_LIST_RECIPE_DISPLAY_LIMIT)
-        .offset(page * MAX_LIST_RECIPE_DISPLAY_LIMIT)
-        .orderBy(...(sort ? [...orderByClauses[sort]] : [asc(recipe.id)]));
-    }
+  const savedRecipes = await getSearchResults({
+    query,
+    userId,
+    sort,
+    filters,
+    limit: MAX_LIST_RECIPE_DISPLAY_LIMIT,
+    offset: page * MAX_LIST_RECIPE_DISPLAY_LIMIT
   });
   
   return (
@@ -184,7 +52,18 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
       {
         savedRecipes.length > 0 ? (
           <div className="grid gap-3">
-            {savedRecipes.map((r) => <RecipeResult key={r.id} recipe={r}/>)}
+            {savedRecipes.map(({ id, saveDate, recipe }) => recipe ? (
+              <RecipeResult
+                key={id}
+                saveDate={saveDate}
+                recipe={recipe}
+              />
+            ) : (
+              <RecipeNotFound 
+                key={id}
+                savedRecipeId={id}
+              />
+            ))}
           </div>
         ) : (
           <div className="w-full bg-sidebar border border-border rounded-md flex flex-col justify-center items-center gap-8 p-4 mx-auto">
@@ -199,6 +78,167 @@ export default async function SearchResults({ count, userId, searchParams }: Sea
     </div>
   );
 }
+
+const getSearchResults = cache(async ({
+  query = "",
+  userId,
+  filters = [],
+  sort = null,
+  limit,
+  offset
+}: {
+  query?: string;
+  userId: string;
+  filters?: Filter[];
+  sort?: Sort | null;
+  limit: number;
+  offset: number;
+}) => {
+  const cuisineSubQuery = db.select({
+    cuisine: sql`
+      json_build_object(
+        'id', ${cuisine.id}, 
+        'adjective', ${cuisine.adjective}, 
+        'icon', ${cuisine.icon}
+      )
+    `.as("cuisine")
+  }).from(cuisine)
+    .where(eq(cuisine.id, recipe.cuisineId))
+    .as("cuisine_sub");
+
+  const dietSubQuery = db.select({
+    diets: sql`
+      json_build_object(
+        'id', ${diet.id},
+        'name', ${diet.name}
+      )
+    `.as("diets")
+  }).from(recipeToDiet)
+    .where(eq(recipeToDiet.recipeId, recipe.id))
+    .innerJoin(diet, eq(recipeToDiet.dietId, diet.id))
+    .limit(MAX_DIET_DISPLAY_LIMIT)
+    .as("diets_sub");
+
+  const recipeToDietSubQuery = db.select({
+    diets: sql`
+      coalesce(
+        json_agg("diets_sub"."diets"),
+        '[]'::json
+      )
+    `.as("diets")
+  }).from(dietSubQuery).as("recipe_to_diet_sub");
+
+  const caloriesSubQuery = db.select({
+    calories: recipeToNutrition.amount
+  }).from(recipeToNutrition)
+    .where(and(
+      eq(recipeToNutrition.recipeId, recipe.id),
+      eq(nutrition.name, "Calories")
+    ))
+    .innerJoin(nutrition, eq(recipeToNutrition.nutritionId, nutrition.id))
+    .as("recipe_to_nutrition_sub");
+
+  const sortByTitle = asc(sql`"recipe_sub"."recipe"->>'title'`);
+  const sortById = asc(sql`"recipe_sub"."recipe"->>'id'`);
+  const sortByCalories = asc(sql`("recipe_sub"."recipe"->>'calories')::integer`);
+  const sortByPrepTime = asc(sql`("recipe_sub"."recipe"->>'prepTime')::integer`);
+
+  const orderByClauses: Record<Sort, SQL[]> = {
+    title: [sortByTitle, sortById],
+    calories: [sortByCalories, sortByTitle, sortById],
+    prepTime: [sortByPrepTime, sortByTitle, sortById],
+    saveDate: [desc(savedRecipe.saveDate), sortByTitle, sortById]
+  };
+  
+  const filterClauses: Record<Filter, SQL> = {
+    created: eq(sql`("recipe_sub"."recipe"->>'isAuthor')::boolean`, true),
+    favorited: eq(sql`("recipe_sub"."recipe"->>'isFavorite')::boolean`, true)
+  };
+
+  const recipeSubQuery = db.select({
+    recipe: sql`
+      json_build_object(
+        'id', ${recipe.id},
+        'title', ${recipe.title},
+        'description', ${recipe.description},
+        'image', ${recipe.image},
+        'calories', coalesce(${caloriesSubQuery.calories}::integer, 0),
+        'prepTime', ${recipe.prepTime},
+        'diets', ${recipeToDietSubQuery.diets},
+        'cuisine', ${cuisineSubQuery.cuisine},
+        'sourceName', ${recipe.sourceName},
+        'sourceUrl', ${recipe.sourceUrl},
+        'isFavorite', ${exists(
+          db.select({ id: recipeFavorite.recipeId })
+            .from(recipeFavorite)
+            .where(and(
+              eq(recipeFavorite.recipeId, recipe.id),
+              eq(recipeFavorite.userId, userId)
+            ))
+        )},
+        'isAuthor', ${eq(recipe.createdBy, userId)}
+      )
+    `.as("recipe")
+  }).from(recipe)
+    .where(and(
+      eq(recipe.id, savedRecipe.recipeId),
+      query ? ilike(recipe.title, `%${query}%`) : undefined
+    ))
+    .leftJoinLateral(cuisineSubQuery, sql`true`)
+    .leftJoinLateral(recipeToDietSubQuery, sql`true`)
+    .leftJoinLateral(caloriesSubQuery, sql`true`)
+    .as("recipe_sub");
+
+  const SavedRecipesSchema = z.array(
+    z.object({
+      id: IdSchema,
+      saveDate: z.date(),
+      recipe: z.nullable(
+        z.object({
+          id: IdSchema,
+          title: z.string().nonempty(),
+          description: z.nullable(z.string().nonempty()),
+          image: UrlSchema,
+          calories: z.number().nonnegative(),
+          prepTime: z.number().nonnegative(),
+          diets: z.array(
+            z.object({
+              id: z.string().nonempty(),
+              name: z.string().nonempty()
+            })
+          ),
+          cuisine: z.nullable(
+            z.object({
+              id: IdSchema,
+              adjective: z.string().nonempty(),
+              icon: UrlSchema
+            })
+          ),
+          sourceName: z.nullable(z.string().nonempty()),
+          sourceUrl: z.nullable(UrlSchema),
+          isFavorite: z.boolean(),
+          isAuthor: z.boolean()
+        })
+      )
+    })
+  ).max(limit);
+
+  const result = await db.select({
+    id: savedRecipe.id,
+    saveDate: savedRecipe.saveDate,
+    recipe: recipeSubQuery.recipe
+  }).from(savedRecipe)
+    .where(and(
+      eq(savedRecipe.userId, userId),
+      ...filters.map((f) => filterClauses[f])
+    ))
+    .leftJoinLateral(recipeSubQuery, sql`true`)
+    .limit(limit)
+    .offset(offset)
+    .orderBy(...(sort ? [...orderByClauses[sort]] : [sortById]));
+
+  return SavedRecipesSchema.parse(result);
+});
 
 export function SearchResultsSkeleton() {
   return (

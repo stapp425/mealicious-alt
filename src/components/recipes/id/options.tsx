@@ -1,6 +1,6 @@
 "use client";
 
-import { toggleRecipeFavorite, toggleSavedListRecipe } from "@/lib/actions/recipe";
+import { toggleRecipeFavorite, deleteRecipeFromSavedList, addRecipeToSavedList } from "@/lib/actions/recipe";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDownToLine, Heart, Loader2, X } from "lucide-react";
@@ -22,7 +22,7 @@ export function Favorite({
   const queryClient = useQueryClient();
   
   const [isFavorite, setIsFavorite] = useState(isRecipeFavorite);
-  const { executeAsync, isExecuting, isTransitioning } = useAction(toggleRecipeFavorite, {
+  const { execute, isExecuting, isTransitioning } = useAction(toggleRecipeFavorite, {
     onSuccess: async ({ data }) => {
       setIsFavorite(data.isFavorite)
       await queryClient.invalidateQueries({
@@ -38,7 +38,7 @@ export function Favorite({
   return (
     <button 
       disabled={isActionExecuting}
-      onClick={async () => await executeAsync(recipeId)}
+      onClick={() => execute(recipeId)}
       className={cn(
         "group/favorite cursor-pointer disabled:cursor-not-allowed border border-rose-400 hover:border-rose-500 text-xs",
         "bg-rose-400/15 disabled:bg-rose-400/10 hover:bg-rose-400/33 dark:hover:bg-rose-400/40",
@@ -72,34 +72,37 @@ export function Favorite({
 export function Saved({ 
   recipeId,
   isRecipeSaved,
-  onRecipeSavedToggle,
+  onSavedRecipeToggle,
   className,
   ...props
 }: Omit<ComponentProps<"button">, "children" | "disabled" | "onClick"> & {
-  recipeId: string;
+  recipeId: string ;
   isRecipeSaved: boolean;
-  onRecipeSavedToggle?: (status: boolean) => void;
+  onSavedRecipeToggle?: (status: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  
-  const [isSaved, setIsSaved] = useState(isRecipeSaved);
-  const { executeAsync, isExecuting, isTransitioning } = useAction(toggleSavedListRecipe, {
-    onSuccess: async ({ data }) => {
-      setIsSaved(data.isSaved);
-      if (data.isSaved) toast.success("Successfully saved recipe!");
-      else toast.warning("Successfully removed recipe from saved list!");
+
+  const {
+    isSaved,
+    isExecuting,
+    toggleSaveFn
+  } = useToggleSavedRecipe({
+    initialSavedStatus: isRecipeSaved,
+    onSavedRecipeToggleSuccess: async (val, message) => {
+      if (val) toast.success(message);
+      else toast.warning(message);
+
       await queryClient.invalidateQueries({
         predicate: ({ queryKey }) => 
           queryKey[0] === "recipe-statistics" &&
           queryKey[1] === recipeId || 
           queryKey[0] === "meal-form-recipes"
       });
-      onRecipeSavedToggle?.(data.isSaved);
+      onSavedRecipeToggle?.(val);
     },
-    onError: ({ error: { serverError } }) => toast.error(serverError)
+    onSavedRecipeToggleError: (message) => toast.error(message)
   });
 
-  const isActionExecuting = isExecuting || isTransitioning;
   const label = isSaved ? "Unsave" : "Save";
   const Icon = isSaved ? X : ArrowDownToLine;
   const savedStateClassName = isSaved
@@ -108,20 +111,20 @@ export function Saved({
   
   return (
     <button 
-      disabled={isActionExecuting}
-      onClick={async () => await executeAsync(recipeId)}
+      disabled={isExecuting}
+      onClick={() => toggleSaveFn(recipeId)}
       className={cn(
         "group/saved cursor-pointer disabled:cursor-not-allowed border text-xs",
         "flex flex-col justify-between items-center",
         "p-1.5 @min-3xl:p-2 rounded-sm transition-colors",
-        isActionExecuting ? "justify-center" : "justify-center @min-3xl:justify-between",
+        isExecuting ? "justify-center" : "justify-center @min-3xl:justify-between",
         savedStateClassName,
         className
       )}
       {...props}
     >
       {
-        isActionExecuting ? (
+        isExecuting ? (
           <Loader2 size={28} className="animate-spin"/>
         ) : (
           <>
@@ -134,4 +137,53 @@ export function Saved({
       }
     </button>
   );
+}
+
+function useToggleSavedRecipe({
+  initialSavedStatus = false,
+  onSavedRecipeToggleSuccess,
+  onSavedRecipeToggleError
+}: {
+  initialSavedStatus?: boolean;
+  onSavedRecipeToggleSuccess?: (val: boolean, message: string) => void;
+  onSavedRecipeToggleError?: (message: string) => void;
+}) {
+  const [isSaved, setIsSaved] = useState(initialSavedStatus);
+
+  const { 
+    execute: executeAddRecipeToSavedList,
+    isExecuting: isAddRecipeToSavedListExecuting,
+    isTransitioning: isAddRecipeToSavedListTransitioning
+  } = useAction(addRecipeToSavedList, {
+    onSuccess: ({ data }) => {
+      setIsSaved(true);
+      onSavedRecipeToggleSuccess?.(true, data.message);
+    },
+    onError: ({ error: { serverError } }) => onSavedRecipeToggleError?.(serverError || "There was an internal server error.")
+  });
+
+  const { 
+    execute: executeDeleteRecipeToSavedList,
+    isExecuting: isDeleteRecipeToSavedListExecuting,
+    isTransitioning: isDeleteRecipeToSavedListTransitioning
+  } = useAction(deleteRecipeFromSavedList, {
+    onSuccess: ({ data }) => {
+      setIsSaved(false);
+      onSavedRecipeToggleSuccess?.(false, data.message);
+    },
+    onError: ({ error: { serverError } }) => onSavedRecipeToggleError?.(serverError || "There was an internal server error.")
+  });
+
+  return {
+    isSaved,
+    toggleSaveFn: isSaved
+      ? executeDeleteRecipeToSavedList
+      : executeAddRecipeToSavedList,
+    isExecuting: 
+      isAddRecipeToSavedListExecuting || 
+      isAddRecipeToSavedListTransitioning || 
+      isDeleteRecipeToSavedListExecuting || 
+      isDeleteRecipeToSavedListTransitioning
+  };
+
 }

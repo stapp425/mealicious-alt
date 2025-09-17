@@ -7,7 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Control, useFieldArray, useForm, UseFormSetValue, useFormState, useWatch } from "react-hook-form";
-import { memo, useMemo, useState } from "react";
+import { memo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Info, LoaderCircle, Minus, Plus } from "lucide-react";
@@ -36,18 +36,18 @@ export default function ChangeDietPreferencesForm({ dietPreferences }: ChangeDie
     handleSubmit,
     reset,
     formState: {
-      isDirty,
-      isSubmitting
+      isDirty
     }
-  } = useForm<ChangeDietPreferencesForm>({
+  } = useForm({
     resolver: zodResolver(ChangeDietPreferencesFormSchema),
     mode: "onSubmit",
     reValidateMode: "onSubmit",
     defaultValues: { preferences: dietPreferences }
   });
+
   const { fields } = useFieldArray({ control, name: "preferences" });
 
-  const { executeAsync } = useAction(updateDietPreferences, {
+  const { execute, isExecuting } = useAction(updateDietPreferences, {
     onSuccess: async ({ data, input }) => {
       await queryClient.invalidateQueries({
         queryKey: ["search-recipes-results"]
@@ -57,23 +57,9 @@ export default function ChangeDietPreferencesForm({ dietPreferences }: ChangeDie
     },
     onError: ({ error: { serverError } }) => toast.error(serverError)
   });
-
-  const previewDiets = useMemo(
-    () => fields.slice(0, MAX_DIET_DISPLAY_LIMIT),
-    [fields]
-  );
-
-  const restOfDiets = useMemo(
-    () => fields.slice(MAX_DIET_DISPLAY_LIMIT),
-    [fields]
-  );
-
-  const onSubmit = handleSubmit(async (data) => {
-    await executeAsync(data);
-  });
   
   return (
-    <form onSubmit={onSubmit} className="grid overflow-hidden">
+    <form onSubmit={handleSubmit(execute)} className="grid overflow-hidden">
       <h1 className="font-bold text-xl">Diet Preferences</h1>
       <p className="text-muted-foreground mb-1">Change your diet preferences here.</p>
       <div className="text-muted-foreground flex items-center gap-2">
@@ -83,7 +69,7 @@ export default function ChangeDietPreferencesForm({ dietPreferences }: ChangeDie
       <Collapsible open={open} onOpenChange={setOpen} className="grid border border-border mt-4 rounded-md">
         <div className="grid">
           {
-            previewDiets.map((d, index) => (
+            fields.slice(0, MAX_DIET_DISPLAY_LIMIT).map((d, index) => (
               <DietPreference 
                 key={d.id}
                 index={index}
@@ -95,7 +81,7 @@ export default function ChangeDietPreferencesForm({ dietPreferences }: ChangeDie
         </div>
         <CollapsibleContent className="grid">
           {
-            restOfDiets.map((d, index) => (
+            fields.slice(MAX_DIET_DISPLAY_LIMIT).map((d, index) => (
               <DietPreference 
                 key={d.id}
                 index={index + MAX_DIET_DISPLAY_LIMIT}
@@ -115,39 +101,47 @@ export default function ChangeDietPreferencesForm({ dietPreferences }: ChangeDie
           "border-t border-t-border flex items-center gap-3 p-3",
           !isDirty && "hidden"
         )}>
+          <button
+            type="submit"
+            disabled={isExecuting}
+            className="mealicious-button w-20 flex justify-center items-center text-white text-sm font-semibold py-2 px-4 rounded-sm"
+          >
+            {isExecuting ? <LoaderCircle size={18} className="animate-spin"/> : "Submit"}
+          </button>
           <Button
             type="button"
             variant="destructive"
-            disabled={isSubmitting}
+            disabled={isExecuting}
             onClick={() => reset()}
             className="cursor-pointer rounded-sm"
           >
             Cancel
           </Button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="mealicious-button w-20 flex justify-center items-center text-white text-sm font-semibold py-2 px-4 rounded-sm"
-          >
-            {isSubmitting ? <LoaderCircle size={18} className="animate-spin"/> : "Submit"}
-          </button>
         </div>
       </Collapsible>
     </form>
   );
 }
 
-type DietPreferenceProps<T extends ChangeDietPreferencesForm = ChangeDietPreferencesForm> = {
+const DietPreference = memo(({
+  index,
+  control,
+  setPreferenceValue
+}: {
   index: number;
-  control: Control<T>;
-  setPreferenceValue: UseFormSetValue<T>;
-};
-
-const DietPreference = memo(({ index, control, setPreferenceValue }: DietPreferenceProps) => {
+  control: Control<ChangeDietPreferencesForm>;
+  setPreferenceValue: UseFormSetValue<ChangeDietPreferencesForm>;
+}) => {
   const dietPreference = useWatch({ control, name: `preferences.${index}` });
+  
   const { 
-    errors: { preferences: preferencesError }
-  } = useFormState({ control, name: `preferences.${index}` });
+    errors: {
+      preferences: preferencesError
+    }
+  } = useFormState({
+    control,
+    name: `preferences.${index}`
+  });
 
   return (
     <div className="grid border-b border-b-border gap-2.5 p-4">
@@ -162,23 +156,30 @@ const DietPreference = memo(({ index, control, setPreferenceValue }: DietPrefere
         </Popover>
         <h2 className="font-semibold text-sm">{dietPreference.name}</h2>
       </div>
-      {
-        preferencesError?.[index]?.score?.message && (
-          <div className="flex items-center gap-1.5 text-red-500 text-xs">
-            {preferencesError[index].score.message}
-          </div>
-        )
-      }
+      <div className="error-text text-xs has-[>span:empty]:hidden">
+        <Info size={14}/>
+        <span>{preferencesError?.[index]?.score?.message}</span>
+      </div>
       <RadioGroup 
         value={String(dietPreference.score)}
-        onValueChange={(val) => setPreferenceValue(`preferences.${index}.score`, Number(val), { shouldDirty: true })}
+        onValueChange={(val) => setPreferenceValue(
+          `preferences.${index}.score`,
+          Number(val),
+          { shouldDirty: true }
+        )}
         className="flex justify-between gap-2"
       >
         {
           Array.from({ length: MAX_DIET_SCORE + 1 }, (_, i) => String(i)).map((i) => (
-            <Label key={i} className="flex-1 border border-border has-[[data-state=checked]]:border-mealicious-primary has-[[data-state=checked]]:bg-mealicious-primary/20 flex flex-col sm:flex-row justify-around items-center gap-2 rounded-sm py-2 px-3">
-              <RadioGroupItem value={i}/>
-              <span className="text-muted-foreground/50 [[data-state=checked]~&]:text-primary">{i}</span>
+            <Label 
+              key={i}
+              className={cn(
+                "flex-1 cursor-pointer border border-muted-foreground/25 flex flex-col @min-2xl:flex-row justify-around items-center gap-2 rounded-sm py-2 px-3",
+                "has-data-[state=checked]:pointer-events-none has-data-[state=checked]:border-mealicious-primary has-data-[state=checked]:bg-mealicious-primary/20"
+              )}
+            >
+              <RadioGroupItem value={i} className="peer/radio-item"/>
+              <span className="text-muted-foreground peer-data-[state=checked]/radio-item:text-primary">{i}</span>
             </Label>
           ))
         }

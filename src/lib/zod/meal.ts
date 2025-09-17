@@ -72,8 +72,11 @@ const MealFormSchema = z.object({
   })
 });
 
-export const CreateMealFormSchema = MealFormSchema
-export const EditMealFormSchema = MealFormSchema.extend({ id: IdSchema });
+export const CreateMealFormSchema = MealFormSchema;
+
+export const EditMealFormSchema = MealFormSchema.extend({
+  id: IdSchema
+});
 
 export type CreateMealForm = z.infer<typeof CreateMealFormSchema>;
 export type EditMealForm = z.infer<typeof EditMealFormSchema>;

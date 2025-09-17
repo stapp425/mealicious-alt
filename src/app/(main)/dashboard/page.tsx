@@ -44,7 +44,7 @@ export default async function Page() {
         <div className="relative aspect-square size-36 rounded-full overflow-hidden shrink-0">
           <Image 
             src={userInfo.image || defaultProfilePicture}
-            alt={`Profile picture of ${userInfo.name || "[deleted]"}`}
+            alt={`Profile picture of ${userInfo.name}`}
             fill
             className="object-cover object-center bg-slate-100"
           />

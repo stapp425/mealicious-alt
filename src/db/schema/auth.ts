@@ -7,7 +7,7 @@ import { nanoid } from "nanoid";
 export const account = pgTable("account", (t) => ({
     id: t.text("acc_id")
       .primaryKey()
-      .$default(() => nanoid()),
+      .$default(nanoid),
     userId: t.text("acc_holder")
       .notNull()
       .references(() => user.id, {
@@ -32,7 +32,7 @@ export const account = pgTable("account", (t) => ({
 export const emailVerification = pgTable("email_verification", (t) => ({
   id: t.text("verify_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   email: t.text("verify_email")
     .notNull()
     .unique()
@@ -48,7 +48,7 @@ export const emailVerification = pgTable("email_verification", (t) => ({
 export const passwordReset = pgTable("password_reset", (t) => ({
   id: t.text("pr_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   email: t.text("pr_email")
     .notNull()
     .unique()

@@ -201,7 +201,7 @@ const MorePlansSearchResults = memo(({
     }
 
     return {
-      startDate: date1 ? new UTCDate(date1) : undefined,
+      startDate: date1,
       endDate: date2 ? new UTCDate(addMilliseconds(date2, -1, inUtc)) : undefined,
     };
   }, [timeframe, view]);
@@ -237,7 +237,6 @@ const MorePlansSearchResults = memo(({
   } = useQuery({
     queryKey: [
       "more-plans",
-      { mode: timeframe },
       userId,
       query,
       { startDate, endDate },

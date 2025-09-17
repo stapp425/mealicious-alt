@@ -39,12 +39,6 @@ export const ImageDataSchema = z.object({
     error: (issue) => typeof issue.code === "undefined"
       ? "A file size is required."
       : "Expected a number, but received an invalid type."
-  }).min(1, {
-    abort: true,
-    error: "File size must be greater than 0B."
-  }).max(maxFileSize.amount, {
-    abort: true,
-    error: `File size must be at most ${maxFileSize.label}.`
   }),
   type: z.string({
     error: (issue) => typeof issue.input === "undefined"

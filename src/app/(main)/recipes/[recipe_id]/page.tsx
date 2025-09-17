@@ -108,23 +108,15 @@ export default async function Page({ params }: PageProps<"/recipes/[recipe_id]">
             <div className="relative size-12 rounded-full overflow-hidden">
               <Image 
                 src={foundRecipe.creator?.image || defaultProfilePicture}
-                alt={`Profile picture of ${foundRecipe.creator?.name || "[deleted]"}`}
+                alt={`Profile picture of ${foundRecipe.creator.name}`}
                 fill
                 className="object-cover object-center bg-slate-100"
               />
             </div>
             <div className="flex flex-col justify-between items-start gap-0.5">
-              {
-                foundRecipe.creator ? (
-                  <Link href={`/user/${foundRecipe.creator.id}`} className="font-semibold hover:underline">
-                    {foundRecipe.creator.name}
-                  </Link>
-                ) : (
-                  <h2 className="text-muted-foreground italic">
-                    [deleted]
-                  </h2>
-                )
-              }
+              <Link href={`/user/${foundRecipe.creator.id}`} className="font-semibold hover:underline">
+                {foundRecipe.creator.name}
+              </Link>
               <span className="text-muted-foreground text-xs">
                 Created {format(foundRecipe.createdAt, "MMM d, yyyy")} {foundRecipe.updatedAt > foundRecipe.createdAt && `• Updated ${format(foundRecipe.updatedAt, "MMM d, yyyy")}`}
               </span>
@@ -184,7 +176,7 @@ export default async function Page({ params }: PageProps<"/recipes/[recipe_id]">
                   <Saved 
                     recipeId={foundRecipe.id}
                     isRecipeSaved={isSaved}
-                    onRecipeSavedToggle={async () => {
+                    onSavedRecipeToggle={async () => {
                       "use server";
                       revalidatePath("/recipes");
                       revalidatePath(`/recipes/${foundRecipe.id}`);

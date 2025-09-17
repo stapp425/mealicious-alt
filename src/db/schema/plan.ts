@@ -8,7 +8,7 @@ import { MealType } from "@/lib/types";
 export const plan = pgTable("plan", (t) => ({
   id: t.text("plan_id")
     .primaryKey()
-    .$default(() => nanoid()),
+    .$default(nanoid),
   title: t.varchar("plan_title", { length: 100 }).notNull(),
   description: t.text("plan_desc"),
   tags: t.json("plan_tags")
