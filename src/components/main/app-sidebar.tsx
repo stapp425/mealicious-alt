@@ -17,7 +17,7 @@ import Link from "next/link";
 import siteLogo from "@/img/logo/mealicious-logo.svg";
 import SidebarUser from "@/components/main/sidebar-user";
 import { usePathname } from "next/navigation";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Route } from "next";
 

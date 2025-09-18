@@ -87,7 +87,6 @@ type EditRecipeFormProps = {
       id: string;
       unit: Unit["abbreviation"];
       amount: number;
-      isAllergen: boolean;
       note: string | null;
     }[];
     instructions: {

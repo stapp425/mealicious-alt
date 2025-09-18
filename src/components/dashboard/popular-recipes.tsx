@@ -3,8 +3,8 @@ import { cuisine, diet, nutrition, recipe, recipeToDiet, recipeToNutrition, save
 import { tz } from "@date-fns/tz";
 import { endOfDay, startOfDay } from "date-fns";
 import { and, count, desc, eq, gte, lt, sql } from "drizzle-orm";
-import PopularRecipesInfo from "./popular-recipes-info";
-import { Skeleton } from "../ui/skeleton";
+import PopularRecipesInfo from "@/components/dashboard/popular-recipes-info";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const now = new Date();
 const MAX_RECIPE_DISPLAY_LIMIT = 3;

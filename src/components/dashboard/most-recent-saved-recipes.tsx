@@ -1,8 +1,8 @@
 import { db } from "@/db";
 import { nutrition, recipe, recipeToNutrition, savedRecipe } from "@/db/schema";
 import { and, eq, not, sql, desc } from "drizzle-orm";
-import MostRecentSavedRecipesInfo from "./most-recent-saved-recipes-info";
-import { Skeleton } from "../ui/skeleton";
+import MostRecentSavedRecipesInfo from "@/components/dashboard/most-recent-saved-recipes-info";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SearchX } from "lucide-react";
 
 type MostRecentSavedRecipesProps = {

@@ -1,6 +1,5 @@
 "use client";
 
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { 
   Select, 
@@ -42,7 +41,6 @@ export default function RecipeIngredients({ className, ...props }: Omit<Componen
     name: "",
     amount: 0,
     unit: "g",
-    isAllergen: false,
     note: undefined
   });
 
@@ -61,7 +59,6 @@ export default function RecipeIngredients({ className, ...props }: Omit<Componen
       name: "",
       amount: 0,
       unit: "g",
-      isAllergen: false,
       note: undefined
     });
     setTouched(false);
@@ -152,23 +149,6 @@ export default function RecipeIngredients({ className, ...props }: Omit<Componen
         }}
         className="rounded-sm shadow-none"
       />
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="isAllergen"
-          checked={ingredient.isAllergen}
-          onCheckedChange={(val) => setIngredient((i) => ({
-            ...i,
-            isAllergen: val === true
-          }))}
-          className="rounded-xs shadow-none"
-        />
-        <label
-          htmlFor="isAllergen"
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          Is Allergen
-        </label>
-      </div>
       <div className="error-label flex flex-col gap-2 has-[>ul:empty]:hidden">
         <div className="flex items-center gap-2">
           <Info size={14}/>
@@ -337,26 +317,6 @@ const RecipeIngredient = memo(({
             placeholder="Ingredient Name"
             className="rounded-sm shadow-none"
           />
-          <div className="flex items-center @min-3xl:items-start gap-2 mb-1">
-            <Checkbox
-              id={`ingredient-${currentIngredientIndex}-isAllergen`}
-              checked={ingredientInput.isAllergen}
-              onCheckedChange={(val) => {
-                setTouched(true);
-                setIngredientInput((i) => ({
-                  ...i,
-                  isAllergen: val === true
-                }));
-              }}
-              className="rounded-xs shadow-none"
-            />
-            <label
-              htmlFor={`ingredient-${currentIngredientIndex}-isAllergen`}
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Is Allergen
-            </label>
-          </div>
           <div className="error-label flex flex-col gap-2 has-[ul:empty]:hidden">
             <div className="flex items-center gap-2">
               <Info size={14}/>
@@ -454,12 +414,9 @@ const RecipeIngredient = memo(({
             <Trash2 size={16} className="shrink-0 stroke-muted-foreground group-hover:stroke-white"/>
           </button>
         </div>
-        <div className="flex justify-between items-center gap-3">
-          <span className="w-full line-clamp-1 font-semibold text-muted-foreground max-w-48 truncate">
-            {currentIngredientContent.name}
-          </span>
-          {currentIngredientContent.isAllergen && <span className="font-semibold text-muted-foreground text-sm">(Allergen)</span>}
-        </div>
+        <span className="w-full line-clamp-1 font-semibold text-muted-foreground max-w-48 truncate">
+          {currentIngredientContent.name}
+        </span>
       </div>
       <div className="flex flex-col has-[div:nth-child(2):empty]:hidden">
         <Separator />

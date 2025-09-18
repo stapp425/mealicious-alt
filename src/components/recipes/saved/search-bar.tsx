@@ -8,7 +8,7 @@ import { Search } from "lucide-react";
 import { parseAsArrayOf, parseAsIndex, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
-import SearchOptions from "./search-options";
+import SearchOptions from "@/components/recipes/saved/search-options";
 
 export default function SearchBar() {
   const [{

@@ -89,7 +89,6 @@ export const createRecipe = authActionClient
         name: i.name,
         amount: Number(i.amount.toFixed(2)),
         unit: i.unit,
-        isAllergen: i.isAllergen,
         note: i.note
       }))) : undefined;
 
@@ -199,7 +198,6 @@ export const updateRecipe = authActionClient
         name: i.name,
         amount: i.amount,
         unit: i.unit,
-        isAllergen: i.isAllergen,
         note: i.note
       }))) : undefined;
 
@@ -528,7 +526,6 @@ export async function getRecipeIngredients(recipeId: string) {
     name: ingredient.name,
     amount: ingredient.amount,
     unit: ingredient.unit,
-    isAllergen: ingredient.isAllergen,
     note: ingredient.note
   }).from(ingredient)
     .where(eq(ingredient.recipeId, recipeId));

@@ -166,9 +166,6 @@ export const ingredient = pgTable("ingredient", (t) => ({
     .primaryKey()
     .$default(nanoid),
   name: t.varchar("ing_name", { length: 100 }).notNull(),
-  isAllergen: t.boolean("ing_is_allergen")
-    .notNull()
-    .default(false),
   recipeId: t.text("recipe_id")
     .notNull()
     .references(() => recipe.id, {

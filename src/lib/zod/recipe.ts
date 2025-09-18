@@ -224,7 +224,6 @@ const RecipeFormSchema = z.object({
       error: `Amount must be at most ${MAX_RECIPE_INGREDIENT_AMOUNT.toLocaleString()}.`
     }).transform((val) => Number(val.toFixed(2))),
     unit: UnitSchema,
-    isAllergen: z.boolean("Expected a boolean, but received an invalid type."),
     note: z.optional(
       z.string("Expected a string, but received an invalid type.")
         .nonempty({

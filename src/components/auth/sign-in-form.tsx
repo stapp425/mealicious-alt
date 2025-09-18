@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import PasswordInput from "./password-input";
+import PasswordInput from "@/components/auth/password-input";
 import { signInWithCredentials } from "@/lib/actions/auth";
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
