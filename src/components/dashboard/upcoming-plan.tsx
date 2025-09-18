@@ -3,8 +3,6 @@ import { db } from "@/db";
 import { diet, meal, mealToRecipe, nutrition, plan, planToMeal, recipe, recipeToDiet, recipeToNutrition } from "@/db/schema";
 import { getCachedData } from "@/lib/actions/redis";
 import { MealType } from "@/lib/types";
-import { UpcomingPlanSchema } from "@/lib/zod/dashboard";
-import { tz } from "@date-fns/tz";
 import { startOfDay } from "date-fns";
 import { eq, sql, asc, and, gte } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -12,19 +10,23 @@ import UpcomingPlanInfo from "@/components/dashboard/upcoming-plan-info";
 import z from "zod/v4";
 import { SearchX } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UpcomingPlanSchema } from "@/lib/zod/dashboard";
 
 const MAX_DIET_DISPLAY_LIMIT = 3;
-const now = new Date();
 
 export default async function UpcomingPlan() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
 
-  const [upcomingPlan] = await getCachedData({
+  const now = new Date();
+  const upcomingPlan = await getCachedData({
     cacheKey: `user_${userId}_upcoming_plan`,
     timeToLive: 60 * 10, // 10 minutes
-    schema: z.array(UpcomingPlanSchema).max(1),
+    schema: z
+      .array(UpcomingPlanSchema)
+      .max(1)
+      .transform((val) => val.length > 0 ? val[0] : undefined),
     call: () => {
       const dietSubQuery = db.select({
         diet: sql`
@@ -146,7 +148,7 @@ export default async function UpcomingPlan() {
       }).from(plan)
         .where(and(
           eq(plan.createdBy, userId),
-          gte(plan.date, startOfDay(now, { in: tz("UTC") }))
+          gte(plan.date, startOfDay(now))
         ))
         .innerJoinLateral(planToMealSubQuery, sql`true`)
         .orderBy(asc(plan.createdAt))
@@ -158,10 +160,10 @@ export default async function UpcomingPlan() {
 
   if (!upcomingPlan) {
     return (
-      <div className="flex flex-col">
+      <div className="grid">
         <h1 className="font-bold text-2xl">Upcoming Plan</h1>
         <span className="text-muted-foreground mb-3">The most recent upcoming plan will be shown here.</span>
-        <div className="bg-sidebar border border-border text-muted-foreground text-center font-semibold min-h-[450px] flex flex-col justify-center items-center gap-6 rounded-md">
+        <div className="bg-sidebar border border-border text-muted-foreground text-center font-semibold min-h-112 flex flex-col justify-center items-center gap-6 rounded-md">
           <SearchX size={72} className="stroke-muted-foreground"/>
           <span className="text-lg">No Upcoming Plan Found!</span>
         </div>
@@ -170,9 +172,9 @@ export default async function UpcomingPlan() {
   }
   
   return (
-    <div className="flex flex-col">
+    <div className="grid gap-2">
       <h1 className="font-bold text-2xl">Upcoming Plan</h1>
-      <span className="text-muted-foreground mb-3">The most recent upcoming plan will be shown here.</span>
+      <span className="text-muted-foreground">The most recent upcoming plan will be shown here.</span>
       <UpcomingPlanInfo upcomingPlan={upcomingPlan}/>
     </div>
   );
@@ -183,7 +185,7 @@ export function UpcomingPlanSkeleton() {
     <div className="flex flex-col gap-2.5">
       <Skeleton className="w-48 h-8 rounded-sm"/>
       <Skeleton className="w-60 h-6 rounded-sm"/>
-      <Skeleton className="w-full h-[450px] rounded-sm"/>
+      <Skeleton className="w-full h-112 rounded-sm"/>
     </div>
   );
 }

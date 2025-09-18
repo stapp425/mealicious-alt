@@ -57,12 +57,12 @@ export default function ProfileInfo({
         "flex items-center gap-2 ml-0",
         skeletonClassName
       )}>
-        <div className="hidden sm:flex flex-col items-end gap-1.5">
+        <div className="hidden @min-2xl:flex flex-col items-end gap-1.5">
           <Skeleton className="h-5 w-36 rounded-sm"/>
           <Skeleton className="h-4 w-30 rounded-sm"/>
         </div>
-        <Skeleton className="rounded-full size-10 sm:size-12"/>
-        <Skeleton className="rounded-full size-8 sm:size-10"/>
+        <Skeleton className="rounded-full size-10 @min-2xl:size-12"/>
+        <Skeleton className="rounded-full size-8 @min-2xl:size-10"/>
       </div>
     );
   }
@@ -80,7 +80,7 @@ export default function ProfileInfo({
           <h2 className="font-semibold text-sm">{userInfo.name}</h2>
           <span className="text-muted-foreground text-xs">Mealicious User</span>
         </div>
-        <div className="relative aspect-square size-10 sm:size-12 rounded-full overflow-hidden shrink-0">
+        <div className="relative aspect-square size-10 @min-2xl:size-12 rounded-full overflow-hidden shrink-0">
           <Image 
             src={userInfo.image || defaultProfilePicture}
             alt={`Profile picture of ${userInfo.name}`}

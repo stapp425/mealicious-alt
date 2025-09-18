@@ -69,7 +69,7 @@ export function RecipeResult({ saveDate, recipe }: RecipeResultProps) {
   return (
     <div 
       onClick={() => push(`/recipes/${recipe.id}`)}
-      className="overflow-x-hidden cursor-pointer dark:bg-sidebar grid @min-3xl:grid-cols-[256px_1fr] gap-4 border border-border p-4 rounded-md transition-colors"
+      className="overflow-x-hidden cursor-pointer dark:bg-sidebar grid @min-3xl:grid-cols-[16rem_1fr] gap-4 border border-border p-4 rounded-md transition-colors"
     >
       <div className="shrink-0 group relative w-full h-64 min-h-48 @min-3xl:h-auto rounded-sm overflow-hidden">
         <Image 

@@ -32,6 +32,40 @@ type SearchResultsProps = {
 
 const MAX_DIET_DISPLAY_LIMIT = 3;
 
+const SavedRecipesSchema = z.array(
+  z.object({
+    id: IdSchema,
+    saveDate: z.date(),
+    recipe: z.nullable(
+      z.object({
+        id: IdSchema,
+        title: z.string().nonempty(),
+        description: z.nullable(z.string().nonempty()),
+        image: UrlSchema,
+        calories: z.number().nonnegative(),
+        prepTime: z.number().nonnegative(),
+        diets: z.array(
+          z.object({
+            id: z.string().nonempty(),
+            name: z.string().nonempty()
+          })
+        ),
+        cuisine: z.nullable(
+          z.object({
+            id: IdSchema,
+            adjective: z.string().nonempty(),
+            icon: UrlSchema
+          })
+        ),
+        sourceName: z.nullable(z.string().nonempty()),
+        sourceUrl: z.nullable(UrlSchema),
+        isFavorite: z.boolean(),
+        isAuthor: z.boolean()
+      })
+    )
+  })
+);
+
 export default async function SearchResults({ count, userId, searchParams }: SearchResultsProps) {
   const { query, sort, filters, page } = searchParams;
 
@@ -189,40 +223,6 @@ const getSearchResults = cache(async ({
     .leftJoinLateral(caloriesSubQuery, sql`true`)
     .as("recipe_sub");
 
-  const SavedRecipesSchema = z.array(
-    z.object({
-      id: IdSchema,
-      saveDate: z.date(),
-      recipe: z.nullable(
-        z.object({
-          id: IdSchema,
-          title: z.string().nonempty(),
-          description: z.nullable(z.string().nonempty()),
-          image: UrlSchema,
-          calories: z.number().nonnegative(),
-          prepTime: z.number().nonnegative(),
-          diets: z.array(
-            z.object({
-              id: z.string().nonempty(),
-              name: z.string().nonempty()
-            })
-          ),
-          cuisine: z.nullable(
-            z.object({
-              id: IdSchema,
-              adjective: z.string().nonempty(),
-              icon: UrlSchema
-            })
-          ),
-          sourceName: z.nullable(z.string().nonempty()),
-          sourceUrl: z.nullable(UrlSchema),
-          isFavorite: z.boolean(),
-          isAuthor: z.boolean()
-        })
-      )
-    })
-  ).max(limit);
-
   const result = await db.select({
     id: savedRecipe.id,
     saveDate: savedRecipe.saveDate,
@@ -237,17 +237,17 @@ const getSearchResults = cache(async ({
     .offset(offset)
     .orderBy(...(sort ? [...orderByClauses[sort]] : [sortById]));
 
-  return SavedRecipesSchema.parse(result);
+  return SavedRecipesSchema.max(limit).parse(result);
 });
 
 export function SearchResultsSkeleton() {
   return (
     <div className="flex-1 flex flex-col gap-3">
-      <Skeleton className="w-[225px] h-[35px] rounded-sm"/>
-      <Skeleton className="w-[325px] h-[25px] rounded-sm"/>
+      <Skeleton className="w-56 h-9 rounded-sm"/>
+      <Skeleton className="w-82 h-6 rounded-sm"/>
       {
         Array.from({ length: MAX_LIST_RECIPE_DISPLAY_LIMIT }, (_, i) => i).map((i) => (
-          <Skeleton key={i} className="w-full h-[500px] sm:h-[175px] rounded-md"/>
+          <Skeleton key={i} className="w-full h-125 @min-2xl:h-44 rounded-md"/>
         ))
       }
     </div>

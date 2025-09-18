@@ -10,7 +10,7 @@ import { Check, ChevronDown, Info, Plus, Search, X } from "lucide-react";
 import { parseAsBoolean, parseAsIndex, parseAsString, useQueryStates } from "nuqs";
 import { Control, useForm, UseFormSetValue, useWatch } from "react-hook-form";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, remToPx } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { memo, useCallback, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,7 +42,7 @@ type Item = {
   icon?: string;
 };
 
-const CONTAINER_4XL_BREAKPOINT = 896;
+const CONTAINER_XL_BREAKPOINT = 36;
 
 export default function SearchBar({
   cuisines,
@@ -54,7 +54,7 @@ export default function SearchBar({
 }: SearchBarProps) {
   const hydrated = useHydration();
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
-    condition: ({ width }) => width >= CONTAINER_4XL_BREAKPOINT
+    condition: ({ width }) => width >= remToPx(CONTAINER_XL_BREAKPOINT - 2)
   });
   
   const [{ 
@@ -211,14 +211,14 @@ export default function SearchBar({
             disabled={isSubmitting}
             className="font-semibold text-sm mealicious-button flex items-center gap-3 px-4 rounded-sm"
           >
-            <span className="hidden sm:block">Search</span>
+            <span className="hidden @min-xl:block">Search</span>
             <Search size={14}/>
           </button>
         </div>
         <PopoverTrigger asChild>
           <Button 
             variant="outline"
-            className="w-full sm:w-fit cursor-pointer gap-4 px-4! rounded-sm shadow-none"
+            className="w-full @min-xl:w-fit cursor-pointer gap-4 px-4! rounded-sm shadow-none"
           >
             Advanced Filters
             <Plus />
@@ -351,8 +351,8 @@ export default function SearchBar({
         </div>
         <PopoverContent 
           align={hydrated && matches ? "start" : "center"}
-          sideOffset={12.5}
-          className="w-[clamp(300px,calc(100vw-30px),475px)] p-0"
+          sideOffset={remToPx(0.75)}
+          className="w-[min(36rem,calc(100vw-3rem))] p-0"
           asChild
         >
           <div className="flex flex-col">
@@ -488,7 +488,7 @@ const SelectCommand = memo(({
           <ChevronDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[clamp(250px,25vw,450px)] p-0" align="start">
+      <PopoverContent className="w-[min(34rem,calc(100vw-5rem))] p-0" align="start">
         <Command>
           <CommandInput placeholder={placeholder} className="h-9"/>
           <CommandList>

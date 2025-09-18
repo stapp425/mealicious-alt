@@ -112,6 +112,7 @@ export default function RecipeSearchBar({
     <Popover
       open={open}
       onOpenChange={setOpen}
+      modal
     >
       <PopoverTrigger asChild>
         <div

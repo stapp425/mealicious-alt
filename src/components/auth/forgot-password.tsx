@@ -290,13 +290,13 @@ function OTPSection({
               <InputOTPSlot
                 key={i}
                 index={i}
-                className="flex-1 font-bold h-[50px]"
+                className="flex-1 font-bold h-12"
               />
             ))
           }
         </InputOTPGroup>
       </InputOTP>
-      <div className="h-[30px] text-muted-foreground flex items-center gap-2.5">
+      <div className="h-7 text-muted-foreground flex items-center gap-2.5">
         <span className="font-semibold">Didn&apos;t get a code?</span>
         <Separator orientation="vertical"/>
         <Button

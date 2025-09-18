@@ -17,6 +17,26 @@ type SearchResultsProps = {
   maxCalories: number;
 };
 
+const MealResultsSchema = z.array(
+  z.object({
+    id: IdSchema,
+    title: z.string().nonempty(),
+    description: z.nullable(z.string().nonempty()),
+    tags: z.array(z.string().nonempty()),
+    calories: z.coerce.number()
+      .nonnegative()
+      .transform(Math.round),
+    recipes: z.array(
+      z.object({
+        id: IdSchema,
+        title: z.string().nonempty(),
+        image: UrlSchema,
+        description: z.nullable(z.string().nonempty())
+      })
+    )
+  })
+);
+
 export default async function SearchResults({
   count,
   userId,
@@ -39,7 +59,7 @@ export default async function SearchResults({
       </h2>
       {
         meals.length > 0 ? (
-          <div className="columns-1 @min-2xl:columns-2 *:break-inside-avoid space-y-3 @min-2xl:space-y-5">
+          <div className="columns-1 @min-3xl:columns-2 *:break-inside-avoid space-y-3 @min-2xl:space-y-5">
             {meals.map((m) => <MealResult key={m.id} meal={m}/>)}
           </div> 
         ) : (
@@ -61,7 +81,7 @@ export function SearchResultsSkeleton() {
     <div className="flex-1 flex flex-col gap-3">
       <Skeleton className="w-58 h-9 rounded-sm"/>
       <Skeleton className="w-84 h-6 rounded-sm"/>
-      <div className="w-full grid @min-2xl:grid-cols-2 gap-3">
+      <div className="w-full grid @min-3xl:grid-cols-2 gap-3">
         {
           Array.from({ length: MAX_MEAL_DISPLAY_LIMIT }, (_, i) => i).map((i) => (
             <Skeleton key={i} className="h-124 rounded-md"/>
@@ -122,26 +142,6 @@ const getMealResults = cache(async ({
   .where(eq(mealToRecipe.mealId, meal.id))
   .leftJoinLateral(recipeSubQuery, sql`true`)
   .as("meal_to_recipe_sub");
-
-  const MealResultsSchema = z.array(
-    z.object({
-      id: IdSchema,
-      title: z.string().nonempty(),
-      description: z.nullable(z.string().nonempty()),
-      tags: z.array(z.string().nonempty()),
-      calories: z.coerce.number()
-        .nonnegative()
-        .transform(Math.round),
-      recipes: z.array(
-        z.object({
-          id: IdSchema,
-          title: z.string().nonempty(),
-          image: UrlSchema,
-          description: z.nullable(z.string().nonempty())
-        })
-      )
-    })
-  );
 
   const result = await db.select({
     id: meal.id,

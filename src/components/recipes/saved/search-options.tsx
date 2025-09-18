@@ -46,7 +46,7 @@ export default function SearchOptions({
       <PopoverContent 
         align="start"
         sideOffset={7.5}
-        className="w-[min(350px,calc(100vw-30px))] p-0"
+        className="w-[min(28rem,calc(100vw-2rem))] p-0"
       >
         <div className="font-bold p-3">
           Search Options
@@ -117,7 +117,7 @@ export default function SearchOptions({
                 "w-full cursor-pointer flex items-center justify-between gap-2 rounded-sm px-3 py-2 text-sm whitespace-nowrap shadow-none transition-[color,box-shadow] disabled:cursor-not-allowed disabled:opacity-50",
                 "[&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
                 "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-0.75",
                 "border border-input outline-none bg-transparent dark:bg-input/30 dark:hover:bg-input/50",
                 "data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 data-[placeholder]:text-muted-foreground"
               )}>
@@ -126,7 +126,7 @@ export default function SearchOptions({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="start"
-                className="w-[min(325px,calc(100vw-55px))]"
+                className="w-[min(26.5rem,calc(100vw-3.5rem))]"
               >
                 {
                   filtersEnum.map((f) => (

@@ -18,6 +18,7 @@ import { addMonths, startOfDay, startOfMonth } from "date-fns";
 import PlanMeals from "@/components/plans/create/plan-meals";
 import { useContainerQuery } from "@/hooks/use-container-query";
 import { useQueryClient } from "@tanstack/react-query";
+import { remToPx } from "@/lib/utils";
 
 type CreatePlanFormProps = {
   userId: string;
@@ -32,7 +33,7 @@ type CreatePlanFormContextProps<T extends CreatePlanForm = CreatePlanForm> = {
   setValue: UseFormSetValue<T>;
 };
 
-const CONTAINER_4XL_BREAKPOINT = 896;
+const CONTAINER_4XL_BREAKPOINT = 56;
 
 const CreatePlanFormContext = createContext<CreatePlanFormContextProps | null>(null);
 
@@ -48,7 +49,7 @@ export default function CreatePlanForm({ userId }: CreatePlanFormProps) {
 
   const hydrated = useHydration();
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
-    condition: ({ width }) => width > CONTAINER_4XL_BREAKPOINT
+    condition: ({ width }) => width >= remToPx(CONTAINER_4XL_BREAKPOINT - 2)
   });
   
   const {

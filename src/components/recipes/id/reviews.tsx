@@ -393,7 +393,7 @@ const ReviewCard = memo(({
                         <Button
                           onClick={async () => await executeDeleteReview({ reviewId: review.id })}
                           disabled={isDeleteReviewExecuting}
-                          className="min-w-[75px] cursor-pointer text-white bg-red-500 dark:bg-red-700 disabled:bg-red-300 dark:disabled:bg-red-400"
+                          className="min-w-19 cursor-pointer text-white bg-red-500 dark:bg-red-700 disabled:bg-red-300 dark:disabled:bg-red-400"
                         >
                           {isDeleteReviewExecuting ? <Loader2 className="animate-spin"/> : "Continue"}
                         </Button>

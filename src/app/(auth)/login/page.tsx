@@ -21,12 +21,12 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <div className="size-full 2xl:max-w-[1250px] 2xl:max-h-[1000px] grid sm:grid-cols-[1fr_min(500px,33%)] xl:grid-cols-[1fr_min(750px,50%)] 2xl:border 2xl:border-border overflow-hidden">
-      <div className="flex flex-col gap-4 max-w-[500px] m-auto p-4 md:p-10">
+    <div className="size-full 2xl:max-w-312 2xl:max-h-250 grid sm:grid-cols-[1fr_min(32rem,33%)] xl:grid-cols-[1fr_min(46rem,50%)] 2xl:border 2xl:border-border overflow-hidden">
+      <div className="flex flex-col gap-4 max-w-125 m-auto p-4 md:p-10">
         <Image
           src={siteLogo}
           alt="Mealicious Logo"
-          className="w-[clamp(100px,50%,200px)] mx-auto pt-4 pb-4 sm:pb-6 dark:invert"
+          className="w-[clamp(6rem,50%,12rem)] mx-auto pt-4 pb-4 sm:pb-6 dark:invert"
           priority
         />
         <div className="flex flex-col gap-2">

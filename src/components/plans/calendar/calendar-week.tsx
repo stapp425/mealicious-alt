@@ -192,7 +192,7 @@ const CalendarWeekDay = memo(({
                                   key={r.id}
                                   href={`/recipes/${r.id}`}
                                   prefetch={false}
-                                  className="cursor-pointer border border-border grid @min-2xl:grid-cols-[128px_1fr] gap-4 p-3 rounded-sm"
+                                  className="cursor-pointer border border-border grid @min-2xl:grid-cols-[8rem_1fr] gap-4 p-3 rounded-sm"
                                 >
                                   <div className="relative w-full @min-2xl:w-32 h-36 @min-2xl:h-auto shrink-0">
                                     <Image 

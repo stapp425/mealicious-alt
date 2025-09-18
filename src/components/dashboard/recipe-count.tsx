@@ -85,10 +85,10 @@ export default async function RecipeCount({ userId }: RecipeCountProps) {
   ];
   
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-2.5">
+    <div className="flex flex-col @min-2xl:flex-row items-center gap-2.5">
       {
         recipesCount.map((c) => (
-          <div key={c.id} className="relative bg-mealicious-primary text-white w-full sm:w-auto sm:flex-1 h-[125px] flex flex-col gap-8 p-3 rounded-md overflow-hidden">
+          <div key={c.id} className="relative bg-mealicious-primary text-white w-full @min-2xl:w-auto @min-2xl:flex-1 h-32 flex flex-col gap-8 p-3 rounded-md overflow-hidden">
             <c.icon
               size={96}
               className="absolute stroke-mealicious-primary-muted bottom-0 left-0 opacity-33 dark:opacity-16"
@@ -100,7 +100,7 @@ export default async function RecipeCount({ userId }: RecipeCountProps) {
                 className="stroke-black shrink-0"
               />
             </div>
-            <h2 className="absolute bottom-3 left-3 font-bold text-4xl">{c.count}</h2>
+            <h2 className="absolute bottom-3 left-3 font-bold text-4xl -mb-1.5">{c.count}</h2>
             <Link href={c.href as Route} className="absolute bottom-3 right-3 cursor-pointer bg-white hover:bg-slate-300 text-black text-sm flex items-center gap-2 py-1 px-3 rounded-full transition-colors">
               <span className="font-semibold">View</span>
               <Eye size={18}/>
@@ -119,7 +119,7 @@ export function RecipeCountSkeleton() {
         Array.from({ length: 3 }, (_, i) => i).map((i) => (
           <Skeleton
             key={i}
-            className="flex-1 h-[125px] rounded-md"
+            className="flex-1 h-32 rounded-md"
           />
         ))
       }

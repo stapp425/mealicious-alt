@@ -50,7 +50,7 @@ export default async function MostRecentSavedRecipes({ userId }: MostRecentSaved
     return (
       <div className="flex flex-col">
         <h1 className="font-bold text-2xl mb-3">Most Recent Saved Recipes</h1>
-        <div className="bg-sidebar border border-border text-muted-foreground text-center font-semibold min-h-[450px] flex flex-col justify-center items-center gap-6 rounded-md">
+        <div className="bg-sidebar border border-border text-muted-foreground text-center font-semibold min-h-112 flex flex-col justify-center items-center gap-6 rounded-md">
           <SearchX size={72} className="stroke-muted-foreground"/>
           <span className="text-lg">No Saved Recipes Found!</span>
         </div>
@@ -70,7 +70,7 @@ export function MostRecentSavedRecipesSkeleton() {
   return (
     <div className="flex flex-col gap-2.5">
       <Skeleton className="w-48 h-8 rounded-sm"/>
-      <Skeleton className="h-[500px] rounded-sm"/>
+      <Skeleton className="h-125 rounded-sm"/>
     </div>
   );
 }

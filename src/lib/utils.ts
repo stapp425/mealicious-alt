@@ -34,6 +34,10 @@ export function generatePagination(currentPage: number, totalPages: number): (".
   return [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages];
 }
 
+export function remToPx(rem: number) {
+  return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+}
+
 export function getDateDifference({ earlierDate, laterDate = new Date() }: {
   earlierDate: Date;
   laterDate?: Date;

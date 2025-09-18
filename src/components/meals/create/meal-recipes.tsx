@@ -271,7 +271,7 @@ const MealRecipesResults = memo(({
                   append(r);
                   toast.success("Recipe successfully added!");
                 }}
-                className="group/recipe cursor-pointer disabled:cursor-not-allowed text-left w-full grid grid-cols-[72px_1fr] items-center gap-4 rounded-sm"
+                className="group/recipe cursor-pointer disabled:cursor-not-allowed text-left w-full grid grid-cols-[4.5rem_1fr] items-center gap-4 rounded-sm"
               >
                 <div className="relative min-h-12 h-auto shrink-0">
                   <Image 

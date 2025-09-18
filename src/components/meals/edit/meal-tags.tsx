@@ -92,12 +92,11 @@ export default function MealTags() {
                     [...formTags.filter((ft) => ft !== t)],
                     { shouldDirty: true }
                   )}
-                  className="mealicious-button text-white text-xs font-semibold min-w-[50px] hover:bg-red-500 hover:text-white px-3 py-1 rounded-full transition-colors"
+                  className="mealicious-button text-white text-xs font-semibold min-w-12 hover:bg-red-500 hover:text-white px-3 py-1 rounded-full transition-colors"
                 >
                   {t}
                 </button>
               </li>
-              
             ))
           }
         </ul>

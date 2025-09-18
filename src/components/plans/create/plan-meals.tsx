@@ -438,7 +438,7 @@ const PlanMealsBody = memo(({
               setSelectedMeal(null);
               toast.success("Meal successfully added!");
             }}
-            className="flex-1 max-w-[100px] mealicious-button h-9 font-semibold text-sm rounded-sm"
+            className="flex-1 max-w-24 mealicious-button h-9 font-semibold text-sm rounded-sm"
           >
             Add
           </button>

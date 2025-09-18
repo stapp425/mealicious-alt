@@ -104,7 +104,7 @@ export function PopularRecipesSkeleton() {
     <div className="flex flex-col gap-2.5">
       <Skeleton className="w-48 h-8 rounded-sm"/>
       <Skeleton className="w-60 h-6 rounded-sm"/>
-      <Skeleton className="h-[300px]"/>
+      <Skeleton className="h-75"/>
     </div>
   );
 }

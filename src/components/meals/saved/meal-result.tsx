@@ -89,7 +89,7 @@ export default function MealResult({ meal }: MealResultProps) {
               key={r.id}
               href={`/recipes/${r.id}`}
               prefetch={false}
-              className="border border-border grid grid-cols-[96px_1fr] gap-4 p-3 rounded-md"
+              className="border border-border grid grid-cols-[6rem_1fr] gap-4 p-3 rounded-md"
             >
               <div className="relative min-h-16">
                 <Image 

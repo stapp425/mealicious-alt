@@ -21,23 +21,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronsUpDown, Laptop, LogOut, Moon, Settings, Sun, User } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
-import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import Image from "next/image";
 import defaultProfilePicture from "@/img/default/default-pfp.jpg";
 import { useQueryClient } from "@tanstack/react-query";
+import { useHydration } from "@/hooks/use-hydration";
 
 export default function SidebarUser() {
   const queryClient = useQueryClient();
   const { data, status } = useSession();
-  const [mounted, setMounted] = useState<boolean>(false);
+  const hydrated = useHydration();
   const { setTheme } = useTheme();
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (status === "loading") {
     return (
@@ -55,7 +51,7 @@ export default function SidebarUser() {
     );
   }
     
-  if (!data?.user || !mounted) return null;
+  if (!data?.user || !hydrated) return null;
   const { id, image, name, email } = data.user;
 
   return (
@@ -82,7 +78,7 @@ export default function SidebarUser() {
           <DropdownMenuContent
             side="top"
             align="end"
-            className="w-[175px]"
+            className="w-46"
           >
             <DropdownMenuLabel>
               Options

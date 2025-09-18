@@ -11,12 +11,13 @@ import Image from "next/image";
 import ProfileInfo from "@/components/main/profile-info";
 import { useContainerQuery } from "@/hooks/use-container-query";
 import { queryClient } from "@/lib/queryClient";
+import { remToPx } from "@/lib/utils";
 
-const CONTAINER_3XL_BREAKPOINT = 768;
+const CONTAINER_3XL_BREAKPOINT = 48;
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function Layout({ children }: LayoutProps<"/">) {
   const [ref, matches] = useContainerQuery({
-    condition: ({ width }) => width >= CONTAINER_3XL_BREAKPOINT
+    condition: ({ width }) => width >= remToPx(CONTAINER_3XL_BREAKPOINT)
   });
   
   return (

@@ -6,18 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
+import { useContainerQuery } from "@/hooks/use-container-query";
 import { useHydration } from "@/hooks/use-hydration";
+import { remToPx } from "@/lib/utils";
 import { MAX_MEAL_SEARCH_CALORIES, MealSearch, MealSearchSchema } from "@/lib/zod/meal";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Search } from "lucide-react";
 import { parseAsIndex, parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { memo, useMemo } from "react";
 import { Control, useForm, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form";
-import { useMediaQuery } from "usehooks-ts";
+
+const FORM_BREAKPOINT = 36;
 
 export default function SearchBar() {
   const hydrated = useHydration();
-  const matches = useMediaQuery("(min-width: 48rem)");
+  const [ref, matches] = useContainerQuery<HTMLFormElement>({
+    condition: ({ width }) => width >= remToPx(FORM_BREAKPOINT - 2)
+  });
   const [,setParams] = useQueryStates({
     page: parseAsIndex.withDefault(0),
     query: parseAsString.withDefault(""),
@@ -50,7 +55,11 @@ export default function SearchBar() {
 
   return (
     <Popover>
-      <form onSubmit={onSubmit} className="w-full flex flex-col items-start gap-3">
+      <form
+        ref={ref}
+        onSubmit={onSubmit}
+        className="w-full flex flex-col items-start gap-3"
+      >
         <div className="w-full flex justify-between items-center gap-3">
           <Input 
             placeholder="Meal Query"
@@ -66,12 +75,17 @@ export default function SearchBar() {
           </button>
         </div>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="w-full @min-2xl:w-fit cursor-pointer gap-4 px-4! rounded-sm shadow-none">
+          <Button variant="outline" className="w-full @min-xl:w-fit cursor-pointer gap-4 px-4! rounded-sm shadow-none">
             Search Options
             <Plus />
           </Button>
         </PopoverTrigger>
-        <PopoverContent asChild align={hydrated && matches ? "start" : "center"} sideOffset={12.5} className="w-[clamp(300px,calc(100vw-30px),475px)] p-0">
+        <PopoverContent
+          align={hydrated && matches ? "start" : "center"}
+          sideOffset={remToPx(0.75)}
+          className="w-[min(calc(100vw-2rem),calc(32rem+2rem))] p-0"
+          asChild
+        >
           <div className="grid">
             <h1 className="font-bold text-lg p-4">Advanced Search Options</h1>
             <Separator />

@@ -28,8 +28,9 @@ import { generatePresignedUrlForImageDelete, generatePresignedUrlForImageUpload 
 import { useContainerQuery } from "@/hooks/use-container-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHydration } from "@/hooks/use-hydration";
+import { remToPx } from "@/lib/utils";
 
-const CONTAINER_4XL_BREAKPOINT = 896;
+const CONTAINER_4XL_BREAKPOINT = 52;
 
 type EditRecipeFormProps = {
   readonly cuisines: {
@@ -125,7 +126,7 @@ export default function EditRecipeForm({
 
   const hydrated = useHydration();
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
-    condition: ({ width }) => width > CONTAINER_4XL_BREAKPOINT
+    condition: ({ width }) => width >= remToPx(CONTAINER_4XL_BREAKPOINT - 2)
   });
   // combine both recipe's nutrients and database nutrients together
   const updatedNutrition = nutrition.map((n) => {
@@ -272,11 +273,11 @@ export default function EditRecipeForm({
       <form 
         ref={ref}
         onSubmit={onSubmit} 
-        className="@container/edit-recipe max-w-188 @min-4xl/main:max-w-324 w-full bg-background mx-auto p-4"
+        className="max-w-188 @min-4xl/main:max-w-324 w-full bg-background mx-auto p-4"
       >
         <h1 className="text-4xl font-bold mb-6">Edit Recipe</h1>
-        <div className="flex flex-col @min-4xl/edit-recipe:flex-row gap-6">
-          <div className="w-full @min-4xl/edit-recipe:w-9/20 flex flex-col gap-6">
+        <div className="flex flex-col @min-4xl:flex-row gap-6">
+          <div className="w-full @min-4xl:w-9/20 flex flex-col gap-6">
             <RecipeImageUploader recipeImageURL={recipe.image}/>
             {hydrated && !matches && <RecipeTitle />}
             {hydrated && !matches && <RecipeDescription />}
@@ -289,12 +290,12 @@ export default function EditRecipeForm({
             <button
               disabled={isSubmitting || isValidating || !isDirty}
               type="submit" 
-              className="hidden @min-4xl/edit-recipe:flex mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
+              className="hidden @min-4xl:flex mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
             >
               {isSubmitting || isValidating ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
             </button>
           </div>
-          <div className="w-full @min-4xl/edit-recipe:w-11/20 flex flex-col gap-6">
+          <div className="w-full @min-4xl:w-11/20 flex flex-col gap-6">
             {hydrated && matches && <RecipeTitle />}
             {hydrated && matches && <RecipeTimes />}
             {hydrated && matches && <RecipeDescription />}
@@ -304,7 +305,7 @@ export default function EditRecipeForm({
             <button
               disabled={isSubmitting || isValidating || !isDirty}
               type="submit" 
-              className="flex @min-4xl/edit-recipe:hidden mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
+              className="flex @min-4xl:hidden mealicious-button justify-center items-center font-bold px-6 py-2 rounded-md"
             >
               {isSubmitting || isValidating ? <LoaderCircle className="animate-spin"/> : "Edit Recipe"}
             </button>

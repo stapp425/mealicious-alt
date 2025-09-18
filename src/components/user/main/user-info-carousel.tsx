@@ -6,8 +6,6 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Route } from "next";
-import { useHydration } from "@/hooks/use-hydration";
-import { useContainerQuery } from "@/hooks/use-container-query";
 
 type UserInfoCarouselProps = {
   header: string;
@@ -15,14 +13,7 @@ type UserInfoCarouselProps = {
   items: React.ReactElement<React.HTMLAttributes<HTMLDivElement>, "div">[];
 }
 
-const CAROUSEL_BREAKPOINT = 544;
-
 export default function UserInfoCarousel({ header, href, items }: UserInfoCarouselProps) {
-  const hydrated = useHydration();
-  const [ref, matches] = useContainerQuery({
-    condition: ({ width }) => width >= CAROUSEL_BREAKPOINT
-  });
-
   if (items.length === 0) {
     return (
       <section className="flex flex-col justify-center gap-2">
@@ -36,13 +27,13 @@ export default function UserInfoCarousel({ header, href, items }: UserInfoCarous
   }
 
   return (
-    <section ref={ref} className="grid gap-2">
+    <section className="grid gap-2">
       <h1 className="font-bold text-lg">{header}</h1>
       <Carousel
         opts={{
           skipSnaps: true,
           containScroll: "keepSnaps",
-          slidesToScroll: hydrated && matches ? 2 : 1,
+          slidesToScroll: "auto",
         }}
         className="overflow-hidden"
       >

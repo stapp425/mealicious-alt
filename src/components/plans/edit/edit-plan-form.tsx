@@ -19,6 +19,7 @@ import { addDays, addMonths, startOfDay, startOfMonth } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHydration } from "@/hooks/use-hydration";
 import { useContainerQuery } from "@/hooks/use-container-query";
+import { remToPx } from "@/lib/utils";
 
 type EditPlanFormProps = {
   userId: string;
@@ -35,7 +36,7 @@ type EditPlanFormContextProps<T extends EditPlanForm = EditPlanForm> = {
   setValue: UseFormSetValue<T>;
 };
 
-const CONTAINER_4XL_BREAKPOINT = 896;
+const CONTAINER_4XL_BREAKPOINT = 52;
 
 const EditPlanFormContext = createContext<EditPlanFormContextProps | null>(null);
 
@@ -51,7 +52,7 @@ export default function EditPlanForm({ userId, planToEdit }: EditPlanFormProps) 
   
   const hydrated = useHydration();
   const [ref, matches] = useContainerQuery<HTMLFormElement>({
-    condition: ({ width }) => width > CONTAINER_4XL_BREAKPOINT
+    condition: ({ width }) => width >= remToPx(CONTAINER_4XL_BREAKPOINT - 2)
   });
   
   const {

@@ -51,7 +51,7 @@ export default function RecipeCuisine({
             <ChevronDown className="opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[clamp(250px,25vw,450px)] p-0" align="end">
+        <PopoverContent className="w-[clamp(16rem,calc(100vw-2rem),28rem)] p-0" align="end">
           <Command>
             <CommandInput placeholder="Search cuisine..." className="h-9" />
             <CommandList>

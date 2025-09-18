@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   return (
-    <div className="size-full 2xl:max-w-[1250px] 2xl:max-h-[1000px] grid sm:grid-cols-[min(500px,33%)_1fr] xl:grid-cols-[min(750px,50%)_1fr] 2xl:border 2xl:border-border overflow-hidden">
+    <div className="size-full 2xl:max-w-312 2xl:max-h-250 grid sm:grid-cols-[min(32rem,33%)_1fr] xl:grid-cols-[min(46rem,50%)_1fr] 2xl:border 2xl:border-border overflow-hidden">
       <div className="relative hidden sm:block">
         <Image 
           src={pizzaBanner}
@@ -33,11 +33,11 @@ export default async function Page() {
           </Link>
         </div>
       </div>
-      <div className="flex flex-col gap-4 max-w-[500px] m-auto p-4 md:p-10">
+      <div className="flex flex-col gap-4 max-w-125 m-auto p-4 md:p-10">
         <Image
           src={siteLogo}
           alt="Mealicious Logo"
-          className="w-[clamp(100px,50%,200px)] mx-auto pt-4 pb-4 sm:pb-6 dark:invert"
+          className="w-[clamp(6rem,50%,12rem)] mx-auto pt-4 pb-4 sm:pb-6 dark:invert"
         />
         <SignUpForm />
         <div className="h-8 flex justify-center text-muted-foreground items-center gap-3">
